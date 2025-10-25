@@ -1,0 +1,157 @@
+.page-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.filter-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-pills {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pill {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 9999px;
+  background: none;
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pill:hover {
+  background-color: var(--background-color);
+  color: var(--text-primary);
+}
+
+.pill-active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.pill-active:hover {
+  background-color: var(--primary-hover-color);
+  border-color: var(--primary-hover-color);
+}
+
+.search-bar {
+  flex: 1;
+  max-width: 300px;
+}
+
+.search-bar .form-control {
+  width: 100%;
+}
+
+.bulk-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  margin-bottom: 1rem;
+}
+
+.bulk-actions-bar span {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bulk-actions-bar select {
+  max-width: 200px;
+}
+
+.table-wrapper {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table th {
+  background-color: var(--background-color);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table td {
+  color: var(--text-primary);
+}
+
+.th-checkbox,
+.td-checkbox {
+  width: 50px;
+  text-align: center;
+}
+
+.table tbody tr:hover {
+  background-color: var(--background-color);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.printable-area {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .table {
+    font-size: 12px;
+  }
+  
+  .table th,
+  .table td {
+    padding: 0.5rem;
+  }
+}
+
+/* Event Selector Styles */
+.event-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 250px;
+}
+
+.filter-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}

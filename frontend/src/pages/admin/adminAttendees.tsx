@@ -1,0 +1,265 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { Registration, Event, Group } from '../../types';
+import '../../styles/AdminAttendees.css';
+import { RegistrationDetailsModal } from '../../components/RegistrationDetailsModal';
+
+interface AdminAttendeesProps {
+  registrations: Registration[];
+  events: Event[];
+  groups: Group[];
+  handleSaveRegistration: (regData: Registration) => void;
+  handleDeleteRegistrations: (regIds: number[]) => void;
+  handleBulkAssignGroup: (regIds: number[], targetGroupId: number) => void;
+}
+
+export const AdminAttendees: React.FC<AdminAttendeesProps> = ({ 
+  registrations, 
+  events, 
+  groups, 
+  handleSaveRegistration, 
+  handleDeleteRegistrations, 
+  handleBulkAssignGroup 
+}) => {
+  const [filter, setFilter] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+  const [, setEditingReg] = useState<Registration | null>(null);
+  const [selectedRegIds, setSelectedRegIds] = useState<number[]>([]);
+  const [detailsReg, setDetailsReg] = useState<Registration | null>(null);
+
+  // Automatically select the most recent event on component mount
+  useEffect(() => {
+    if (events.length > 0 && selectedEventId === null) {
+      const mostRecentEvent = events.reduce((latest, current) => {
+        return new Date(current.date) > new Date(latest.date) ? current : latest;
+      });
+      setSelectedEventId(mostRecentEvent.id);
+    }
+  }, [events, selectedEventId]);
+
+  const filteredRegistrations = useMemo(() => {
+    let results = registrations;
+    
+    // Filter by selected event
+    if (selectedEventId !== null) {
+      results = results.filter(r => r.eventId === selectedEventId);
+    }
+    
+    if (filter !== "All") {
+      results = results.filter(r => r.category === filter);
+    }
+
+    if (searchQuery.trim() !== "") {
+      const lowercasedQuery = searchQuery.toLowerCase();
+      results = results.filter(r => 
+        r.name.toLowerCase().includes(lowercasedQuery) || 
+        r.email.toLowerCase().includes(lowercasedQuery)
+      );
+    }
+    return results;
+  }, [filter, registrations, searchQuery, selectedEventId]);
+
+  // const onSave = (regData: Registration) => {
+  //   handleSaveRegistration(regData);
+  //   setEditingReg(null);
+  // };
+
+  const handleSelectOne = (regId: number, isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedRegIds(prev => [...prev, regId]);
+    } else {
+      setSelectedRegIds(prev => prev.filter(id => id !== regId));
+    }
+  };
+
+  const handleSelectAll = (isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedRegIds(filteredRegistrations.map(r => r.id));
+    } else {
+      setSelectedRegIds([]);
+    }
+  };
+  
+  const handleDeleteSelected = () => {
+    if (window.confirm(`Are you sure you want to delete ${selectedRegIds.length} selected attendee(s)?`)) {
+      handleDeleteRegistrations(selectedRegIds);
+      setSelectedRegIds([]);
+    }
+  };
+
+  const handleBulkAssign = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const targetGroupId = Number(e.target.value);
+    if (!targetGroupId) return;
+    
+    handleBulkAssignGroup(selectedRegIds, targetGroupId);
+    setSelectedRegIds([]);
+    e.target.value = ""; // Reset dropdown
+  };
+
+  const groupsByCategory = useMemo(() => {
+    return groups.reduce<Record<string, Group[]>>((acc, group) => {
+      if (!acc[group.category]) {
+        acc[group.category] = [];
+      }
+      acc[group.category].push(group);
+      return acc;
+    }, {});
+  }, [groups]);
+
+  const handleExportCSV = () => {
+    const headers = ["Name", "Email", "Category"];
+    const rows = filteredRegistrations.map(reg =>
+      [
+        `"${reg.name.replace(/"/g, '""')}"`,
+        `"${reg.email.replace(/"/g, '""')}"`,
+        `"${reg.category.replace(/"/g, '""')}"`
+      ].join(',')
+    );
+
+    const csvContent = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "attendees.csv");
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const isAllSelected = filteredRegistrations.length > 0 && selectedRegIds.length === filteredRegistrations.length;
+
+  return (
+    <div className="container">
+      <div className="page-header">
+        <h1>Attendees</h1>
+        <div className="page-actions">
+          <button className="btn btn-secondary" onClick={handleExportCSV}>Export CSV</button>
+          <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button>
+        </div>
+      </div>
+      <div className="filter-controls">
+        <div className="event-selector">
+          <label htmlFor="eventSelect" className="filter-label">Select Event:</label>
+          <select
+            id="eventSelect"
+            className="form-control"
+            value={selectedEventId || ''}
+            onChange={(e) => {
+              const eventId = e.target.value ? parseInt(e.target.value) : null;
+              setSelectedEventId(eventId);
+              setSelectedRegIds([]);
+            }}
+          >
+            <option value="" disabled>All Events</option>
+            {events.map(event => (
+              <option key={event.id} value={event.id}>
+                {event.name} - {new Date(event.date).toLocaleDateString()}
+                {selectedEventId === event.id ? ' (Current)' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="filter-pills">
+          {(() => {
+            const activities = events.find(e => e.id === selectedEventId)?.activities || [];
+            const tabs = ["All", ...activities];
+            return tabs.map(cat => (
+              <button key={cat} className={`pill ${filter === cat ? 'pill-active' : ''}`} onClick={() => { setFilter(cat); setSelectedRegIds([]); }}>
+                {cat}
+              </button>
+            ));
+          })()}
+        </div>
+        <div className="search-bar">
+          <input
+            type="search"
+            placeholder="Search attendees..."
+            className="form-control"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {selectedRegIds.length > 0 && (
+        <div className="bulk-actions-bar">
+          <span>{selectedRegIds.length} selected</span>
+          <select className="form-control" onChange={handleBulkAssign} value="" aria-label="Assign selected attendees to group">
+            <option value="" disabled>Assign to Group...</option>
+            {Object.keys(groupsByCategory).map((category) => (
+              <optgroup label={category} key={category}>
+                {groupsByCategory[category].map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </optgroup>
+            ))}
+          </select>
+          <button className="btn btn-danger btn-sm" onClick={handleDeleteSelected}>Delete Selected</button>
+        </div>
+      )}
+      
+      {filteredRegistrations.length > 0 ? (
+        <div className="table-wrapper printable-area">
+          <table className="table">
+            <thead>
+              <tr>
+                <th className="th-checkbox no-print">
+                  <input 
+                    type="checkbox" 
+                    checked={isAllSelected}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    aria-label="Select all attendees"
+                  />
+                </th>
+                <th>Name</th><th>Email</th><th>Category</th><th className="no-print">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRegistrations.map(reg => (
+                <tr key={reg.id}>
+                  <td className="td-checkbox no-print">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedRegIds.includes(reg.id)}
+                      onChange={(e) => handleSelectOne(reg.id, e.target.checked)}
+                      aria-label={`Select ${reg.name}`}
+                    />
+                  </td>
+                  <td>{reg.name}</td>
+                  <td>{reg.email}</td>
+                  <td>{reg.category}</td>
+                  <td className="no-print">
+                    <button 
+                      className="btn btn-secondary btn-sm" 
+                      onClick={() => setDetailsReg(reg)}
+                      title="Details"
+                    >
+                      🔍 Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p>No attendees found for this filter.</p>
+      )}
+
+      {detailsReg && (
+        <RegistrationDetailsModal
+          event={events.find(e => e.id === detailsReg.eventId)}
+          registration={detailsReg}
+          onClose={() => setDetailsReg(null)}
+        />
+      )}
+    </div>
+  );
+};

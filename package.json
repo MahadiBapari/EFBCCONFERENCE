@@ -1,0 +1,22 @@
+{
+  "name": "efbcconference",
+  "version": "1.0.0",
+  "description": "EFBC Conference Management System",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && node working-server.js",
+    "client": "cd frontend && npm start",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd backend && npm run build && cd ../frontend && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "conference",
+    "management",
+    "efbc"
+  ],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,358 @@
+import { Request, Response } from 'express';
+import { User } from '../models/User';
+import { ApiResponse, CreateUserRequest, UpdateUserRequest, LoginRequest, RegisterRequest, AuthResponse } from '../types';
+import { DatabaseService } from '../services/databaseService';
+
+export class UserController {
+  private db: DatabaseService;
+
+  constructor(db: DatabaseService) {
+    this.db = db;
+  }
+
+  // Get all users
+  async getUsers(req: Request, res: Response): Promise<void> {
+    try {
+      const { page = 1, limit = 10, role, isActive, search } = req.query;
+      const offset = (Number(page) - 1) * Number(limit);
+
+      let conditions: Record<string, any> = {};
+      if (role) conditions.role = role;
+      if (isActive !== undefined) conditions.isActive = isActive === 'true';
+
+      let users;
+      let total;
+
+      if (search) {
+        const searchCondition = `name LIKE '%${search}%' OR email LIKE '%${search}%'`;
+        let whereClause = searchCondition;
+        
+        if (Object.keys(conditions).length > 0) {
+          const conditionClause = Object.keys(conditions).map(key => `${key} = ?`).join(' AND ');
+          whereClause = `${conditionClause} AND ${searchCondition}`;
+        }
+
+        users = await this.db.query(
+          `SELECT * FROM users WHERE ${whereClause} LIMIT ? OFFSET ?`,
+          [...Object.values(conditions), Number(limit), offset]
+        );
+        
+        total = await this.db.query(
+          `SELECT COUNT(*) as count FROM users WHERE ${whereClause}`,
+          Object.values(conditions)
+        );
+      } else {
+        users = await this.db.findAll('users', conditions, Number(limit), offset);
+        total = await this.db.count('users', conditions);
+      }
+
+      const response: ApiResponse = {
+        success: true,
+        data: users.map((row: any) => User.fromDatabase(row).toJSON()),
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total: Array.isArray(total) ? total[0].count : total,
+          totalPages: Math.ceil((Array.isArray(total) ? total[0].count : total) / Number(limit))
+        }
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch users'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  // Get user by ID
+  async getUserById(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const user = await this.db.findById('users', Number(id));
+
+      if (!user) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'User not found'
+        };
+        res.status(404).json(response);
+        return;
+      }
+
+      const response: ApiResponse = {
+        success: true,
+        data: User.fromDatabase(user).toJSON()
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch user'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  // Create new user
+  async createUser(req: Request, res: Response): Promise<void> {
+    try {
+      const userData: CreateUserRequest = req.body;
+      const user = new User(userData);
+      
+      // Validate user data
+      const validation = user.validate();
+      if (!validation.isValid) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Validation failed',
+          message: validation.errors.join(', ')
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Check if email already exists
+      const existingUser = await this.db.query(
+        'SELECT id FROM users WHERE email = ?',
+        [user.email]
+      );
+
+      if (existingUser.length > 0) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Email already exists'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Hash password
+      await user.hashPassword();
+      
+      const result = await this.db.insert('users', user.toDatabase());
+      user.id = result.insertId;
+
+      const response: ApiResponse = {
+        success: true,
+        data: user.toJSON(),
+        message: 'User created successfully'
+      };
+
+      res.status(201).json(response);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to create user'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  // Update user
+  async updateUser(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const updateData: UpdateUserRequest = req.body;
+      
+      const existingUser = await this.db.findById('users', Number(id));
+      if (!existingUser) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'User not found'
+        };
+        res.status(404).json(response);
+        return;
+      }
+
+      const user = new User({ ...existingUser, ...updateData });
+      user.updatedAt = new Date().toISOString();
+      
+      // Hash password if it's being updated
+      if (updateData.password) {
+        await user.hashPassword();
+      }
+      
+      await this.db.update('users', Number(id), user.toDatabase());
+
+      const response: ApiResponse = {
+        success: true,
+        data: user.toJSON(),
+        message: 'User updated successfully'
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to update user'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  // Delete user
+  async deleteUser(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      const existingUser = await this.db.findById('users', Number(id));
+      if (!existingUser) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'User not found'
+        };
+        res.status(404).json(response);
+        return;
+      }
+
+      await this.db.delete('users', Number(id));
+
+      const response: ApiResponse = {
+        success: true,
+        message: 'User deleted successfully'
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to delete user'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  // User login
+  async login(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, password }: LoginRequest = req.body;
+
+      if (!email || !password) {
+        const response: AuthResponse = {
+          success: false,
+          error: 'Email and password are required'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Find user by email
+      const users = await this.db.query(
+        'SELECT * FROM users WHERE email = ? AND isActive = true',
+        [email]
+      );
+
+      if (users.length === 0) {
+        const response: AuthResponse = {
+          success: false,
+          error: 'Invalid email or password'
+        };
+        res.status(401).json(response);
+        return;
+      }
+
+      const user = User.fromDatabase(users[0]);
+      const isValidPassword = await user.verifyPassword(password);
+
+      if (!isValidPassword) {
+        const response: AuthResponse = {
+          success: false,
+          error: 'Invalid email or password'
+        };
+        res.status(401).json(response);
+        return;
+      }
+
+      // In a real application, you would generate a JWT token here
+      const response: AuthResponse = {
+        success: true,
+        user: user.toJSON(),
+        message: 'Login successful'
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error during login:', error);
+      const response: AuthResponse = {
+        success: false,
+        error: 'Login failed'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  // User registration
+  async register(req: Request, res: Response): Promise<void> {
+    try {
+      const { name, email, password, role = 'user' }: RegisterRequest = req.body;
+
+      if (!name || !email || !password) {
+        const response: AuthResponse = {
+          success: false,
+          error: 'Name, email, and password are required'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Check if email already exists
+      const existingUser = await this.db.query(
+        'SELECT id FROM users WHERE email = ?',
+        [email]
+      );
+
+      if (existingUser.length > 0) {
+        const response: AuthResponse = {
+          success: false,
+          error: 'Email already exists'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      const user = new User({ name, email, password, role });
+      
+      // Validate user data
+      const validation = user.validate();
+      if (!validation.isValid) {
+        const response: AuthResponse = {
+          success: false,
+          error: 'Validation failed',
+          message: validation.errors.join(', ')
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Hash password
+      await user.hashPassword();
+      
+      const result = await this.db.insert('users', user.toDatabase());
+      user.id = result.insertId;
+
+      const response: AuthResponse = {
+        success: true,
+        user: user.toJSON(),
+        message: 'Registration successful'
+      };
+
+      res.status(201).json(response);
+    } catch (error) {
+      console.error('Error during registration:', error);
+      const response: AuthResponse = {
+        success: false,
+        error: 'Registration failed'
+      };
+      res.status(500).json(response);
+    }
+  }
+}
