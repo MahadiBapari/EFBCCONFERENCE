@@ -55,7 +55,7 @@ export class DatabaseService {
   }
 
   // Generic find all method with optional conditions
-  async findAll(table: string, conditions?: Record<string, any>, limit?: number, offset?: number): Promise<any[]> {
+  async findAll(table: string, conditions?: Record<string, any>, limit?: number, offset: number = 0): Promise<any[]> {
     let sql = `SELECT * FROM \`${table}\``;
     const values: any[] = [];
 
@@ -66,15 +66,14 @@ export class DatabaseService {
     }
 
     if (limit) {
-      sql += ` LIMIT ?`;
-      values.push(limit);
-      
-      if (offset) {
-        sql += ` OFFSET ?`;
-        values.push(offset);
+      const safeLimit = parseInt(String(limit), 10);
+      const safeOffset = parseInt(String(offset), 10);
+
+      if (Number.isInteger(safeLimit) && Number.isInteger(safeOffset)) {
+        sql += ` LIMIT ${safeLimit} OFFSET ${safeOffset}`;
       }
     }
-
+    
     const result = await this.query(sql, values);
     return result;
   }

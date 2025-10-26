@@ -58,13 +58,21 @@ export class Event {
 
   // Create from database row
   static fromDatabase(row: any): Event {
+    let activities: string[] = [];
+    if (row.activities) {
+      try {
+        activities = JSON.parse(row.activities);
+      } catch (e) {
+        // Fallback for non-JSON strings
+        activities = Array.isArray(row.activities) ? row.activities : String(row.activities).split(',');
+      }
+    }
+    
     return new Event({
       id: row.id,
-      year: row.year,
       name: row.name,
       date: row.date,
-      eventId: row.eventId,
-      activities: row.activities ? JSON.parse(row.activities) : [],
+      activities: activities,
       location: row.location,
       description: row.description,
       createdAt: row.created_at,

@@ -13,11 +13,10 @@ export class EventController {
   // Get all events
   async getEvents(req: Request, res: Response): Promise<void> {
     try {
-      const { page = 1, limit = 10, year, search } = req.query as EventQuery;
+      const { page = 1, limit = 10, search } = req.query as EventQuery;
       const offset = (Number(page) - 1) * Number(limit);
 
       let conditions: Record<string, any> = {};
-      if (year) conditions.year = year;
       if (search) {
         // For search, we'll use LIKE in the query
         const searchCondition = `name LIKE '%${search}%' OR location LIKE '%${search}%'`;
