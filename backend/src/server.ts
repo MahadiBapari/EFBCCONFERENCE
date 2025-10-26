@@ -1,6 +1,7 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import bcrypt from 'bcrypt';
 import connectDB from './config/database';
 import { DatabaseService } from './services/databaseService';
 
@@ -76,10 +77,8 @@ const createTables = async () => {
     await databaseService.query(`
       CREATE TABLE IF NOT EXISTS events (
         id INT PRIMARY KEY AUTO_INCREMENT,
-        year INT NOT NULL,
         name VARCHAR(255) NOT NULL,
         date DATE NOT NULL,
-        eventId INT UNIQUE NOT NULL,
         activities JSON,
         location VARCHAR(500),
         description TEXT,
@@ -141,7 +140,6 @@ const createTables = async () => {
         eventId INT NOT NULL,
         category VARCHAR(100) NOT NULL,
         name VARCHAR(255) NOT NULL,
-        members JSON,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (eventId) REFERENCES events(id) ON DELETE CASCADE
@@ -178,44 +176,44 @@ app.get('/api/demo/setup', async (req: Request, res: Response): Promise<void> =>
 
     // Create demo admin user (password: admin123)
     // Note: In production, passwords should be properly hashed
+    const adminPasswordHash = await bcrypt.hash('admin123', 10);
     await databaseService.query(
       'INSERT IGNORE INTO users (name, email, password, role, isActive) VALUES (?, ?, ?, ?, ?)',
-      ['Admin User', 'admin@efbc.com', 'admin123', 'admin', true]
+      ['Admin User', 'admin@efbc.com', adminPasswordHash, 'admin', true]
     );
 
     // Create demo regular user (password: user123)
+    const userPasswordHash = await bcrypt.hash('user123', 10);
     await databaseService.query(
       'INSERT IGNORE INTO users (name, email, password, role, isActive) VALUES (?, ?, ?, ?, ?)',
-      ['Regular User', 'user@efbc.com', 'user123', 'user', true]
+      ['Regular User', 'user@efbc.com', userPasswordHash, 'user', true]
     );
 
     // Create demo event
     const demoEvent = {
-      year: 2024,
       name: 'EFBC 2024 Conference',
       date: '2024-04-22',
-      eventId: 1,
       activities: JSON.stringify(['Golf', 'Fishing', 'Networking', 'Tennis', 'Swimming']),
       location: 'Disney\'s Yacht & Beach Club Resorts, Orlando, Florida',
       description: 'Annual East Florida Business Conference featuring networking, education, and recreational activities.'
     };
 
     await databaseService.query(
-      'INSERT IGNORE INTO events (year, name, date, eventId, activities, location, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [demoEvent.year, demoEvent.name, demoEvent.date, demoEvent.eventId, demoEvent.activities, demoEvent.location, demoEvent.description]
+      'INSERT IGNORE INTO events (name, date, activities, location, description) VALUES (?, ?, ?, ?, ?)',
+      [demoEvent.name, demoEvent.date, demoEvent.activities, demoEvent.location, demoEvent.description]
     );
 
     // Create demo groups
     const demoGroups = [
-      { eventId: 1, category: 'Networking', name: 'Networking Group 1', members: JSON.stringify([]) },
-      { eventId: 1, category: 'Golf', name: 'Golf Group 1', members: JSON.stringify([]) },
-      { eventId: 1, category: 'Fishing', name: 'Fishing Group 1', members: JSON.stringify([]) }
+      { eventId: 1, category: 'Networking', name: 'Networking Group 1' },
+      { eventId: 1, category: 'Golf', name: 'Golf Group 1' },
+      { eventId: 1, category: 'Fishing', name: 'Fishing Group 1' }
     ];
 
     for (const group of demoGroups) {
       await databaseService.query(
-        'INSERT IGNORE INTO `groups` (eventId, category, name, members) VALUES (?, ?, ?, ?)',
-        [group.eventId, group.category, group.name, group.members]
+        'INSERT IGNORE INTO `groups` (eventId, category, name) VALUES (?, ?, ?)',
+        [group.eventId, group.category, group.name]
       );
     }
 
