@@ -15,6 +15,8 @@ export interface Event {
   activities?: string[];
   location?: string;
   description?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Registration {

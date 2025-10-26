@@ -59,7 +59,8 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
       
       if (editingEvent) {
         // Update existing event
-        const response = await apiClient.put(`/events/${eventData.id}`, eventData);
+        const { createdAt, updatedAt, ...updatePayload } = eventData;
+        const response = await apiClient.put(`/events/${eventData.id}`, updatePayload);
         if (response.success) {
           await loadEvents(); // Reload events from API
           if (onRefreshEvents) await onRefreshEvents();
@@ -69,7 +70,8 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
         }
       } else {
         // Create new event
-        const response = await apiClient.post('/events', eventData);
+        const { id, createdAt, updatedAt, ...createPayload } = eventData;
+        const response = await apiClient.post('/events', createPayload);
         if (response.success) {
           await loadEvents(); // Reload events from API
           if (onRefreshEvents) await onRefreshEvents();

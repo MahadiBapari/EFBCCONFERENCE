@@ -20,8 +20,8 @@ export class Event {
     this.location = data.location || '';
     this.description = data.description || '';
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    this.createdAt = data.createdAt || now;
-    this.updatedAt = data.updatedAt || now;
+    this.createdAt = data.createdAt ? new Date(data.createdAt).toISOString().slice(0, 19).replace('T', ' ') : now;
+    this.updatedAt = data.updatedAt ? new Date(data.updatedAt).toISOString().slice(0, 19).replace('T', ' ') : now;
   }
 
   // Convert to JSON
