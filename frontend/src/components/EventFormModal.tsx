@@ -82,7 +82,6 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
       
       const eventDate = new Date(date);
       const year = eventDate.getFullYear();
-      const newEventId = event?.eventId || Date.now() + Math.floor(Math.random() * 1000);
       
       onSave({ 
         ...event, 
@@ -90,7 +89,6 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
         name: name.trim(), 
         date, 
         year,
-        eventId: newEventId,
         location: location.trim(),
         description: description.trim(),
         activities: activities

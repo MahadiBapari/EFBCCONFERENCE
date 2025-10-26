@@ -2,8 +2,8 @@ import { Event, Registration, Group } from '../types';
 
 // --- MOCK DATA --- //
 export const MOCK_EVENTS: Event[] = [
-    { id: 1, year: 2024, name: "EFBC Annual Conference 2024", date: "2024-10-26", eventId: 1 },
-    { id: 2, year: 2023, name: "EFBC Annual Conference 2023", date: "2023-10-20", eventId: 2 },
+    { id: 1, year: 2024, name: "EFBC Annual Conference 2024", date: "2024-10-26" },
+    { id: 2, year: 2023, name: "EFBC Annual Conference 2023", date: "2023-10-20" },
 ];
 
 export const MOCK_REGISTRATIONS: Registration[] = [

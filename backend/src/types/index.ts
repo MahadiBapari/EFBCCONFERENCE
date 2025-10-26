@@ -16,7 +16,6 @@ export interface Event {
   year: number;
   name: string;
   date: string;
-  eventId: number;
   activities?: string[];
   location?: string;
   description?: string;
@@ -108,7 +107,6 @@ export interface CreateEventRequest {
   year: number;
   name: string;
   date: string;
-  eventId: number;
   activities?: string[];
   location?: string;
   description?: string;

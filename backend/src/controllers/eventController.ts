@@ -115,11 +115,12 @@ export class EventController {
       };
 
       res.status(201).json(response);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating event:', error);
       const response: ApiResponse = {
         success: false,
-        error: 'Failed to create event'
+        error: 'Failed to create event',
+        message: error.message || 'An unexpected error occurred'
       };
       res.status(500).json(response);
     }
@@ -131,8 +132,8 @@ export class EventController {
       const { id } = req.params;
       const updateData: UpdateEventRequest = req.body;
       
-      const existingEvent = await this.db.findById('events', Number(id));
-      if (!existingEvent) {
+      const existingEventData = await this.db.findById('events', Number(id));
+      if (!existingEventData) {
         const response: ApiResponse = {
           success: false,
           error: 'Event not found'
@@ -141,8 +142,9 @@ export class EventController {
         return;
       }
 
-      const event = new Event({ ...existingEvent, ...updateData });
-      event.updatedAt = new Date().toISOString();
+      const event = Event.fromDatabase(existingEventData);
+      Object.assign(event, updateData);
+      event.updatedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
       
       await this.db.update('events', Number(id), event.toDatabase());
 
@@ -153,11 +155,12 @@ export class EventController {
       };
 
       res.status(200).json(response);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating event:', error);
       const response: ApiResponse = {
         success: false,
-        error: 'Failed to update event'
+        error: 'Failed to update event',
+        message: error.message || 'An unexpected error occurred'
       };
       res.status(500).json(response);
     }
