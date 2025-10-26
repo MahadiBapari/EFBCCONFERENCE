@@ -6,7 +6,7 @@ class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: process.env.REACT_APP_API_URL || 'http://localhost:54112/api',
+      baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
@@ -70,3 +70,19 @@ class ApiClient {
 
 export const apiClient = new ApiClient();
 export default apiClient;
+
+// Auth helpers (simple wrapper around apiClient)
+export const authApi = {
+  async login(payload: { email: string; password: string }): Promise<any> {
+    return await apiClient.post('/auth/login', payload);
+  },
+  async me(): Promise<any> {
+    return apiClient.get('/auth/me');
+  },
+  async updateProfile(payload: { name: string; email: string }): Promise<any> {
+    return apiClient.put('/auth/profile', payload);
+  },
+  async changePassword(payload: { currentPassword: string; newPassword: string }): Promise<any> {
+    return apiClient.put('/auth/password', payload);
+  }
+};

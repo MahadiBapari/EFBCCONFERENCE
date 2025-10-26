@@ -9,6 +9,7 @@ import eventRoutes from './routes/eventRoutes';
 import registrationRoutes from './routes/registrationRoutes';
 import groupRoutes from './routes/groupRoutes';
 import userRoutes from './routes/userRoutes';
+import authRoutes from './routes/authRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +24,13 @@ app.use(cors({
 }));
 app.use((express as any).json());
 app.use((express as any).urlencoded({ extended: true }));
+
+// Routes
+app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/registrations', registrationRoutes);
+app.use('/api/groups', groupRoutes);
 
 // Global database service
 let databaseService: DatabaseService;
@@ -40,9 +48,6 @@ const initializeDatabase = async () => {
     
     // Create tables if they don't exist
     await createTables();
-    
-    // Initialize routes after database is ready
-    await initRoutes();
     
   } catch (error) {
     console.error('❌ Failed to initialize database:', error);
@@ -150,18 +155,6 @@ const createTables = async () => {
   }
 };
 
-// Routes - Initialize controllers first
-const initRoutes = async () => {
-  // Initialize controllers with database service
-  if (databaseService) {
-    // Routes will be initialized when controllers are ready
-    app.use('/api/users', userRoutes);
-    app.use('/api/events', eventRoutes);
-    app.use('/api/registrations', registrationRoutes);
-    app.use('/api/groups', groupRoutes);
-  }
-};
-
 // Health check endpoint
 app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({ 
@@ -262,23 +255,26 @@ app.use((err: Error, req: Request, res: Response, next: any) => {
 
 // Initialize database and start server
 const startServer = async () => {
-  await initializeDatabase();
-  
-  const PORT = parseInt(process.env.PORT || '5000');
-  app.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🎯 Demo setup: http://localhost:${PORT}/api/demo/setup`);
-    console.log(`📝 API Documentation:`);
-    console.log(`   Events: http://localhost:${PORT}/api/events`);
-    console.log(`   Registrations: http://localhost:${PORT}/api/registrations`);
-    console.log(`   Groups: http://localhost:${PORT}/api/groups`);
-  });
+  try {
+    await initializeDatabase();
+    
+    const PORT = parseInt(process.env.PORT || '5000');
+    app.listen(PORT, () => {
+      console.log(`🚀 Server is running on port ${PORT}`);
+      console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`🎯 Demo setup: http://localhost:${PORT}/api/demo/setup`);
+      console.log(`📝 API Documentation:`);
+      console.log(`   Events: http://localhost:${PORT}/api/events`);
+      console.log(`   Registrations: http://localhost:${PORT}/api/registrations`);
+      console.log(`   Groups: http://localhost:${PORT}/api/groups`);
+      console.log(`   Auth: http://localhost:${PORT}/api/auth/login`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
 };
 
-startServer().catch(error => {
-  console.error('❌ Failed to start server:', error);
-  process.exit(1);
-});
+startServer();
 
 export default app;

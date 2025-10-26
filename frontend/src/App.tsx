@@ -12,7 +12,7 @@ import { AdminAttendees } from './pages/admin/adminAttendees';
 import { AdminGroups } from './pages/admin/adminGroups';
 import { EventDetailsPage } from './pages/admin/eventsDetails';
 import { Event, Registration, Group, User, RegisterForm } from './types';
-import apiClient from './services/apiClient';
+import apiClient, { authApi } from './services/apiClient';
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -55,11 +55,28 @@ const App: React.FC = () => {
     }
   };
 
-  // Load once on mount
-  useEffect(() => {
-    loadEventsFromApi();
-    loadRegistrationsFromApi();
-  }, []);
+// Load once on mount
+useEffect(() => {
+  loadEventsFromApi();
+  loadRegistrationsFromApi();
+  // Restore session via token
+  const restore = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await authApi.me();
+      const me = (res as any).data || {};
+      if (me.role) {
+        setRole(me.role);
+        setUser({ id: me.id || 999, name: me.name || 'Current User', email: me.email || 'current.user@example.com', role: me.role });
+        setView(me.role === 'admin' ? 'events' : 'dashboard');
+      }
+    } catch (e) {
+      localStorage.removeItem('token');
+    }
+  };
+  restore();
+}, []);
 
   // Load registrations from backend (persistence)
   const loadRegistrationsFromApi = async () => {
@@ -125,10 +142,11 @@ const App: React.FC = () => {
     setView(selectedRole === 'admin' ? 'events' : 'dashboard');
   };
 
-  const handleLogout = () => {
+const handleLogout = () => {
     setRole(null);
     setView('');
     setShowRegistration(false);
+  localStorage.removeItem('token');
   };
 
   const handleRegister = (formData: RegisterForm) => {
@@ -192,16 +210,28 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdateProfile = (updatedData: Partial<User>) => {
-    setUser(prev => ({ ...prev, ...updatedData }));
-    // Also update any existing registrations with the new name/email
-    setRegistrations(regs => regs.map(r => {
-      if (r.userId === user.id) {
-        return { ...r, name: updatedData.name || r.name, email: updatedData.email || r.email };
-      }
-      return r;
-    }));
-    alert("Profile updated successfully!");
+  const handleUpdateProfile = async (updatedData: Partial<User>) => {
+    try {
+      const res = await authApi.updateProfile({
+        name: updatedData.name || user.name,
+        email: updatedData.email || user.email
+      });
+      const payload: any = (res as any).data || {};
+      const newUser = payload.user || payload;
+      const newToken = payload.token;
+      if (newToken) localStorage.setItem('token', newToken);
+      if (newUser) setUser(prev => ({ ...prev, ...newUser }));
+
+      setRegistrations(regs => regs.map(r => {
+        if (r.userId === user.id) {
+          return { ...r, name: newUser?.name || updatedData.name || r.name, email: newUser?.email || updatedData.email || r.email };
+        }
+        return r;
+      }));
+      alert('Profile updated successfully!');
+    } catch (e: any) {
+      alert(e?.response?.data?.error || 'Failed to update profile');
+    }
   };
 
   const handleDeleteEvent = (eventId: number) => {
