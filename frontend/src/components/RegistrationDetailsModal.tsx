@@ -65,8 +65,7 @@ export const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> =
           <h3 className="section-title">Conference Events</h3>
           <Line label="Selected Activity" value={registration.wednesdayActivity} />
           {registration.golfHandicap && <Line label="Golf Handicap" value={registration.golfHandicap} />}
-          {registration.golfClubPreference && <Line label="Golf Club Preference" value={registration.golfClubPreference} />}
-          {registration.massageTimeSlot && <Line label="Massage Time Slot" value={registration.massageTimeSlot} />}
+          {(registration as any).massageTimeSlot && <Line label="Massage Time Slot" value={(registration as any).massageTimeSlot} />}
         </div>
 
         <div className="card" style={{ padding: '1rem' }}>

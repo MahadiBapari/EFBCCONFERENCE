@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Registration, Event, COMPANY_TYPES, GOLF_CLUB_PREFERENCES, MASSAGE_TIME_SLOTS, MEAL_OPTIONS, PAYMENT_METHODS } from '../types';
+import { Registration, Event, COMPANY_TYPES, MASSAGE_TIME_SLOTS, MEAL_OPTIONS, PAYMENT_METHODS } from '../types';
 import { Modal } from './Modal';
 import '../styles/RegistrationModal.css';
 
@@ -39,7 +39,6 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     // Conference Events
     wednesdayActivity: registration?.wednesdayActivity || '',
     golfHandicap: registration?.golfHandicap || '',
-    golfClubPreference: registration?.golfClubPreference || 'Own Clubs',
     massageTimeSlot: registration?.massageTimeSlot || '8:00 AM- 10:00 AM',
     
     // Conference Meals
@@ -70,14 +69,23 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   // Calculate total price based on selections
   useEffect(() => {
     let total = 675; // Base price
-    
-    // Add spouse dinner ticket cost
+
+    // Dynamic spouse tier pricing
+    const tiers = (event.spousePricing || []).map(t => ({
+      ...t,
+      startMs: t.startDate ? new Date(t.startDate).getTime() : -Infinity,
+      endMs: t.endDate ? new Date(t.endDate).getTime() : Infinity,
+    }));
+    const now = Date.now();
+    const active = tiers.find(t => now >= t.startMs && now <= t.endMs);
+
+    // Add spouse dinner ticket cost using active tier (fallback $200)
     if (formData.spouseDinnerTicket) {
-      total += 200;
+      total += (active?.price ?? 200);
     }
-    
+
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [formData.spouseDinnerTicket]);
+  }, [formData.spouseDinnerTicket, event.spousePricing]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -508,38 +516,51 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               {errors.wednesdayActivity && <div className="error-message">{errors.wednesdayActivity}</div>}
             </div>
 
-            {formData.wednesdayActivity === 'Golf Tournament' && (
+            {/**************** Golf-specific fields ****************/}
+            {((event.activities || []).some(a => a.toLowerCase().includes('golf')) && (formData.wednesdayActivity || '').toLowerCase().includes('golf')) && (
               <>
                 <div className="form-group">
-                  <label htmlFor="golfHandicap" className="form-label">Your handicap</label>
+                  <label className="form-label">
+                    Club rentals needed?
+                  </label>
+                  <div className="radio-group">
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name="clubRentals"
+                        checked={!!formData.clubRentals}
+                        onChange={() => handleInputChange('clubRentals', true)}
+                      />
+                      Yes
+                    </label>
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name="clubRentals"
+                        checked={!formData.clubRentals}
+                        onChange={() => handleInputChange('clubRentals', false)}
+                      />
+                      No
+                    </label>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="golfHandicap" className="form-label">Your handicap (1-36)</label>
                   <input
                     id="golfHandicap"
-                    type="text"
+                    type="number"
+                    min={1}
+                    max={36}
                     className="form-control"
                     value={formData.golfHandicap || ''}
                     onChange={(e) => handleInputChange('golfHandicap', e.target.value)}
-                    placeholder="e.g., 15"
                   />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="golfClubPreference" className="form-label">
-                    Rental clubs are available on-site for a fee and must be reserved in advance to ensure availability. Let us know your club preference.
-                  </label>
-                  <select
-                    id="golfClubPreference"
-                    className="form-control"
-                    value={formData.golfClubPreference || ''}
-                    onChange={(e) => handleInputChange('golfClubPreference', e.target.value)}
-                  >
-                    {GOLF_CLUB_PREFERENCES.map(preference => (
-                      <option key={preference} value={preference}>{preference}</option>
-                    ))}
-                  </select>
                 </div>
               </>
             )}
 
+            {/**************** Networking-specific fields kept for massage time slots if desired ****************/}
             {formData.wednesdayActivity === 'Networking' && (
               <div className="form-group">
                 <label htmlFor="massageTimeSlot" className="form-label">
@@ -548,7 +569,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 <select
                   id="massageTimeSlot"
                   className="form-control"
-                  value={formData.massageTimeSlot || ''}
+                  value={(formData as any).massageTimeSlot || ''}
                   onChange={(e) => handleInputChange('massageTimeSlot', e.target.value)}
                 >
                   {MASSAGE_TIME_SLOTS.map(slot => (
@@ -721,12 +742,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               {formData.spouseDinnerTicket && (
                 <div className="payment-item">
                   <span>Spouse Dinner Ticket:</span>
-                  <span>$200.00</span>
+                  <span>${formData.totalPrice && formData.totalPrice > 675 ? (formData.totalPrice - 675).toFixed(2) : '0.00'}</span>
                 </div>
               )}
               <div className="payment-total">
                 <span>Total Price:</span>
-                <span>${formData.totalPrice || 675}.00 USD</span>
+                <span>${(formData.totalPrice || 675).toFixed(2)} USD</span>
               </div>
             </div>
 

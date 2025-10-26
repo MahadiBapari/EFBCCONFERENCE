@@ -16,6 +16,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
   const [description, setDescription] = useState(event?.description || "");
   const [activities, setActivities] = useState<string[]>(event?.activities || []);
   const [newActivity, setNewActivity] = useState('');
+  const [spousePricing, setSpousePricing] = useState<Array<{ label: string; price: number; startDate?: string; endDate?: string }>>(event?.spousePricing || []);
   const [errors, setErrors] = useState<{name?: string; date?: string; location?: string; description?: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -91,7 +92,8 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
         year,
         location: location.trim(),
         description: description.trim(),
-        activities: activities
+        activities: activities,
+        spousePricing
       });
     } catch (error) {
       console.error('Error saving event:', error);
@@ -273,6 +275,59 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Spouse Ticket Pricing Tiers</label>
+              <div className="pricing-tiers">
+                {spousePricing.map((tier, idx) => (
+                  <div key={idx} className="tier-row">
+                    <input
+                      type="text"
+                      className="form-control tier-label"
+                      placeholder="Label (e.g., Early Bird)"
+                      value={tier.label}
+                      onChange={(e)=>{
+                        const v=[...spousePricing]; v[idx]={...v[idx], label:e.target.value}; setSpousePricing(v);
+                      }}
+                      disabled={isSubmitting}
+                    />
+                    <input
+                      type="number"
+                      className="form-control tier-price"
+                      placeholder="Price"
+                      min={0}
+                      value={tier.price}
+                      onChange={(e)=>{
+                        const v=[...spousePricing]; v[idx]={...v[idx], price: Number(e.target.value)}; setSpousePricing(v);
+                      }}
+                      disabled={isSubmitting}
+                    />
+                    <input
+                      type="date"
+                      className="form-control tier-date"
+                      value={tier.startDate || ''}
+                      onChange={(e)=>{
+                        const v=[...spousePricing]; v[idx]={...v[idx], startDate:e.target.value}; setSpousePricing(v);
+                      }}
+                      disabled={isSubmitting}
+                    />
+                    <input
+                      type="date"
+                      className="form-control tier-date"
+                      value={tier.endDate || ''}
+                      onChange={(e)=>{
+                        const v=[...spousePricing]; v[idx]={...v[idx], endDate:e.target.value}; setSpousePricing(v);
+                      }}
+                      disabled={isSubmitting}
+                    />
+                    <button type="button" className="btn btn-danger btn-sm" onClick={()=>{
+                      const v=[...spousePricing]; v.splice(idx,1); setSpousePricing(v);
+                    }} disabled={isSubmitting}>Remove</button>
+                  </div>
+                ))}
+                <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setSpousePricing([...spousePricing,{label:'',price:0}])} disabled={isSubmitting}>Add Tier</button>
+              </div>
             </div>
           </div>
 

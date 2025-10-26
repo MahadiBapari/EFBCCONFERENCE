@@ -20,17 +20,15 @@ export class Registration {
   public emergencyContactName?: string;
   public emergencyContactPhone?: string;
   public wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
-  public golfHandicap?: string;
-  public golfClubPreference?: 'Own Clubs' | 'Right-handed Mens' | 'Left-handed Mens' | 'Right-handed Ladies' | 'Left-handed Ladies';
-  public massageTimeSlot?: '8:00 AM- 10:00 AM' | '10:00 AM - 12:00 PM' | '12:00 PM - 2:00 PM' | '2:00 PM - 4:00 PM';
   public wednesdayReception: 'I will attend' | 'I will NOT attend';
   public thursdayBreakfast: 'I will attend' | 'I will NOT attend';
   public thursdayLunch: 'I will attend' | 'I will NOT attend';
   public thursdayReception: 'I will attend' | 'I will NOT attend';
   public fridayBreakfast: 'I will attend' | 'I will NOT attend';
-  public fridayLunch: 'I will attend' | 'I will NOT attend';
   public fridayDinner: 'I will attend' | 'I will NOT attend';
   public dietaryRestrictions?: string;
+  public clubRentals?: boolean;
+  public golfHandicap?: string;
   public spouseFirstName?: string;
   public spouseLastName?: string;
   public spouseDinnerTicket: 'Yes' | 'No';
@@ -61,17 +59,15 @@ export class Registration {
     this.emergencyContactName = data.emergencyContactName;
     this.emergencyContactPhone = data.emergencyContactPhone;
     this.wednesdayActivity = data.wednesdayActivity || 'None';
-    this.golfHandicap = data.golfHandicap;
-    this.golfClubPreference = data.golfClubPreference;
-    this.massageTimeSlot = data.massageTimeSlot;
     this.wednesdayReception = data.wednesdayReception || 'I will attend';
     this.thursdayBreakfast = data.thursdayBreakfast || 'I will attend';
     this.thursdayLunch = data.thursdayLunch || 'I will attend';
     this.thursdayReception = data.thursdayReception || 'I will attend';
     this.fridayBreakfast = data.fridayBreakfast || 'I will attend';
-    this.fridayLunch = data.fridayLunch || 'I will attend';
     this.fridayDinner = data.fridayDinner || 'I will attend';
     this.dietaryRestrictions = data.dietaryRestrictions;
+    this.clubRentals = (data as any).clubRentals ?? false;
+    this.golfHandicap = (data as any).golfHandicap;
     this.spouseFirstName = data.spouseFirstName;
     this.spouseLastName = data.spouseLastName;
     this.spouseDinnerTicket = data.spouseDinnerTicket || 'No';
@@ -105,17 +101,15 @@ export class Registration {
       emergencyContactName: this.emergencyContactName,
       emergencyContactPhone: this.emergencyContactPhone,
       wednesdayActivity: this.wednesdayActivity,
-      golfHandicap: this.golfHandicap,
-      golfClubPreference: this.golfClubPreference,
-      massageTimeSlot: this.massageTimeSlot,
       wednesdayReception: this.wednesdayReception,
       thursdayBreakfast: this.thursdayBreakfast,
       thursdayLunch: this.thursdayLunch,
       thursdayReception: this.thursdayReception,
       fridayBreakfast: this.fridayBreakfast,
-      fridayLunch: this.fridayLunch,
       fridayDinner: this.fridayDinner,
       dietaryRestrictions: this.dietaryRestrictions,
+      clubRentals: this.clubRentals,
+      golfHandicap: this.golfHandicap,
       spouseFirstName: this.spouseFirstName,
       spouseLastName: this.spouseLastName,
       spouseDinnerTicket: this.spouseDinnerTicket,
@@ -131,44 +125,37 @@ export class Registration {
   // Convert to database format
   toDatabase(): any {
     return {
-      userId: this.userId,
-      eventId: this.eventId,
-      firstName: this.firstName,
-      lastName: this.lastName,
-      badgeName: this.badgeName,
+      user_id: this.userId,
+      event_id: this.eventId,
+      first_name: this.firstName,
+      last_name: this.lastName,
+      badge_name: this.badgeName,
       email: this.email,
-      secondaryEmail: this.secondaryEmail,
+      secondary_email: this.secondaryEmail,
       organization: this.organization,
-      jobTitle: this.jobTitle,
+      job_title: this.jobTitle,
       address: this.address,
       mobile: this.mobile,
-      officePhone: this.officePhone,
-      isFirstTimeAttending: this.isFirstTimeAttending,
-      companyType: this.companyType,
-      companyTypeOther: this.companyTypeOther,
-      emergencyContactName: this.emergencyContactName,
-      emergencyContactPhone: this.emergencyContactPhone,
-      wednesdayActivity: this.wednesdayActivity,
-      golfHandicap: this.golfHandicap,
-      golfClubPreference: this.golfClubPreference,
-      massageTimeSlot: this.massageTimeSlot,
-      wednesdayReception: this.wednesdayReception,
-      thursdayBreakfast: this.thursdayBreakfast,
-      thursdayLunch: this.thursdayLunch,
-      thursdayReception: this.thursdayReception,
-      fridayBreakfast: this.fridayBreakfast,
-      fridayLunch: this.fridayLunch,
-      fridayDinner: this.fridayDinner,
-      dietaryRestrictions: this.dietaryRestrictions,
-      spouseFirstName: this.spouseFirstName,
-      spouseLastName: this.spouseLastName,
-      spouseDinnerTicket: this.spouseDinnerTicket,
-      totalPrice: this.totalPrice,
-      paymentMethod: this.paymentMethod,
-      name: this.name,
-      category: this.category,
-      created_at: this.createdAt,
-      updated_at: this.updatedAt
+      office_phone: this.officePhone,
+      is_first_time_attending: this.isFirstTimeAttending,
+      company_type: this.companyType,
+      company_type_other: this.companyTypeOther,
+      emergency_contact_name: this.emergencyContactName,
+      emergency_contact_phone: this.emergencyContactPhone,
+      wednesday_activity: this.wednesdayActivity,
+      wednesday_reception: this.wednesdayReception,
+      thursday_breakfast: this.thursdayBreakfast,
+      thursday_lunch: this.thursdayLunch,
+      thursday_reception: this.thursdayReception,
+      friday_breakfast: this.fridayBreakfast,
+      dietary_restrictions: this.dietaryRestrictions,
+      club_rentals: this.clubRentals ?? false,
+      golf_handicap: this.golfHandicap,
+      spouse_dinner_ticket: this.spouseDinnerTicket === 'Yes',
+      spouse_first_name: this.spouseFirstName,
+      spouse_last_name: this.spouseLastName,
+      total_price: this.totalPrice,
+      payment_method: this.paymentMethod,
     };
   }
 
@@ -176,44 +163,43 @@ export class Registration {
   static fromDatabase(row: any): Registration {
     return new Registration({
       id: row.id,
-      userId: row.userId,
-      eventId: row.eventId,
-      firstName: row.firstName,
-      lastName: row.lastName,
-      badgeName: row.badgeName,
+      userId: row.user_id,
+      eventId: row.event_id,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      badgeName: row.badge_name,
       email: row.email,
-      secondaryEmail: row.secondaryEmail,
+      secondaryEmail: row.secondary_email,
       organization: row.organization,
-      jobTitle: row.jobTitle,
+      jobTitle: row.job_title,
       address: row.address,
       mobile: row.mobile,
-      officePhone: row.officePhone,
-      isFirstTimeAttending: row.isFirstTimeAttending,
-      companyType: row.companyType,
-      companyTypeOther: row.companyTypeOther,
-      emergencyContactName: row.emergencyContactName,
-      emergencyContactPhone: row.emergencyContactPhone,
-      wednesdayActivity: row.wednesdayActivity,
-      golfHandicap: row.golfHandicap,
-      golfClubPreference: row.golfClubPreference,
-      massageTimeSlot: row.massageTimeSlot,
-      wednesdayReception: row.wednesdayReception,
-      thursdayBreakfast: row.thursdayBreakfast,
-      thursdayLunch: row.thursdayLunch,
-      thursdayReception: row.thursdayReception,
-      fridayBreakfast: row.fridayBreakfast,
-      fridayLunch: row.fridayLunch,
-      fridayDinner: row.fridayDinner,
-      dietaryRestrictions: row.dietaryRestrictions,
-      spouseFirstName: row.spouseFirstName,
-      spouseLastName: row.spouseLastName,
-      spouseDinnerTicket: row.spouseDinnerTicket,
-      totalPrice: row.totalPrice,
-      paymentMethod: row.paymentMethod,
-      name: row.name,
-      category: row.category,
+      officePhone: row.office_phone,
+      isFirstTimeAttending: !!row.is_first_time_attending,
+      companyType: row.company_type,
+      companyTypeOther: row.company_type_other,
+      emergencyContactName: row.emergency_contact_name,
+      emergencyContactPhone: row.emergency_contact_phone,
+      wednesdayActivity: row.wednesday_activity,
+      wednesdayReception: row.wednesday_reception,
+      thursdayBreakfast: row.thursday_breakfast,
+      thursdayLunch: row.thursday_luncheon,
+      thursdayReception: row.thursday_reception,
+      fridayBreakfast: row.friday_breakfast,
+      fridayDinner: row.friday_dinner,
+      dietaryRestrictions: row.dietary_restrictions,
+      clubRentals: !!row.club_rentals,
+      golfHandicap: row.golf_handicap,
+      spouseDinnerTicket: row.spouse_dinner_ticket ? 'Yes' : 'No',
+      spouseFirstName: row.spouse_first_name,
+      spouseLastName: row.spouse_last_name,
+      totalPrice: row.total_price,
+      paymentMethod: row.payment_method,
       createdAt: row.created_at,
-      updatedAt: row.updated_at
+      updatedAt: row.updated_at,
+      // Legacy fields are not mapped from DB in this version
+      name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
+      category: row.wednesday_activity || 'Networking',
     });
   }
 }

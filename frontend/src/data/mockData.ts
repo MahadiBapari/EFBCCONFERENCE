@@ -30,7 +30,6 @@ export const MOCK_REGISTRATIONS: Registration[] = [
         // Conference Events
         wednesdayActivity: "Golf Tournament",
         golfHandicap: "15",
-        golfClubPreference: "Own Clubs",
         massageTimeSlot: "8:00 AM- 10:00 AM",
         // Conference Meals
         wednesdayReception: "I will attend",
@@ -73,7 +72,6 @@ export const MOCK_REGISTRATIONS: Registration[] = [
         // Conference Events
         wednesdayActivity: "Fishing",
         golfHandicap: "",
-        golfClubPreference: "Own Clubs",
         massageTimeSlot: "8:00 AM- 10:00 AM",
         // Conference Meals
         wednesdayReception: "I will attend",
@@ -116,7 +114,6 @@ export const MOCK_REGISTRATIONS: Registration[] = [
         // Conference Events
         wednesdayActivity: "Networking",
         golfHandicap: "",
-        golfClubPreference: "Own Clubs",
         massageTimeSlot: "10:00 AM - 12:00 PM",
         // Conference Meals
         wednesdayReception: "I will attend",
@@ -159,7 +156,6 @@ export const MOCK_REGISTRATIONS: Registration[] = [
         // Conference Events
         wednesdayActivity: "Fishing",
         golfHandicap: "",
-        golfClubPreference: "Own Clubs",
         massageTimeSlot: "8:00 AM- 10:00 AM",
         // Conference Meals
         wednesdayReception: "I will attend",

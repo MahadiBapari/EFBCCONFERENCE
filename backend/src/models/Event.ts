@@ -10,8 +10,9 @@ export class Event {
   public description?: string;
   public createdAt?: string;
   public updatedAt?: string;
+  public spousePricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
 
-  constructor(data: Partial<IEvent>) {
+  constructor(data: Partial<IEvent> & { spousePricing?: any }) {
     this.id = data.id;
     this.year = data.year || (data.date ? new Date(data.date).getFullYear() : new Date().getFullYear());
     this.name = data.name || '';
@@ -20,12 +21,13 @@ export class Event {
     this.location = data.location || '';
     this.description = data.description || '';
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    this.createdAt = data.createdAt ? new Date(data.createdAt).toISOString().slice(0, 19).replace('T', ' ') : now;
-    this.updatedAt = data.updatedAt ? new Date(data.updatedAt).toISOString().slice(0, 19).replace('T', ' ') : now;
+    this.createdAt = (data as any).createdAt || now;
+    this.updatedAt = (data as any).updatedAt || now;
+    this.spousePricing = (data as any).spousePricing || [];
   }
 
   // Convert to JSON
-  toJSON(): IEvent {
+  toJSON(): any {
     return {
       id: this.id!,
       year: this.year,
@@ -35,7 +37,8 @@ export class Event {
       location: this.location,
       description: this.description,
       createdAt: this.createdAt,
-      updatedAt: this.updatedAt
+      updatedAt: this.updatedAt,
+      spousePricing: this.spousePricing
     };
   }
 
@@ -48,7 +51,8 @@ export class Event {
       location: this.location,
       description: this.description,
       createdAt: this.createdAt,
-      updatedAt: this.updatedAt
+      updatedAt: this.updatedAt,
+      spouse_pricing: this.spousePricing ? JSON.stringify(this.spousePricing) : null
     };
   }
 
@@ -59,9 +63,12 @@ export class Event {
       try {
         activities = JSON.parse(row.activities);
       } catch (e) {
-        // Fallback for non-JSON strings
         activities = Array.isArray(row.activities) ? row.activities : String(row.activities).split(',');
       }
+    }
+    let spousePricing: any[] = [];
+    if (row.spouse_pricing) {
+      try { spousePricing = JSON.parse(row.spouse_pricing); } catch {}
     }
     
     return new Event({
@@ -71,8 +78,9 @@ export class Event {
       activities: activities,
       location: row.location,
       description: row.description,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt
-    });
+      createdAt: row.created_at || row.createdAt,
+      updatedAt: row.updated_at || row.updatedAt,
+      spousePricing
+    } as any);
   }
 }

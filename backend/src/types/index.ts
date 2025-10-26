@@ -21,6 +21,7 @@ export interface Event {
   description?: string;
   createdAt?: string;
   updatedAt?: string;
+  spousePricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
 }
 
 export interface Registration {
@@ -48,8 +49,7 @@ export interface Registration {
   // Conference Events
   wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
   golfHandicap?: string;
-  golfClubPreference?: 'Own Clubs' | 'Right-handed Mens' | 'Left-handed Mens' | 'Right-handed Ladies' | 'Left-handed Ladies';
-  massageTimeSlot?: '8:00 AM- 10:00 AM' | '10:00 AM - 12:00 PM' | '12:00 PM - 2:00 PM' | '2:00 PM - 4:00 PM';
+  clubRentals?: boolean;
   
   // Conference Meals
   wednesdayReception: 'I will attend' | 'I will NOT attend';
@@ -57,7 +57,6 @@ export interface Registration {
   thursdayLunch: 'I will attend' | 'I will NOT attend';
   thursdayReception: 'I will attend' | 'I will NOT attend';
   fridayBreakfast: 'I will attend' | 'I will NOT attend';
-  fridayLunch: 'I will attend' | 'I will NOT attend';
   fridayDinner: 'I will attend' | 'I will NOT attend';
   dietaryRestrictions?: string;
   
@@ -110,6 +109,7 @@ export interface CreateEventRequest {
   activities?: string[];
   location?: string;
   description?: string;
+  spousePricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
 }
 
 export interface UpdateEventRequest extends Partial<CreateEventRequest> {}
@@ -134,14 +134,12 @@ export interface CreateRegistrationRequest {
   emergencyContactPhone?: string;
   wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
   golfHandicap?: string;
-  golfClubPreference?: 'Own Clubs' | 'Right-handed Mens' | 'Left-handed Mens' | 'Right-handed Ladies' | 'Left-handed Ladies';
-  massageTimeSlot?: '8:00 AM- 10:00 AM' | '10:00 AM - 12:00 PM' | '12:00 PM - 2:00 PM' | '2:00 PM - 4:00 PM';
+  clubRentals?: boolean;
   wednesdayReception: 'I will attend' | 'I will NOT attend';
   thursdayBreakfast: 'I will attend' | 'I will NOT attend';
   thursdayLunch: 'I will attend' | 'I will NOT attend';
   thursdayReception: 'I will attend' | 'I will NOT attend';
   fridayBreakfast: 'I will attend' | 'I will NOT attend';
-  fridayLunch: 'I will attend' | 'I will NOT attend';
   fridayDinner: 'I will attend' | 'I will NOT attend';
   dietaryRestrictions?: string;
   spouseFirstName?: string;

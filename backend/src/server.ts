@@ -91,16 +91,46 @@ const createTables = async () => {
     await databaseService.query(`
       CREATE TABLE IF NOT EXISTS registrations (
         id INT PRIMARY KEY AUTO_INCREMENT,
-        userId INT NOT NULL,
-        eventId INT NOT NULL,
-        name VARCHAR(255) NOT NULL,
+        user_id INT,
+        event_id INT,
+        first_name VARCHAR(255) NOT NULL,
+        last_name VARCHAR(255) NOT NULL,
+        badge_name VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL,
-        category VARCHAR(100) NOT NULL,
+        secondary_email VARCHAR(255),
+        organization VARCHAR(255),
+        job_title VARCHAR(255),
+        address TEXT,
+        mobile VARCHAR(50),
+        office_phone VARCHAR(50),
+        is_first_time_attending BOOLEAN,
+        company_type VARCHAR(255),
+        company_type_other VARCHAR(255),
+        emergency_contact_name VARCHAR(255),
+        emergency_contact_phone VARCHAR(50),
+        wednesday_activity VARCHAR(255),
+        wednesday_reception VARCHAR(50),
+        thursday_breakfast VARCHAR(50),
+        thursday_luncheon VARCHAR(50),
+        thursday_dinner VARCHAR(50),
+        friday_breakfast VARCHAR(50),
+        dietary_restrictions TEXT,
+        spouse_dinner_ticket BOOLEAN,
+        spouse_first_name VARCHAR(255),
+        spouse_last_name VARCHAR(255),
+        total_price DECIMAL(10, 2),
+        payment_method VARCHAR(50),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (eventId) REFERENCES events(id) ON DELETE CASCADE
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
       )
     `);
+
+    // Attempt automatic migration of legacy registrations schema (camelCase -> snake_case)
+    await migrateRegistrationsTable();
+
+    // Add/verify spouse_pricing on events and rentals fields on registrations
+    await migrateEventsAndRegistrationsEnhancements();
 
     // Groups table
     await databaseService.query(`
@@ -119,6 +149,137 @@ const createTables = async () => {
   } catch (error) {
     console.error('❌ Error creating tables:', error);
     throw error;
+  }
+};
+
+// Migration helper to align legacy registrations table columns
+const migrateRegistrationsTable = async () => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    const columns: any[] = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION',
+      [dbName, 'registrations']
+    );
+    if (!Array.isArray(columns)) return;
+
+    const has = (name: string) => columns.some((c: any) => c.COLUMN_NAME === name);
+
+    const alter: string[] = [];
+    const rename = (oldCol: string, newCol: string, type: string) => {
+      if (!has(newCol) && has(oldCol)) alter.push(`CHANGE COLUMN \`${oldCol}\` \`${newCol}\` ${type}`);
+    };
+    const add = (col: string, type: string) => {
+      if (!has(col)) alter.push(`ADD COLUMN \`${col}\` ${type}`);
+    };
+    const drop = (col: string) => {
+      if (has(col)) alter.push(`DROP COLUMN \`${col}\``);
+    };
+
+    // Renames from legacy camelCase -> snake_case
+    rename('userId', 'user_id', 'INT');
+    rename('eventId', 'event_id', 'INT');
+    rename('firstName', 'first_name', 'VARCHAR(255)');
+    rename('lastName', 'last_name', 'VARCHAR(255)');
+    rename('badgeName', 'badge_name', 'VARCHAR(255)');
+    rename('secondaryEmail', 'secondary_email', 'VARCHAR(255)');
+    rename('jobTitle', 'job_title', 'VARCHAR(255)');
+    rename('officePhone', 'office_phone', 'VARCHAR(50)');
+    rename('isFirstTimeAttending', 'is_first_time_attending', 'BOOLEAN');
+    rename('companyType', 'company_type', 'VARCHAR(255)');
+    rename('companyTypeOther', 'company_type_other', 'VARCHAR(255)');
+    rename('emergencyContactName', 'emergency_contact_name', 'VARCHAR(255)');
+    rename('emergencyContactPhone', 'emergency_contact_phone', 'VARCHAR(50)');
+    rename('wednesdayActivity', 'wednesday_activity', 'VARCHAR(255)');
+    rename('wednesdayReception', 'wednesday_reception', 'VARCHAR(50)');
+    rename('thursdayBreakfast', 'thursday_breakfast', 'VARCHAR(50)');
+    rename('thursdayLunch', 'thursday_luncheon', 'VARCHAR(50)');
+    rename('thursdayReception', 'thursday_reception', 'VARCHAR(50)');
+    rename('fridayBreakfast', 'friday_breakfast', 'VARCHAR(50)');
+    rename('dietaryRestrictions', 'dietary_restrictions', 'TEXT');
+    rename('spouseDinnerTicket', 'spouse_dinner_ticket', 'BOOLEAN');
+    rename('spouseFirstName', 'spouse_first_name', 'VARCHAR(255)');
+    rename('spouseLastName', 'spouse_last_name', 'VARCHAR(255)');
+    rename('totalPrice', 'total_price', 'DECIMAL(10,2)');
+    rename('paymentMethod', 'payment_method', 'VARCHAR(50)');
+    rename('createdAt', 'created_at', 'TIMESTAMP');
+    rename('updatedAt', 'updated_at', 'TIMESTAMP');
+
+    // Add required columns if missing
+    ['user_id','event_id','first_name','last_name','badge_name','email','organization','address','mobile','wednesday_activity','wednesday_reception','thursday_breakfast','thursday_luncheon','thursday_dinner','friday_breakfast','spouse_dinner_ticket','total_price','payment_method','created_at','updated_at']
+      .forEach((col) => {
+        if (!has(col)) {
+          // minimal types for missing columns
+          switch (col) {
+            case 'user_id':
+            case 'event_id':
+              add(col, 'INT');
+              break;
+            case 'total_price':
+              add(col, 'DECIMAL(10,2)');
+              break;
+            case 'spouse_dinner_ticket':
+              add(col, 'BOOLEAN');
+              break;
+            case 'created_at':
+            case 'updated_at':
+              add(col, 'TIMESTAMP NULL');
+              break;
+            default:
+              add(col, 'VARCHAR(255)');
+          }
+        }
+      });
+
+    // Drop removed columns if present
+    drop('golfHandicap');
+    drop('golfClubPreference');
+    drop('massageTimeSlot');
+    drop('golf_handicap');
+    drop('golf_club_preference');
+    drop('massage_time_slot');
+
+    if (alter.length > 0) {
+      const sql = `ALTER TABLE \`registrations\` ${alter.join(', ')}`;
+      await databaseService.query(sql);
+      console.log('🛠️ Migrated registrations table schema');
+    }
+  } catch (e) {
+    console.warn('⚠️ Skipping registrations schema migration:', e);
+  }
+};
+
+// Migration helper to add spouse_pricing to events and rentals fields to registrations
+const migrateEventsAndRegistrationsEnhancements = async () => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    const getCols = async (table: string) => await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',[dbName, table]
+    );
+
+    // events.spouse_pricing JSON
+    const eventCols: any[] = await getCols('events');
+    if (!eventCols.some((c:any)=>c.COLUMN_NAME==='spouse_pricing')) {
+      await databaseService.query('ALTER TABLE `events` ADD COLUMN `spouse_pricing` JSON NULL AFTER `activities`');
+      console.log('🛠️ Added events.spouse_pricing');
+    }
+
+    // registrations.club_rentals (BOOLEAN) and golf_handicap (VARCHAR(10))
+    const regCols: any[] = await getCols('registrations');
+    const alter: string[] = [];
+    if (!regCols.some((c:any)=>c.COLUMN_NAME==='club_rentals')) alter.push('ADD COLUMN `club_rentals` BOOLEAN');
+    if (!regCols.some((c:any)=>c.COLUMN_NAME==='golf_handicap')) alter.push('ADD COLUMN `golf_handicap` VARCHAR(10)');
+    if (alter.length>0) {
+      await databaseService.query(`ALTER TABLE \`registrations\` ${alter.join(', ')}`);
+      console.log('🛠️ Added registrations.club_rentals/golf_handicap');
+    }
+  } catch(e) {
+    console.warn('⚠️ Enhancement migration skipped:', e);
   }
 };
 

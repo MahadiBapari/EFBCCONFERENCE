@@ -17,6 +17,7 @@ export interface Event {
   description?: string;
   createdAt?: string;
   updatedAt?: string;
+  spousePricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
 }
 
 export interface Registration {
@@ -44,7 +45,7 @@ export interface Registration {
   // Conference Events
   wednesdayActivity: string;
   golfHandicap?: string;
-  golfClubPreference?: 'Own Clubs' | 'Right-handed Mens' | 'Left-handed Mens' | 'Right-handed Ladies' | 'Left-handed Ladies';
+  clubRentals?: boolean;
   massageTimeSlot?: '8:00 AM- 10:00 AM' | '10:00 AM - 12:00 PM' | '12:00 PM - 2:00 PM' | '2:00 PM - 4:00 PM';
   
   // Conference Meals
