@@ -177,17 +177,23 @@ app.get('/api/demo/setup', async (req: Request, res: Response): Promise<void> =>
     // Create demo admin user (password: admin123)
     // Note: In production, passwords should be properly hashed
     const adminPasswordHash = await bcrypt.hash('admin123', 10);
-    await databaseService.query(
-      'INSERT IGNORE INTO users (name, email, password, role, isActive) VALUES (?, ?, ?, ?, ?)',
-      ['Admin User', 'admin@efbc.com', adminPasswordHash, 'admin', true]
-    );
+    const adminSql = `
+      INSERT INTO users (name, email, password, role, isActive) 
+      VALUES (?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE password = VALUES(password), name = VALUES(name), role = VALUES(role), isActive = VALUES(isActive)
+    `;
+    await databaseService.query(adminSql, ['Admin User', 'admin@efbc.com', adminPasswordHash, 'admin', true]);
+
 
     // Create demo regular user (password: user123)
     const userPasswordHash = await bcrypt.hash('user123', 10);
-    await databaseService.query(
-      'INSERT IGNORE INTO users (name, email, password, role, isActive) VALUES (?, ?, ?, ?, ?)',
-      ['Regular User', 'user@efbc.com', userPasswordHash, 'user', true]
-    );
+    const userSql = `
+      INSERT INTO users (name, email, password, role, isActive) 
+      VALUES (?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE password = VALUES(password), name = VALUES(name), role = VALUES(role), isActive = VALUES(isActive)
+    `;
+    await databaseService.query(userSql, ['Regular User', 'user@efbc.com', userPasswordHash, 'user', true]);
+
 
     // Create demo event
     const demoEvent = {
