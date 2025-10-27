@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { RegisterForm } from '../../types';
+import { authApi } from '../../services/apiClient';
 import '../../styles/RegistrationPage.css';
 
 interface RegistrationPageProps {
@@ -64,8 +65,13 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
     setIsSubmitting(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call backend register
+      const res = await authApi.register({ name: formData.name, email: formData.email, password: formData.password });
+      // Immediately log in to get token for session
+      const login = await authApi.login({ email: formData.email, password: formData.password });
+      const data = (login as any).data || login;
+      const token = data.token || (data.data && data.data.token);
+      if (token) localStorage.setItem('token', token);
       onRegister(formData);
     } catch (error) {
       console.error('Registration error:', error);

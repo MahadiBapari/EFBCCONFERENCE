@@ -311,6 +311,8 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
                         const v=[...spousePricing]; v[idx]={...v[idx], startDate:e.target.value}; setSpousePricing(v);
                       }}
                       disabled={isSubmitting}
+                      aria-label="Spouse tier start date"
+                      title="Spouse tier start date"
                     />
                     <input
                       type="date"
@@ -320,6 +322,8 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
                         const v=[...spousePricing]; v[idx]={...v[idx], endDate:e.target.value}; setSpousePricing(v);
                       }}
                       disabled={isSubmitting}
+                      aria-label="Spouse tier end date"
+                      title="Spouse tier end date"
                     />
                     <button type="button" className="btn btn-danger btn-sm" onClick={()=>{
                       const v=[...spousePricing]; v.splice(idx,1); setSpousePricing(v);

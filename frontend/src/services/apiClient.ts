@@ -84,5 +84,8 @@ export const authApi = {
   },
   async changePassword(payload: { currentPassword: string; newPassword: string }): Promise<any> {
     return apiClient.put('/auth/password', payload);
+  },
+  async register(payload: { name: string; email: string; password: string }): Promise<any> {
+    return apiClient.post('/users/register', payload);
   }
 };

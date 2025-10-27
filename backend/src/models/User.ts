@@ -18,8 +18,14 @@ export class User {
     this.password = data.password || '';
     this.role = data.role || 'user';
     this.isActive = data.isActive ?? true;
-    this.createdAt = data.createdAt || new Date().toISOString();
-    this.updatedAt = data.updatedAt || new Date().toISOString();
+    const fmt = (d?: string) => {
+      if (!d) return new Date().toISOString().slice(0,19).replace('T',' ');
+      const dt = new Date(d);
+      if (isNaN(dt.getTime())) return new Date().toISOString().slice(0,19).replace('T',' ');
+      return dt.toISOString().slice(0,19).replace('T',' ');
+    };
+    this.createdAt = fmt(data.createdAt);
+    this.updatedAt = fmt(data.updatedAt);
   }
 
   // Hash password
@@ -56,8 +62,8 @@ export class User {
       password: this.password,
       role: this.role,
       isActive: this.isActive,
-      created_at: this.createdAt,
-      updated_at: this.updatedAt
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt
     };
   }
 
@@ -70,8 +76,8 @@ export class User {
       password: row.password,
       role: row.role,
       isActive: row.isActive,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at
+      createdAt: row.createdAt || row.created_at,
+      updatedAt: row.updatedAt || row.updated_at
     });
   }
 
