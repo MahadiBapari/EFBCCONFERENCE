@@ -1,4 +1,5 @@
 import mysql from 'mysql2/promise';
+import connectDB from '../config/database';
 
 export class DatabaseService {
   private connection: mysql.Connection;
@@ -7,12 +8,37 @@ export class DatabaseService {
     this.connection = connection;
   }
 
+  private async reconnect(): Promise<void> {
+    try {
+      this.connection = await connectDB();
+      console.log('🔄 Reconnected to MySQL');
+    } catch (e) {
+      console.error('❌ Reconnect failed:', e);
+      throw e;
+    }
+  }
+
   // Generic query method
   async query(sql: string, values?: any[]): Promise<any> {
-    try {
+    const run = async () => {
       const [rows] = await this.connection.execute(sql, values);
       return rows;
-    } catch (error) {
+    };
+    try {
+      return await run();
+    } catch (error: any) {
+      const msg = String(error?.message || '').toLowerCase();
+      // Auto-reconnect on closed/lost connection and retry once
+      if (
+        msg.includes('closed state') ||
+        msg.includes('cannot enqueue') ||
+        msg.includes('protocol_connection_lost') ||
+        msg.includes('ecconnreset')
+      ) {
+        console.warn('⚠️ MySQL connection lost. Attempting reconnect...');
+        await this.reconnect();
+        return await run();
+      }
       console.error('Database query error:', error);
       throw error;
     }

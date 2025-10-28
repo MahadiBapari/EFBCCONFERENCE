@@ -149,22 +149,31 @@ const handleLogout = () => {
   localStorage.removeItem('token');
   };
 
-  const handleRegister = (formData: RegisterForm) => {
-    // Create a new user with the registration data
-    const newUser: User = {
-      id: Date.now(),
-      name: formData.name,
-      email: formData.email,
-      role: 'user'
-    };
-    
-    setUser(newUser);
-    setRole('user');
-    setView('dashboard');
-    setShowRegistration(false);
-    
-    // Show success message
-    alert(`Welcome to EFBC Conference Portal, ${formData.name}! Your account has been created successfully.`);
+  const handleRegister = async (formData: RegisterForm) => {
+    try {
+      // Registration page already stored token after calling /users/register + login
+      const res = await authApi.me();
+      const payload: any = (res as any).data || res;
+      const me = payload?.data || payload;
+      const newUser: User = {
+        id: me.id,
+        name: me.name || formData.name,
+        email: me.email || formData.email,
+        role: me.role || 'user'
+      };
+      setUser(newUser);
+      setRole(newUser.role as any);
+      setView('dashboard');
+      setShowRegistration(false);
+      alert(`Welcome to EFBC Conference Portal, ${newUser.name}! Your account has been created successfully.`);
+    } catch {
+      // Fallback if /auth/me not available yet; still proceed with minimal state
+      setUser({ id: 0, name: formData.name, email: formData.email, role: 'user' });
+      setRole('user');
+      setView('dashboard');
+      setShowRegistration(false);
+      alert(`Welcome to EFBC Conference Portal, ${formData.name}! Your account has been created successfully.`);
+    }
   };
 
   const handleBackToLogin = () => {
@@ -184,7 +193,13 @@ const handleLogout = () => {
     // Persist to backend and then refresh list.
     const save = async () => {
       try {
-        await apiClient.post(`/registrations`, finalRegistration);
+        // Do not send timestamps on write
+        const { createdAt, updatedAt, ...payload } = finalRegistration as any;
+        if (regData.id) {
+          await apiClient.put(`/registrations/${registrationId}`, payload);
+        } else {
+          await apiClient.post(`/registrations`, payload);
+        }
       } catch (e) {
         console.error('Failed to save registration to API, falling back to local:', e);
         // Fallback local upsert if API fails
