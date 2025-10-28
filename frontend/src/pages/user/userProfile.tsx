@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../../types';
 import '../../styles/UserProfile.css';
+import { authApi } from '../../services/apiClient';
 
 interface UserProfileProps {
   user: User;
@@ -13,6 +14,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateProfile 
     name: user.name,
     email: user.email,
   });
+
+  const [curPw, setCurPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [cnfPw, setCnfPw] = useState('');
+  const [pwMsg, setPwMsg] = useState<string | null>(null);
+  const [pwLoading, setPwLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +40,23 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateProfile 
       ...prev,
       [e.target.name]: e.target.value,
     }));
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwMsg(null);
+    if (!newPw || newPw !== cnfPw) {
+      setPwMsg('New password and confirmation must match');
+      return;
+    }
+    setPwLoading(true);
+    try {
+      await authApi.changePassword({ currentPassword: curPw, newPassword: newPw });
+      setPwMsg('Password updated successfully');
+      setCurPw(''); setNewPw(''); setCnfPw('');
+    } catch (err: any) {
+      setPwMsg(err?.response?.data?.error || 'Failed to change password');
+    } finally { setPwLoading(false); }
   };
 
   return (
@@ -110,6 +134,26 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateProfile 
             </div>
           </div>
         )}
+      </div>
+
+      <div className="card profile-form" style={{ marginTop: '1rem' }}>
+        <h3>Change Password</h3>
+        <form onSubmit={handlePasswordChange}>
+          <div className="form-group">
+            <label htmlFor="curPw">Current Password</label>
+            <input id="curPw" type="password" className="form-control" value={curPw} onChange={e=>setCurPw(e.target.value)} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="newPw">New Password</label>
+            <input id="newPw" type="password" className="form-control" value={newPw} onChange={e=>setNewPw(e.target.value)} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="cnfPw">Confirm New Password</label>
+            <input id="cnfPw" type="password" className="form-control" value={cnfPw} onChange={e=>setCnfPw(e.target.value)} required />
+          </div>
+          {pwMsg && <div style={{ marginBottom: '0.5rem' }}>{pwMsg}</div>}
+          <button type="submit" className="btn btn-primary" disabled={pwLoading}>{pwLoading ? 'Updating...' : 'Update Password'}</button>
+        </form>
       </div>
     </div>
   );

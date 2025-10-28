@@ -26,7 +26,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onShowRegistratio
       localStorage.setItem('token', token);
       onLogin(user.role);
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Login failed');
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.error || '';
+      if (status === 401 || /invalid credentials/i.test(msg)) {
+        setError('Wrong email or password');
+      } else {
+        setError(msg || 'Login failed');
+      }
     } finally {
       setLoading(false);
     }
