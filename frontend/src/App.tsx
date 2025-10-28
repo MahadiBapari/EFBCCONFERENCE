@@ -187,8 +187,22 @@ useEffect(() => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  const handleLogin = (selectedRole: 'admin' | 'user') => {
-    setRole(selectedRole);
+  const handleLogin = async (selectedRole: 'admin' | 'user') => {
+    try {
+      const res = await authApi.me();
+      const me = (res as any).data || {};
+      if (me && (me.id || me.email)) {
+        setUser({ id: me.id || 0, name: me.name || 'Current User', email: me.email || '', role: me.role || selectedRole });
+        setRole((me.role as any) || selectedRole);
+      } else {
+        setRole(selectedRole);
+      }
+    } catch {
+      setRole(selectedRole);
+    }
+    // Ensure we load fresh data right after login
+    await loadEventsFromApi();
+    await loadRegistrationsFromApi();
     setView(selectedRole === 'admin' ? 'events' : 'dashboard');
   };
 
