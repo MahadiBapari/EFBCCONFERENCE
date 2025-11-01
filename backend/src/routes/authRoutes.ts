@@ -90,8 +90,8 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
     // Always respond 200 to prevent user enumeration
     if (users.length) {
       const token = crypto.randomBytes(32).toString('hex');
-      const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0,19).replace('T',' ');
-      await db.query('UPDATE users SET password_reset_token=?, password_reset_expires_at=? WHERE id=?', [token, expires, users[0].id]);
+      // Rely on DB time to avoid timezone conversions
+      await db.query('UPDATE users SET password_reset_token=?, password_reset_expires_at=DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id=?', [token, users[0].id]);
       await sendPasswordResetEmail(email, token);
     }
     return res.json({ success: true, message: 'If an account exists for that email, a reset link has been sent.' });
@@ -106,12 +106,10 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     const { token, newPassword } = req.body || {};
     if (!token || !newPassword) return res.status(400).json({ success: false, error: 'Token and newPassword are required' });
     const db = getDb();
-    const rows = await db.query('SELECT id, password_reset_expires_at FROM users WHERE password_reset_token=? LIMIT 1', [token]);
+    // Validate token and expiry in DB time to avoid timezone issues
+    const rows = await db.query('SELECT id FROM users WHERE password_reset_token=? AND password_reset_expires_at > NOW() LIMIT 1', [token]);
     const u = rows[0];
-    if (!u) return res.status(400).json({ success: false, error: 'Invalid token' });
-    if (u.password_reset_expires_at && new Date(u.password_reset_expires_at).getTime() < Date.now()) {
-      return res.status(400).json({ success: false, error: 'Token expired' });
-    }
+    if (!u) return res.status(400).json({ success: false, error: 'Invalid or expired token' });
     const hash = await bcrypt.hash(newPassword, 10);
     await db.query('UPDATE users SET password=?, password_reset_token=NULL, password_reset_expires_at=NULL WHERE id=?', [hash, u.id]);
     return res.json({ success: true, message: 'Password updated' });

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { MOCK_REGISTRATIONS, MOCK_GROUPS } from './data/mockData';
 import { LoginPage } from './pages/authentication/login';
 import { RegistrationPage } from './pages/authentication/registration';
+import ResetPasswordPage from './pages/authentication/resetPassword';
 import { Sidebar } from './components/Sidebar';
 import { UserDashboard } from './pages/user/userDashboard';
 import { UserEvents } from './pages/user/userEvents';
@@ -455,6 +456,9 @@ const handleLogout = () => {
   };
 
   if (!role) {
+    if (window.location.pathname === '/reset-password') {
+      return <ResetPasswordPage />;
+    }
     if (showRegistration) {
       return <RegistrationPage onRegister={handleRegister} onBackToLogin={handleBackToLogin} />;
     }
