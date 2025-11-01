@@ -31,9 +31,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     [registrations, user, activeEvent]
   );
 
-  const userRegistrations = useMemo(() => 
-    registrations.filter(r => r.userId === user.id), 
-    [registrations, user]
+  // NOTE: Per requirements, dashboard cards show global event counts now
+
+  // Aggregate event stats (global, not user-specific)
+  const totalEvents = useMemo(() => events.length, [events]);
+  const activeEventsCount = useMemo(
+    () => events.filter(e => !isEventExpired(e.date)).length,
+    [events]
   );
 
   const onSave = (regData: Registration) => {
@@ -50,11 +54,11 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-number">{userRegistrations.length}</div>
-          <div className="stat-label">Total Registrations</div>
+          <div className="stat-number">{totalEvents}</div>
+          <div className="stat-label">Total Events</div>
         </div>
         <div className="stat-card">
-          <div className="stat-number">{userRegistrations.filter(r => !isEventExpired(events.find(e => e.id === r.eventId)?.date || '')).length}</div>
+          <div className="stat-number">{activeEventsCount}</div>
           <div className="stat-label">Active Events</div>
         </div>
       </div>

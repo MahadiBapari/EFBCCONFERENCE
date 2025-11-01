@@ -80,11 +80,25 @@ export class Event {
     }
     let spousePricing: any[] = [];
     let registrationPricing: any[] = [];
-    if (row.spouse_pricing) {
-      try { spousePricing = JSON.parse(row.spouse_pricing); } catch {}
+    // Support both string and native JSON return types from mysql2
+    if (row.spouse_pricing !== undefined && row.spouse_pricing !== null) {
+      if (typeof row.spouse_pricing === 'string') {
+        try { spousePricing = JSON.parse(row.spouse_pricing); } catch { spousePricing = []; }
+      } else if (Array.isArray(row.spouse_pricing)) {
+        spousePricing = row.spouse_pricing;
+      } else if (typeof row.spouse_pricing === 'object') {
+        // Some drivers can return object for JSON columns
+        spousePricing = Array.isArray((row.spouse_pricing as any)) ? (row.spouse_pricing as any) : [];
+      }
     }
-    if (row.registration_pricing) {
-      try { registrationPricing = JSON.parse(row.registration_pricing); } catch {}
+    if (row.registration_pricing !== undefined && row.registration_pricing !== null) {
+      if (typeof row.registration_pricing === 'string') {
+        try { registrationPricing = JSON.parse(row.registration_pricing); } catch { registrationPricing = []; }
+      } else if (Array.isArray(row.registration_pricing)) {
+        registrationPricing = row.registration_pricing;
+      } else if (typeof row.registration_pricing === 'object') {
+        registrationPricing = Array.isArray((row.registration_pricing as any)) ? (row.registration_pricing as any) : [];
+      }
     }
     
     return new Event({

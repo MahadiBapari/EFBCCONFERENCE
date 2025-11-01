@@ -86,6 +86,18 @@ const App: React.FC = () => {
     try {
       const response = await apiClient.get<Event[]>(`/events`);
       const apiEvents = (response as any).data || [];
+      const parseArr = (v: any) => {
+        if (Array.isArray(v)) return v;
+        if (typeof v === 'string') {
+          try { const a = JSON.parse(v); return Array.isArray(a) ? a : []; } catch { return []; }
+        }
+        return [];
+      };
+      const numOrUndef = (v: any) => {
+        if (v === null || v === undefined || v === '') return undefined;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : undefined;
+      };
       const normalized: Event[] = apiEvents.map((e: any) => ({
         id: e.id,
         year: new Date(e.date).getFullYear(),
@@ -99,11 +111,11 @@ const App: React.FC = () => {
               : []),
         location: e.location,
         description: e.description,
-        // pass-through pricing fields from backend (already camelCase from toJSON)
-        registrationPricing: e.registrationPricing || [],
-        spousePricing: e.spousePricing || [],
-        breakfastPrice: typeof e.breakfastPrice === 'number' ? e.breakfastPrice : (e.breakfast_price ?? undefined),
-        breakfastEndDate: e.breakfastEndDate || e.breakfast_end_date || undefined,
+        // Normalize pricing fields (handle camelCase/snake_case and stringified JSON)
+        registrationPricing: parseArr(e.registrationPricing ?? e.registration_pricing),
+        spousePricing: parseArr(e.spousePricing ?? e.spouse_pricing),
+        breakfastPrice: numOrUndef(e.breakfastPrice ?? e.breakfast_price),
+        breakfastEndDate: (e.breakfastEndDate ?? e.breakfast_end_date) || undefined,
       }));
       setEvents(normalized);
     } catch (err) {
