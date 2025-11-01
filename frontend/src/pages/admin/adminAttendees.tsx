@@ -140,12 +140,6 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     <div className="container">
       <div className="page-header">
         <h1>Attendees</h1>
-        <div className="page-actions">
-          <button className="btn btn-secondary" onClick={handleExportCSV}>Export CSV</button>
-          <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button>
-        </div>
-      </div>
-      <div className="filter-controls">
         <div className="event-selector">
           <label htmlFor="eventSelect" className="filter-label">Select Event:</label>
           <select
@@ -167,18 +161,28 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
             ))}
           </select>
         </div>
-        
-        <div className="filter-pills">
-          {(() => {
-            const activities = events.find(e => e.id === selectedEventId)?.activities || [];
-            const tabs = ["All", ...activities];
-            return tabs.map(cat => (
-              <button key={cat} className={`pill ${filter === cat ? 'pill-active' : ''}`} onClick={() => { setFilter(cat); setSelectedRegIds([]); }}>
-                {cat}
-              </button>
-            ));
-          })()}
+        <div className="page-actions">
+          <button className="btn btn-secondary" onClick={handleExportCSV}>Export CSV</button>
+          <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button>
         </div>
+      </div>
+      <div className="category-tabs">
+        {( (() => {
+          const activities = events.find(e => e.id === selectedEventId)?.activities || [];
+          const tabs = ["All", ...activities];
+          return tabs;
+        })() ).map(cat => (
+          <button 
+            key={cat} 
+            className={`tab-btn ${filter === cat ? 'tab-btn-active' : ''}`}
+            onClick={() => { setFilter(cat); setSelectedRegIds([]); }}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      <div className="filter-controls">
         <div className="search-bar">
           <input
             type="search"

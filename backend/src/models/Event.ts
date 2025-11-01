@@ -50,8 +50,8 @@ export class Event {
       activities: this.activities ? JSON.stringify(this.activities) : null,
       location: this.location,
       description: this.description,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
+      created_at: this.createdAt,
+      updated_at: this.updatedAt,
       spouse_pricing: this.spousePricing ? JSON.stringify(this.spousePricing) : null
     };
   }

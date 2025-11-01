@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Registration } from '../models/Registration';
 import { ApiResponse, CreateRegistrationRequest, UpdateRegistrationRequest, RegistrationQuery } from '../types';
 import { DatabaseService } from '../services/databaseService';
+import { sendRegistrationConfirmationEmail } from '../services/emailService';
 
 export class RegistrationController {
   private db: DatabaseService;
@@ -107,6 +108,13 @@ export class RegistrationController {
       
       const result = await this.db.insert('registrations', registration.toDatabase());
       registration.id = result.insertId;
+
+      // Fire-and-forget confirmation email (non-blocking)
+      sendRegistrationConfirmationEmail({
+        to: registration.email,
+        name: registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim(),
+        totalPrice: registration.totalPrice,
+      }).catch((e) => console.warn('⚠️ Failed to send registration confirmation:', e));
 
       const response: ApiResponse = {
         success: true,

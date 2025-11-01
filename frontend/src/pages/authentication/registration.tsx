@@ -17,6 +17,10 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
   });
   const [errors, setErrors] = useState<Partial<RegisterForm>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>('');
+  const [submitMessage, setSubmitMessage] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<RegisterForm> = {};
@@ -63,18 +67,19 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
     }
 
     setIsSubmitting(true);
+    setSubmitError('');
+    setSubmitMessage('');
     
     try {
       // Call backend register
       const res = await authApi.register({ name: formData.name, email: formData.email, password: formData.password });
-      // Immediately log in to get token for session
-      const login = await authApi.login({ email: formData.email, password: formData.password });
-      const data = (login as any).data || login;
-      const token = data.token || (data.data && data.data.token);
-      if (token) localStorage.setItem('token', token);
-      onRegister(formData);
-    } catch (error) {
+      const payload: any = (res as any).data || res;
+      const msg = payload?.message || 'Registration successful. Please check your email to verify your account.';
+      setSubmitMessage(msg);
+    } catch (error: any) {
       console.error('Registration error:', error);
+      const msg = error?.response?.data?.error || 'Failed to create account';
+      setSubmitError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -114,6 +119,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
         <p>Join the EFBC Conference Portal</p>
         
         <form className="registration-form" onSubmit={handleSubmit}>
+          
           <div className="form-group">
             <label htmlFor="name">Full Name</label>
             <input
@@ -154,15 +160,31 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Create a strong password"
-              required
-            />
+            <div className="input-with-action">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Create a strong password"
+                required
+              />
+              <button type="button" className="inline-action" onClick={()=>setShowPassword(s=>!s)} aria-label="Toggle password visibility">
+                {showPassword ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M1 12s3-8 11-8 11 8 11 8-3 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-6.94"/>
+                    <path d="M1 1l22 22"/>
+                    <path d="M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 2.12-.88"/>
+                  </svg>
+                )}
+              </button>
+            </div>
             {formData.password && (
               <div className="password-requirements">
                 <div className={`password-strength ${passwordStrength.strength.toLowerCase()}`}>
@@ -185,15 +207,31 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
 
           <div className="form-group">
             <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm your password"
-              required
-            />
+            <div className="input-with-action">
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm your password"
+                required
+              />
+              <button type="button" className="inline-action" onClick={()=>setShowConfirm(s=>!s)} aria-label="Toggle confirm password visibility">
+                {showConfirm ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M1 12s3-8 11-8 11 8 11 8-3 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-6.94"/>
+                    <path d="M1 1l22 22"/>
+                    <path d="M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 2.12-.88"/>
+                  </svg>
+                )}
+              </button>
+            </div>
             {errors.confirmPassword && (
               <div className="error-message">
                 <span>⚠️</span>
@@ -202,11 +240,23 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
             )}
             {formData.confirmPassword && formData.password === formData.confirmPassword && (
               <div className="success-message">
-                <span>✅</span>
+                
                 Passwords match
               </div>
             )}
           </div>
+
+          {submitMessage && (
+            <div className="success-message" style={{ marginBottom: '12px' }}>
+              {submitMessage}
+            </div>
+          )}
+          {submitError && (
+            <div className="error-message" style={{ marginBottom: '12px' }}>
+              <span>⚠️</span>
+              {submitError}
+            </div>
+          )}
 
           <div className="registration-actions">
             <button 

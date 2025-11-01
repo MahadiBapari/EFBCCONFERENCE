@@ -12,6 +12,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onShowRegistratio
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotMsg, setForgotMsg] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +54,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onShowRegistratio
           </div>
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input id="password" type="password" className="form-control" value={password} onChange={e => setPassword(e.target.value)} required />
+            <div className="input-with-action">
+              <input id="password" type={showPassword ? 'text' : 'password'} className="form-control" value={password} onChange={e => setPassword(e.target.value)} required />
+              <button type="button" className="inline-action" onClick={()=>setShowPassword(s=>!s)} aria-label="Toggle password visibility">
+                {showPassword ? (
+                  // Eye icon when visible
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M1 12s3-8 11-8 11 8 11 8-3 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                ) : (
+                  // Eye-off icon when hidden
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-6.94"/>
+                    <path d="M1 1l22 22"/>
+                    <path d="M9.88 9.88A3 3 0 0 0 12 15a3 3 0 0 0 2.12-.88"/>
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right', marginTop: '-0.5rem', marginBottom: '1.75rem' }}>
+            <button type="button" className="link-button" onClick={()=>{ setForgotOpen(true); setForgotEmail(email); setForgotMsg(''); }}>Forgot password?</button>
           </div>
           {error && <div className="error-message" style={{ marginBottom: '0.5rem' }}>{error}</div>}
           <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</button>
@@ -68,6 +93,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onShowRegistratio
           </p>
         </div>
       </div>
+      {forgotOpen && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <h3>Reset Password</h3>
+            <p>Enter your account email and we’ll send a reset link.</p>
+            <input type="email" className="form-control" value={forgotEmail} onChange={e=>setForgotEmail(e.target.value)} placeholder="you@example.com" />
+            {forgotMsg && <div className="info-message" style={{ marginTop: '8px' }}>{forgotMsg}</div>}
+            <div style={{ display:'flex', gap:'0.5rem', marginTop:'12px' }}>
+              <button className="btn btn-primary" onClick={async()=>{
+                try {
+                  const em = (forgotEmail||'').trim();
+                  if(!em) { setForgotMsg('Email is required'); return; }
+                  await authApi.forgotPassword(em);
+                  setForgotMsg('If an account exists, a reset link has been sent.');
+                } catch(e:any){ setForgotMsg(e?.response?.data?.error || 'Request failed'); }
+              }}>Send Reset Link</button>
+              <button className="btn btn-secondary" onClick={()=>setForgotOpen(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

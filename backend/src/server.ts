@@ -73,6 +73,9 @@ const createTables = async () => {
       )
     `);
 
+    // Ensure email verification columns exist on users
+    await migrateUsersEmailVerification();
+
     // Events table
     await databaseService.query(`
       CREATE TABLE IF NOT EXISTS events (
@@ -149,6 +152,33 @@ const createTables = async () => {
   } catch (error) {
     console.error('❌ Error creating tables:', error);
     throw error;
+  }
+};
+
+// Migration helper to add email verification columns to users
+const migrateUsersEmailVerification = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    const cols: any[] = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION',
+      [dbName, 'users']
+    );
+    const has = (name: string) => cols.some((c: any) => c.COLUMN_NAME === name);
+    const alter: string[] = [];
+    if (!has('email_verified_at')) alter.push('ADD COLUMN `email_verified_at` TIMESTAMP NULL AFTER `isActive`');
+    if (!has('email_verification_token')) alter.push('ADD COLUMN `email_verification_token` VARCHAR(255) NULL AFTER `email_verified_at`');
+    if (!has('email_verification_expires_at')) alter.push('ADD COLUMN `email_verification_expires_at` TIMESTAMP NULL AFTER `email_verification_token`');
+    if (!has('password_reset_token')) alter.push('ADD COLUMN `password_reset_token` VARCHAR(255) NULL AFTER `email_verification_expires_at`');
+    if (!has('password_reset_expires_at')) alter.push('ADD COLUMN `password_reset_expires_at` TIMESTAMP NULL AFTER `password_reset_token`');
+    if (alter.length > 0) {
+      await databaseService.query(`ALTER TABLE \`users\` ${alter.join(', ')}`);
+      console.log('🛠️ Added users.email verification columns');
+    }
+  } catch (e) {
+    console.warn('⚠️ Skipping users email verification migration:', e);
   }
 };
 
@@ -312,7 +342,7 @@ app.get('/api/demo/setup', async (req: Request, res: Response): Promise<void> =>
       VALUES (?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE password = VALUES(password), name = VALUES(name), role = VALUES(role), isActive = VALUES(isActive)
     `;
-    await databaseService.query(adminSql, ['Admin User', 'admin@efbc.com', adminPasswordHash, 'admin', true]);
+    await databaseService.query(adminSql, ['Admin User', 'hasan5481@gmail.com', adminPasswordHash, 'admin', true]);
 
 
     // Create demo regular user (password: user123)

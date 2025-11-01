@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { User } from '../models/User';
 import { ApiResponse, CreateUserRequest, UpdateUserRequest, LoginRequest, RegisterRequest, AuthResponse } from '../types';
 import { DatabaseService } from '../services/databaseService';
+import crypto from 'crypto';
+import { sendVerificationEmail } from '../services/emailService';
 
 export class UserController {
   private db: DatabaseService;
@@ -272,6 +274,16 @@ export class UserController {
         return;
       }
 
+      // Require verified email
+      if (!users[0].email_verified_at) {
+        const response: AuthResponse = {
+          success: false,
+          error: 'Email not verified'
+        };
+        res.status(403).json(response);
+        return;
+      }
+
       // In a real application, you would generate a JWT token here
       const response: AuthResponse = {
         success: true,
@@ -339,10 +351,25 @@ export class UserController {
       const result = await this.db.insert('users', user.toDatabase());
       user.id = result.insertId;
 
+      // Generate email verification token
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h
+        .toISOString().slice(0, 19).replace('T', ' ');
+
+      await this.db.query(
+        'UPDATE users SET email_verification_token=?, email_verification_expires_at=? WHERE id=?',
+        [token, expires, user.id]
+      );
+
+      // Fire-and-forget email (do not block response if it fails)
+      sendVerificationEmail(user.email, token).catch((e) => {
+        console.warn('⚠️ Failed to send verification email:', e);
+      });
+
       const response: AuthResponse = {
         success: true,
         user: user.toJSON(),
-        message: 'Registration successful'
+        message: 'Registration successful. Please check your email to verify your account.'
       };
 
       res.status(201).json(response);

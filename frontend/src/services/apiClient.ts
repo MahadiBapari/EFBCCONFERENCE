@@ -37,7 +37,10 @@ class ApiClient {
         return response;
       },
       (error: any) => {
-        if (error.response?.status === 401) {
+        const status = error?.response?.status;
+        const url = (error?.config?.url || '') as string;
+        const isAuthFlow = url.includes('/auth/login') || url.includes('/users/register');
+        if (status === 401 && !isAuthFlow && window.location.pathname !== '/login') {
           localStorage.removeItem('token');
           window.location.href = '/login';
         }
@@ -87,5 +90,11 @@ export const authApi = {
   },
   async register(payload: { name: string; email: string; password: string }): Promise<any> {
     return apiClient.post('/users/register', payload);
+  },
+  async forgotPassword(email: string): Promise<any> {
+    return apiClient.post('/auth/forgot-password', { email });
+  },
+  async resetPassword(payload: { token: string; newPassword: string }): Promise<any> {
+    return apiClient.post('/auth/reset-password', payload);
   }
 };

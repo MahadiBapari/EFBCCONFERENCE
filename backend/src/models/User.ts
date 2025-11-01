@@ -8,10 +8,17 @@ export class User {
   public password: string;
   public role: 'admin' | 'user' | 'guest';
   public isActive: boolean;
-  public createdAt?: string;
-  public updatedAt?: string;
+  public created_at?: string;
+  public updated_at?: string;
 
-  constructor(data: Partial<IUser>) {
+  constructor(
+    data: Partial<IUser> & {
+      created_at?: string;
+      updated_at?: string;
+      created_At?: string;
+      updated_At?: string;
+    }
+  ) {
     this.id = data.id;
     this.name = data.name || '';
     this.email = data.email || '';
@@ -24,8 +31,11 @@ export class User {
       if (isNaN(dt.getTime())) return new Date().toISOString().slice(0,19).replace('T',' ');
       return dt.toISOString().slice(0,19).replace('T',' ');
     };
-    this.createdAt = fmt(data.createdAt);
-    this.updatedAt = fmt(data.updatedAt);
+    // accept multiple input shapes for backward compatibility
+    const createdInput = (data as any).created_at || (data as any).createdAt || (data as any).created_At;
+    const updatedInput = (data as any).updated_at || (data as any).updatedAt || (data as any).updated_At;
+    this.created_at = fmt(createdInput);
+    this.updated_at = fmt(updatedInput);
   }
 
   // Hash password
@@ -41,6 +51,23 @@ export class User {
     return await bcrypt.compare(plainPassword, this.password);
   }
 
+  // Accessors to maintain camelCase usage across the codebase
+  get createdAt(): string | undefined {
+    return this.created_at;
+  }
+
+  set createdAt(value: string | undefined) {
+    this.created_at = value;
+  }
+
+  get updatedAt(): string | undefined {
+    return this.updated_at;
+  }
+
+  set updatedAt(value: string | undefined) {
+    this.updated_at = value;
+  }
+
   // Convert to JSON (without password)
   toJSON(): Omit<IUser, 'password'> {
     return {
@@ -49,8 +76,10 @@ export class User {
       email: this.email,
       role: this.role,
       isActive: this.isActive,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt
+      // expose snake_case columns to align with DB schema
+      // Note: API consumers expecting camelCase can map as needed upstream
+      createdAt: this.created_at,
+      updatedAt: this.updated_at
     };
   }
 
@@ -62,8 +91,8 @@ export class User {
       password: this.password,
       role: this.role,
       isActive: this.isActive,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt
+      created_at: this.created_at,
+      updated_at: this.updated_at
     };
   }
 
@@ -76,8 +105,8 @@ export class User {
       password: row.password,
       role: row.role,
       isActive: row.isActive,
-      createdAt: row.createdAt || row.created_at,
-      updatedAt: row.updatedAt || row.updated_at
+      created_at: row.created_at || row.created_At,
+      updated_at: row.updated_at || row.updated_At
     });
   }
 
