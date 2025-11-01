@@ -105,6 +105,31 @@ export class RegistrationController {
     try {
       const registrationData: CreateRegistrationRequest = req.body;
       const registration = new Registration(registrationData);
+      // Compute total dynamically from event pricing
+      try {
+        const ev: any = await this.db.findById('events', registration.eventId);
+        if (ev) {
+          const parseJson = (v:any)=>{ try { return JSON.parse(v||'[]'); } catch { return []; } };
+          const regTiers: any[] = parseJson(ev.registration_pricing);
+          const spouseTiers: any[] = parseJson(ev.spouse_pricing);
+          const breakfastPrice = Number(ev.breakfast_price ?? 0);
+          const bEnd = ev.breakfast_end_date ? new Date(ev.breakfast_end_date).getTime() : Infinity;
+          const now = Date.now();
+          const pick = (tiers:any[])=>{
+            const mapped = (tiers||[]).map(t=>({ ...t, s: t.startDate? new Date(t.startDate).getTime(): -Infinity, e: t.endDate? new Date(t.endDate).getTime(): Infinity }));
+            return mapped.find((t:any)=> now>=t.s && now<=t.e) || mapped[mapped.length-1] || null;
+          };
+          const base = pick(regTiers);
+          const spouse = registration.spouseDinnerTicket ? pick(spouseTiers) : null;
+          let total = 0;
+          if (base && typeof base.price==='number') total += base.price; else total += Number(ev.default_price || 0);
+          if (spouse && typeof spouse.price==='number') total += spouse.price;
+          if ((registration as any).spouseBreakfast && now <= bEnd) total += (isNaN(breakfastPrice)?0:breakfastPrice);
+          registration.totalPrice = total || registration.totalPrice || 0;
+        }
+      } catch (e) {
+        // fallback to existing total if compute fails
+      }
       
       const result = await this.db.insert('registrations', registration.toDatabase());
       registration.id = result.insertId;

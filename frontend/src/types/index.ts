@@ -18,6 +18,9 @@ export interface Event {
   createdAt?: string;
   updatedAt?: string;
   spousePricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
+  registrationPricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
+  breakfastPrice?: number;
+  breakfastEndDate?: string;
 }
 
 export interface Registration {
@@ -60,6 +63,7 @@ export interface Registration {
   spouseDinnerTicket: boolean;
   spouseFirstName?: string;
   spouseLastName?: string;
+  spouseBreakfast?: boolean;
   
   // Payment Information
   totalPrice: number;

@@ -16,7 +16,23 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
   const [description, setDescription] = useState(event?.description || "");
   const [activities, setActivities] = useState<string[]>(event?.activities || []);
   const [newActivity, setNewActivity] = useState('');
-  const [spousePricing, setSpousePricing] = useState<Array<{ label: string; price: number; startDate?: string; endDate?: string }>>(event?.spousePricing || []);
+  const defaultSpouseTiers = [
+    { label: 'Early Bird Dinner Ticket', price: 0 },
+    { label: 'Dinner Ticket', price: 0 },
+    { label: 'On-Site Dinner Ticket', price: 0 },
+  ];
+  const defaultRegTiers = [
+    { label: 'Priority Registration Fee', price: 0 },
+    { label: 'Early Bird Registration Fee', price: 0 },
+    { label: 'Advance Registration Fee', price: 0 },
+    { label: 'Registration Fee', price: 0 },
+  ];
+  const [spousePricing, setSpousePricing] = useState<Array<{ label: string; price: number; startDate?: string; endDate?: string }>>((event?.spousePricing && event.spousePricing.length>0) ? event.spousePricing : defaultSpouseTiers);
+  const [registrationPricing, setRegistrationPricing] = useState<Array<{ label: string; price: number; startDate?: string; endDate?: string }>>(event?.registrationPricing || [
+    ...defaultRegTiers
+  ]);
+  const [breakfastPrice, setBreakfastPrice] = useState<number | undefined>(event?.breakfastPrice);
+  const [breakfastEndDate, setBreakfastEndDate] = useState<string | undefined>(event?.breakfastEndDate);
   const [errors, setErrors] = useState<{name?: string; date?: string; location?: string; description?: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -93,7 +109,10 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
         location: location.trim(),
         description: description.trim(),
         activities: activities,
-        spousePricing
+        spousePricing,
+        registrationPricing,
+        breakfastPrice,
+        breakfastEndDate
       });
     } catch (error) {
       console.error('Error saving event:', error);
@@ -278,6 +297,53 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
             </div>
 
             <div className="form-group">
+              <label className="form-label">Registration Pricing Tiers</label>
+              <div className="pricing-tiers">
+                {registrationPricing.map((tier, idx) => (
+                  <div key={idx} className="tier-row">
+                    <input
+                      type="text"
+                      className="form-control tier-label"
+                      placeholder="Label (e.g., SUPER Early bird)"
+                      value={tier.label}
+                      onChange={(e)=>{ const v=[...registrationPricing]; v[idx]={...v[idx], label:e.target.value}; setRegistrationPricing(v); }}
+                      disabled={isSubmitting}
+                    />
+                    <input
+                      type="number"
+                      className="form-control tier-price"
+                      placeholder="Price"
+                      min={0}
+                      value={tier.price}
+                      onChange={(e)=>{ const v=[...registrationPricing]; v[idx]={...v[idx], price:Number(e.target.value)}; setRegistrationPricing(v); }}
+                      disabled={isSubmitting}
+                    />
+                    <input
+                      type="date"
+                      className="form-control tier-date"
+                      value={tier.startDate || ''}
+                      onChange={(e)=>{ const v=[...registrationPricing]; v[idx]={...v[idx], startDate:e.target.value}; setRegistrationPricing(v); }}
+                      disabled={isSubmitting}
+                      aria-label="Registration tier start date"
+                      title="Registration tier start date"
+                    />
+                    <input
+                      type="date"
+                      className="form-control tier-date"
+                      value={tier.endDate || ''}
+                      onChange={(e)=>{ const v=[...registrationPricing]; v[idx]={...v[idx], endDate:e.target.value}; setRegistrationPricing(v); }}
+                      disabled={isSubmitting}
+                      aria-label="Registration tier end date"
+                      title="Registration tier end date"
+                    />
+                    <button type="button" className="btn btn-danger btn-sm" onClick={()=>{ const v=[...registrationPricing]; v.splice(idx,1); setRegistrationPricing(v); }} disabled={isSubmitting}>Remove</button>
+                  </div>
+                ))}
+                <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setRegistrationPricing([...registrationPricing,{label:'',price:0}])} disabled={isSubmitting}>Add Tier</button>
+              </div>
+            </div>
+
+            <div className="form-group">
               <label className="form-label">Spouse Ticket Pricing Tiers</label>
               <div className="pricing-tiers">
                 {spousePricing.map((tier, idx) => (
@@ -331,6 +397,20 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
                   </div>
                 ))}
                 <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setSpousePricing([...spousePricing,{label:'',price:0}])} disabled={isSubmitting}>Add Tier</button>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Spouse Breakfast/Lunch Price</label>
+              <input type="number" className="form-control" placeholder="e.g., 80" min={0}
+                value={breakfastPrice ?? ''}
+                onChange={(e)=> setBreakfastPrice(e.target.value === '' ? undefined : Number(e.target.value))}
+                disabled={isSubmitting}
+              />
+              <div style={{ marginTop: '0.5rem' }}>
+                <label className="form-label" htmlFor="breakfastEnd">Spouse Breakfast/Lunch End Date (optional)</label>
+                <input id="breakfastEnd" type="date" className="form-control" value={breakfastEndDate || ''}
+                  onChange={(e)=> setBreakfastEndDate(e.target.value || undefined)} disabled={isSubmitting} />
               </div>
             </div>
           </div>

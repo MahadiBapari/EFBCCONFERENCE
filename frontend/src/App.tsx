@@ -99,6 +99,11 @@ const App: React.FC = () => {
               : []),
         location: e.location,
         description: e.description,
+        // pass-through pricing fields from backend (already camelCase from toJSON)
+        registrationPricing: e.registrationPricing || [],
+        spousePricing: e.spousePricing || [],
+        breakfastPrice: typeof e.breakfastPrice === 'number' ? e.breakfastPrice : (e.breakfast_price ?? undefined),
+        breakfastEndDate: e.breakfastEndDate || e.breakfast_end_date || undefined,
       }));
       setEvents(normalized);
     } catch (err) {

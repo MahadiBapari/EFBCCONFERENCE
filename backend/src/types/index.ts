@@ -22,6 +22,9 @@ export interface Event {
   createdAt?: string;
   updatedAt?: string;
   spousePricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
+  registrationPricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
+  breakfastPrice?: number;
+  breakfastEndDate?: string;
 }
 
 export interface Registration {
@@ -50,6 +53,7 @@ export interface Registration {
   wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
   golfHandicap?: string;
   clubRentals?: boolean;
+  spouseBreakfast?: boolean;
   
   // Conference Meals
   wednesdayReception: 'I will attend' | 'I will NOT attend';
@@ -110,6 +114,9 @@ export interface CreateEventRequest {
   location?: string;
   description?: string;
   spousePricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
+  registrationPricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
+  breakfastPrice?: number;
+  breakfastEndDate?: string;
 }
 
 export interface UpdateEventRequest extends Partial<CreateEventRequest> {}

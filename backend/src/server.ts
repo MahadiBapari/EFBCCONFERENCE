@@ -298,12 +298,25 @@ const migrateEventsAndRegistrationsEnhancements = async () => {
       await databaseService.query('ALTER TABLE `events` ADD COLUMN `spouse_pricing` JSON NULL AFTER `activities`');
       console.log('🛠️ Added events.spouse_pricing');
     }
+    if (!eventCols.some((c:any)=>c.COLUMN_NAME==='registration_pricing')) {
+      await databaseService.query('ALTER TABLE `events` ADD COLUMN `registration_pricing` JSON NULL AFTER `spouse_pricing`');
+      console.log('🛠️ Added events.registration_pricing');
+    }
+    if (!eventCols.some((c:any)=>c.COLUMN_NAME==='breakfast_price')) {
+      await databaseService.query('ALTER TABLE `events` ADD COLUMN `breakfast_price` DECIMAL(10,2) NULL AFTER `registration_pricing`');
+      console.log('🛠️ Added events.breakfast_price');
+    }
+    if (!eventCols.some((c:any)=>c.COLUMN_NAME==='breakfast_end_date')) {
+      await databaseService.query('ALTER TABLE `events` ADD COLUMN `breakfast_end_date` DATE NULL AFTER `breakfast_price`');
+      console.log('🛠️ Added events.breakfast_end_date');
+    }
 
     // registrations.club_rentals (BOOLEAN) and golf_handicap (VARCHAR(10))
     const regCols: any[] = await getCols('registrations');
     const alter: string[] = [];
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='club_rentals')) alter.push('ADD COLUMN `club_rentals` BOOLEAN');
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='golf_handicap')) alter.push('ADD COLUMN `golf_handicap` VARCHAR(10)');
+    if (!regCols.some((c:any)=>c.COLUMN_NAME==='spouse_breakfast')) alter.push('ADD COLUMN `spouse_breakfast` BOOLEAN');
     if (alter.length>0) {
       await databaseService.query(`ALTER TABLE \`registrations\` ${alter.join(', ')}`);
       console.log('🛠️ Added registrations.club_rentals/golf_handicap');

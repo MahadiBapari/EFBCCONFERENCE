@@ -68,24 +68,19 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   // Calculate total price based on selections
   useEffect(() => {
-    let total = 675; // Base price
-
-    // Dynamic spouse tier pricing
-    const tiers = (event.spousePricing || []).map(t => ({
-      ...t,
-      startMs: t.startDate ? new Date(t.startDate).getTime() : -Infinity,
-      endMs: t.endDate ? new Date(t.endDate).getTime() : Infinity,
-    }));
     const now = Date.now();
-    const active = tiers.find(t => now >= t.startMs && now <= t.endMs);
-
-    // Add spouse dinner ticket cost using active tier (fallback $200)
-    if (formData.spouseDinnerTicket) {
-      total += (active?.price ?? 200);
+    const mapTiers = (arr:any[]=[]) => (arr||[]).map((t:any)=>({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity }));
+    const pick = (tiers:any[]) => tiers.find(t => now>=t.s && now<=t.e) || tiers[tiers.length-1] || null;
+    const regActive = pick(mapTiers(event.registrationPricing || []));
+    const spouseActive = pick(mapTiers(event.spousePricing || []));
+    let total = regActive?.price ?? 675;
+    if (formData.spouseDinnerTicket) total += (spouseActive?.price ?? 200);
+    if ((formData as any).spouseBreakfast && typeof event.breakfastPrice === 'number') {
+      const endOk = event.breakfastEndDate ? (now <= new Date(event.breakfastEndDate).getTime()) : true;
+      if (endOk) total += event.breakfastPrice;
     }
-
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [formData.spouseDinnerTicket, event.spousePricing]);
+  }, [formData.spouseDinnerTicket, (formData as any).spouseBreakfast, event.registrationPricing, event.spousePricing, event.breakfastPrice]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -204,39 +199,29 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             
             <div className="pricing-info">
               <div className="pricing-section">
-                <h4 className="pricing-title">EFBC 2024 Registration Fees</h4>
-                <div className="pricing-item">
-                  <span className="pricing-label">SUPER Early bird:</span>
-                  <span className="pricing-amount">$450 until December 31, 2025</span>
-                </div>
-                <div className="pricing-item">
-                  <span className="pricing-label">Early bird:</span>
-                  <span className="pricing-amount">$575 between January 1 to February 29, 2026</span>
-                </div>
-                <div className="pricing-item">
-                  <span className="pricing-label">Regular:</span>
-                  <span className="pricing-amount">$675 between March 1 to April 21, 2026</span>
-                </div>
+                <h4 className="pricing-title">Registration Fees</h4>
+                {(event.registrationPricing || []).map((t, i) => (
+                  <div className="pricing-item" key={i}>
+                    <span className="pricing-label">{t.label || `Tier ${i+1}`}:</span>
+                    <span className="pricing-amount">${t.price}{(t.startDate||t.endDate) ? ` ${t.startDate? 'between ' + new Date(t.startDate).toLocaleDateString(): ''}${t.startDate && t.endDate ? ' to ' : ''}${t.endDate? new Date(t.endDate).toLocaleDateString(): ''}`: ''}</span>
+                  </div>
+                ))}
               </div>
 
               <div className="pricing-section">
                 <h4 className="pricing-title">Spouse/Guest Tickets</h4>
-                <div className="pricing-item">
-                  <span className="pricing-label">Spouse dinner ticket:</span>
-                  <span className="pricing-amount">$125 until February 29, 2026</span>
-                </div>
-                <div className="pricing-item">
-                  <span className="pricing-label">Spouse dinner ticket:</span>
-                  <span className="pricing-amount">$150 between March 1 to April 21, 2026</span>
-                </div>
-                <div className="pricing-item">
-                  <span className="pricing-label">Spouse dinner ticket:</span>
-                  <span className="pricing-amount">$200 from April 22, 2026 and on-site</span>
-                </div>
-                <div className="pricing-item">
-                  <span className="pricing-label">Spouse breakfast/lunch:</span>
-                  <span className="pricing-amount">$80 prior to April 22, 2026 (upon request)</span>
-                </div>
+                {(event.spousePricing || []).map((t,i)=> (
+                  <div className="pricing-item" key={i}>
+                    <span className="pricing-label">Spouse dinner ticket:</span>
+                    <span className="pricing-amount">${t.price}{(t.startDate||t.endDate) ? ` ${t.startDate? 'between ' + new Date(t.startDate).toLocaleDateString(): ''}${t.startDate && t.endDate ? ' to ' : ''}${t.endDate? new Date(t.endDate).toLocaleDateString(): ''}`: ''}</span>
+                  </div>
+                ))}
+                {typeof event.breakfastPrice === 'number' && (
+                  <div className="pricing-item">
+                    <span className="pricing-label">Spouse breakfast/lunch:</span>
+                    <span className="pricing-amount">${event.breakfastPrice.toFixed(2)}{event.breakfastEndDate ? ` prior to ${new Date(event.breakfastEndDate).toLocaleDateString()}` : ''} (upon request)</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -693,9 +678,22 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                   checked={formData.spouseDinnerTicket || false}
                   onChange={(e) => handleInputChange('spouseDinnerTicket', e.target.checked)}
                 />
-                <span>Check Box to purchase Spouse/Guest Dinner Ticket. ($200)</span>
+                <span>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
               </label>
             </div>
+
+            {typeof event.breakfastPrice === 'number' && (
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={(formData as any).spouseBreakfast || false}
+                    onChange={(e) => handleInputChange('spouseBreakfast', e.target.checked)}
+                  />
+                  <span>Spouse/Guest breakfast/lunch (adds ${event.breakfastPrice.toFixed(2)})</span>
+                </label>
+              </div>
+            )}
 
             {formData.spouseDinnerTicket && (
               <div className="form-row">
@@ -737,12 +735,18 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             <div className="payment-summary">
               <div className="payment-item">
                 <span>Conference Registration:</span>
-                <span>$675.00</span>
+                <span>${(event.registrationPricing && event.registrationPricing.length ? (function(){ const now=Date.now(); const tiers=(event.registrationPricing||[]).map((t:any)=>({ ...t, s:t.startDate? new Date(t.startDate).getTime():-Infinity, e:t.endDate? new Date(t.endDate).getTime():Infinity })); const active=tiers.find((t:any)=> now>=t.s && now<=t.e) || tiers[tiers.length-1]; return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
               </div>
               {formData.spouseDinnerTicket && (
                 <div className="payment-item">
                   <span>Spouse Dinner Ticket:</span>
-                  <span>${formData.totalPrice && formData.totalPrice > 675 ? (formData.totalPrice - 675).toFixed(2) : '0.00'}</span>
+                  <span>${(function(){ const now=Date.now(); const tiers=(event.spousePricing||[]).map((t:any)=>({ ...t, s:t.startDate? new Date(t.startDate).getTime():-Infinity, e:t.endDate? new Date(t.endDate).getTime():Infinity })); const active=tiers.find((t:any)=> now>=t.s && now<=t.e) || tiers[tiers.length-1]; return (active?.price ?? 0).toFixed(2); })()}</span>
+                </div>
+              )}
+              {(formData as any).spouseBreakfast && typeof event.breakfastPrice === 'number' && (
+                <div className="payment-item">
+                  <span>Spouse Breakfast/Lunch:</span>
+                  <span>${event.breakfastPrice.toFixed(2)}</span>
                 </div>
               )}
               <div className="payment-total">

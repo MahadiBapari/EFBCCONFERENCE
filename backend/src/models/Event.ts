@@ -11,6 +11,9 @@ export class Event {
   public createdAt?: string;
   public updatedAt?: string;
   public spousePricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
+  public registrationPricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
+  public breakfastPrice?: number;
+  public breakfastEndDate?: string;
 
   constructor(data: Partial<IEvent> & { spousePricing?: any }) {
     this.id = data.id;
@@ -24,6 +27,9 @@ export class Event {
     this.createdAt = (data as any).createdAt || now;
     this.updatedAt = (data as any).updatedAt || now;
     this.spousePricing = (data as any).spousePricing || [];
+    this.registrationPricing = (data as any).registrationPricing || [];
+    this.breakfastPrice = (data as any).breakfastPrice ?? undefined;
+    this.breakfastEndDate = (data as any).breakfastEndDate || undefined;
   }
 
   // Convert to JSON
@@ -38,7 +44,10 @@ export class Event {
       description: this.description,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
-      spousePricing: this.spousePricing
+      spousePricing: this.spousePricing,
+      registrationPricing: this.registrationPricing,
+      breakfastPrice: this.breakfastPrice,
+      breakfastEndDate: this.breakfastEndDate
     };
   }
 
@@ -52,7 +61,10 @@ export class Event {
       description: this.description,
       created_at: this.createdAt,
       updated_at: this.updatedAt,
-      spouse_pricing: this.spousePricing ? JSON.stringify(this.spousePricing) : null
+      spouse_pricing: this.spousePricing ? JSON.stringify(this.spousePricing) : null,
+      registration_pricing: this.registrationPricing ? JSON.stringify(this.registrationPricing) : null,
+      breakfast_price: this.breakfastPrice ?? null,
+      breakfast_end_date: this.breakfastEndDate || null
     };
   }
 
@@ -67,8 +79,12 @@ export class Event {
       }
     }
     let spousePricing: any[] = [];
+    let registrationPricing: any[] = [];
     if (row.spouse_pricing) {
       try { spousePricing = JSON.parse(row.spouse_pricing); } catch {}
+    }
+    if (row.registration_pricing) {
+      try { registrationPricing = JSON.parse(row.registration_pricing); } catch {}
     }
     
     return new Event({
@@ -80,7 +96,10 @@ export class Event {
       description: row.description,
       createdAt: row.created_at || row.createdAt,
       updatedAt: row.updated_at || row.updatedAt,
-      spousePricing
+      spousePricing,
+      registrationPricing,
+      breakfastPrice: row.breakfast_price,
+      breakfastEndDate: row.breakfast_end_date
     } as any);
   }
 }

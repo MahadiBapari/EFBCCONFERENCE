@@ -29,6 +29,7 @@ export class Registration {
   public dietaryRestrictions?: string;
   public clubRentals?: boolean;
   public golfHandicap?: string;
+  public spouseBreakfast?: boolean;
   public spouseFirstName?: string;
   public spouseLastName?: string;
   public spouseDinnerTicket: 'Yes' | 'No';
@@ -67,6 +68,7 @@ export class Registration {
     this.fridayDinner = data.fridayDinner || 'I will attend';
     this.dietaryRestrictions = data.dietaryRestrictions;
     this.clubRentals = (data as any).clubRentals ?? false;
+    this.spouseBreakfast = (data as any).spouseBreakfast ?? false;
     this.golfHandicap = (data as any).golfHandicap;
     this.spouseFirstName = data.spouseFirstName;
     this.spouseLastName = data.spouseLastName;
@@ -152,6 +154,7 @@ export class Registration {
       club_rentals: this.clubRentals ?? false,
       golf_handicap: this.golfHandicap,
       spouse_dinner_ticket: this.spouseDinnerTicket === 'Yes',
+      spouse_breakfast: !!this.spouseBreakfast,
       spouse_first_name: this.spouseFirstName,
       spouse_last_name: this.spouseLastName,
       total_price: this.totalPrice,
@@ -191,6 +194,7 @@ export class Registration {
       clubRentals: !!row.club_rentals,
       golfHandicap: row.golf_handicap,
       spouseDinnerTicket: row.spouse_dinner_ticket ? 'Yes' : 'No',
+      spouseBreakfast: !!row.spouse_breakfast,
       spouseFirstName: row.spouse_first_name,
       spouseLastName: row.spouse_last_name,
       totalPrice: row.total_price,
