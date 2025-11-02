@@ -1,0 +1,230 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GroupController = void 0;
+const Group_1 = require("../models/Group");
+class GroupController {
+    constructor(db) {
+        this.db = db;
+    }
+    async getGroups(req, res) {
+        try {
+            const { page = 1, limit = 10, eventId, category, search } = req.query;
+            const offset = (Number(page) - 1) * Number(limit);
+            let conditions = {};
+            if (eventId)
+                conditions.eventId = eventId;
+            if (category)
+                conditions.category = category;
+            let groups;
+            let total;
+            if (search) {
+                const searchCondition = `name LIKE '%${search}%'`;
+                let whereClause = searchCondition;
+                if (Object.keys(conditions).length > 0) {
+                    const conditionClause = Object.keys(conditions).map(key => `${key} = ?`).join(' AND ');
+                    whereClause = `${conditionClause} AND ${searchCondition}`;
+                }
+                groups = await this.db.query(`SELECT * FROM \`groups\` WHERE ${whereClause} LIMIT ? OFFSET ?`, [...Object.values(conditions), Number(limit), offset]);
+                total = await this.db.query(`SELECT COUNT(*) as count FROM \`groups\` WHERE ${whereClause}`, Object.values(conditions));
+            }
+            else {
+                groups = await this.db.findAll('groups', conditions, Number(limit), offset);
+                total = await this.db.count('groups', conditions);
+            }
+            const response = {
+                success: true,
+                data: groups.map((row) => Group_1.Group.fromDatabase(row).toJSON()),
+                pagination: {
+                    page: Number(page),
+                    limit: Number(limit),
+                    total: Array.isArray(total) ? total[0].count : total,
+                    totalPages: Math.ceil((Array.isArray(total) ? total[0].count : total) / Number(limit))
+                }
+            };
+            res.status(200).json(response);
+        }
+        catch (error) {
+            console.error('Error fetching groups:', error);
+            const response = {
+                success: false,
+                error: 'Failed to fetch groups'
+            };
+            res.status(500).json(response);
+        }
+    }
+    async getGroupById(req, res) {
+        try {
+            const { id } = req.params;
+            const group = await this.db.findById('groups', Number(id));
+            if (!group) {
+                const response = {
+                    success: false,
+                    error: 'Group not found'
+                };
+                res.status(404).json(response);
+                return;
+            }
+            const response = {
+                success: true,
+                data: Group_1.Group.fromDatabase(group).toJSON()
+            };
+            res.status(200).json(response);
+        }
+        catch (error) {
+            console.error('Error fetching group:', error);
+            const response = {
+                success: false,
+                error: 'Failed to fetch group'
+            };
+            res.status(500).json(response);
+        }
+    }
+    async createGroup(req, res) {
+        try {
+            const groupData = req.body;
+            const group = new Group_1.Group(groupData);
+            const result = await this.db.insert('groups', group.toDatabase());
+            group.id = result.insertId;
+            const response = {
+                success: true,
+                data: group.toJSON(),
+                message: 'Group created successfully'
+            };
+            res.status(201).json(response);
+        }
+        catch (error) {
+            console.error('Error creating group:', error);
+            const response = {
+                success: false,
+                error: 'Failed to create group'
+            };
+            res.status(500).json(response);
+        }
+    }
+    async updateGroup(req, res) {
+        try {
+            const { id } = req.params;
+            const updateData = req.body;
+            const existingGroup = await this.db.findById('groups', Number(id));
+            if (!existingGroup) {
+                const response = {
+                    success: false,
+                    error: 'Group not found'
+                };
+                res.status(404).json(response);
+                return;
+            }
+            const group = new Group_1.Group({ ...existingGroup, ...updateData });
+            group.updatedAt = new Date().toISOString();
+            await this.db.update('groups', Number(id), group.toDatabase());
+            const response = {
+                success: true,
+                data: group.toJSON(),
+                message: 'Group updated successfully'
+            };
+            res.status(200).json(response);
+        }
+        catch (error) {
+            console.error('Error updating group:', error);
+            const response = {
+                success: false,
+                error: 'Failed to update group'
+            };
+            res.status(500).json(response);
+        }
+    }
+    async deleteGroup(req, res) {
+        try {
+            const { id } = req.params;
+            const existingGroup = await this.db.findById('groups', Number(id));
+            if (!existingGroup) {
+                const response = {
+                    success: false,
+                    error: 'Group not found'
+                };
+                res.status(404).json(response);
+                return;
+            }
+            await this.db.delete('groups', Number(id));
+            const response = {
+                success: true,
+                message: 'Group deleted successfully'
+            };
+            res.status(200).json(response);
+        }
+        catch (error) {
+            console.error('Error deleting group:', error);
+            const response = {
+                success: false,
+                error: 'Failed to delete group'
+            };
+            res.status(500).json(response);
+        }
+    }
+    async addMemberToGroup(req, res) {
+        try {
+            const { id } = req.params;
+            const { memberId } = req.body;
+            const group = await this.db.findById('groups', Number(id));
+            if (!group) {
+                const response = {
+                    success: false,
+                    error: 'Group not found'
+                };
+                res.status(404).json(response);
+                return;
+            }
+            const groupModel = Group_1.Group.fromDatabase(group);
+            groupModel.addMember(memberId);
+            await this.db.update('groups', Number(id), groupModel.toDatabase());
+            const response = {
+                success: true,
+                data: groupModel.toJSON(),
+                message: 'Member added to group successfully'
+            };
+            res.status(200).json(response);
+        }
+        catch (error) {
+            console.error('Error adding member to group:', error);
+            const response = {
+                success: false,
+                error: 'Failed to add member to group'
+            };
+            res.status(500).json(response);
+        }
+    }
+    async removeMemberFromGroup(req, res) {
+        try {
+            const { id } = req.params;
+            const { memberId } = req.body;
+            const group = await this.db.findById('groups', Number(id));
+            if (!group) {
+                const response = {
+                    success: false,
+                    error: 'Group not found'
+                };
+                res.status(404).json(response);
+                return;
+            }
+            const groupModel = Group_1.Group.fromDatabase(group);
+            groupModel.removeMember(memberId);
+            await this.db.update('groups', Number(id), groupModel.toDatabase());
+            const response = {
+                success: true,
+                data: groupModel.toJSON(),
+                message: 'Member removed from group successfully'
+            };
+            res.status(200).json(response);
+        }
+        catch (error) {
+            console.error('Error removing member from group:', error);
+            const response = {
+                success: false,
+                error: 'Failed to remove member from group'
+            };
+            res.status(500).json(response);
+        }
+    }
+}
+exports.GroupController = GroupController;
+//# sourceMappingURL=groupController.js.map

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Registration, Event, COMPANY_TYPES, MASSAGE_TIME_SLOTS, MEAL_OPTIONS, PAYMENT_METHODS } from '../types';
 import { Modal } from './Modal';
 import '../styles/RegistrationModal.css';
@@ -66,21 +66,38 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Derived selections to keep effects dependencies simple
+  const spouseDinnerSelected = !!formData.spouseDinnerTicket;
+  const spouseBreakfastSelected = !!(formData as any).spouseBreakfast;
+  const regTiers = useMemo(() => event.registrationPricing || [], [event.registrationPricing]);
+  const spouseTiers = useMemo(() => event.spousePricing || [], [event.spousePricing]);
+  const breakfastEnd = event.breakfastEndDate;
+
   // Calculate total price based on selections
   useEffect(() => {
     const now = Date.now();
-    const mapTiers = (arr:any[]=[]) => (arr||[]).map((t:any)=>({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity }));
-    const pick = (tiers:any[]) => tiers.find(t => now>=t.s && now<=t.e) || tiers[tiers.length-1] || null;
-    const regActive = pick(mapTiers(event.registrationPricing || []));
-    const spouseActive = pick(mapTiers(event.spousePricing || []));
+    const withBounds = (arr:any[]=[]) => (arr)
+      .map((t:any)=>({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity }))
+      .sort((a:any,b:any)=> (a.s - b.s));
+    const pickTier = (tiers:any[]) => {
+      if (!tiers || tiers.length===0) return null;
+      const active = tiers.find(t => now>=t.s && now<=t.e);
+      if (active) return active;
+      if (now < tiers[0].s) return tiers[0];
+      if (now > tiers[tiers.length-1].e) return tiers[tiers.length-1];
+      const upcoming = tiers.find(t => now < t.s);
+      return upcoming || tiers[tiers.length-1];
+    };
+    const regActive = pickTier(withBounds(regTiers));
+    const spouseActive = pickTier(withBounds(spouseTiers));
     let total = regActive?.price ?? 675;
-    if (formData.spouseDinnerTicket) total += (spouseActive?.price ?? 200);
-    if ((formData as any).spouseBreakfast && typeof event.breakfastPrice === 'number') {
-      const endOk = event.breakfastEndDate ? (now <= new Date(event.breakfastEndDate).getTime()) : true;
+    if (spouseDinnerSelected) total += (spouseActive?.price ?? 200);
+    if (spouseBreakfastSelected && typeof event.breakfastPrice === 'number') {
+      const endOk = breakfastEnd ? (now <= new Date(breakfastEnd).getTime()) : true;
       if (endOk) total += event.breakfastPrice;
     }
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [formData.spouseDinnerTicket, (formData as any).spouseBreakfast, event.registrationPricing, event.spousePricing, event.breakfastPrice]);
+  }, [spouseDinnerSelected, spouseBreakfastSelected, regTiers, spouseTiers, event.breakfastPrice, breakfastEnd]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -735,12 +752,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             <div className="payment-summary">
               <div className="payment-item">
                 <span>Conference Registration:</span>
-                <span>${(event.registrationPricing && event.registrationPricing.length ? (function(){ const now=Date.now(); const tiers=(event.registrationPricing||[]).map((t:any)=>({ ...t, s:t.startDate? new Date(t.startDate).getTime():-Infinity, e:t.endDate? new Date(t.endDate).getTime():Infinity })); const active=tiers.find((t:any)=> now>=t.s && now<=t.e) || tiers[tiers.length-1]; return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
+                <span>${(event.registrationPricing && event.registrationPricing.length ? (function(){ const now=Date.now(); const tiers=(event.registrationPricing||[]).map((t:any)=>({ ...t, s:t.startDate? new Date(t.startDate).getTime():-Infinity, e:t.endDate? new Date(t.endDate).getTime():Infinity })).sort((a:any,b:any)=>a.s-b.s); const active=tiers.find((t:any)=> now>=t.s && now<=t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length-1].e ? tiers[tiers.length-1] : (tiers.find((t:any)=> now < t.s) || tiers[tiers.length-1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
               </div>
               {formData.spouseDinnerTicket && (
                 <div className="payment-item">
                   <span>Spouse Dinner Ticket:</span>
-                  <span>${(function(){ const now=Date.now(); const tiers=(event.spousePricing||[]).map((t:any)=>({ ...t, s:t.startDate? new Date(t.startDate).getTime():-Infinity, e:t.endDate? new Date(t.endDate).getTime():Infinity })); const active=tiers.find((t:any)=> now>=t.s && now<=t.e) || tiers[tiers.length-1]; return (active?.price ?? 0).toFixed(2); })()}</span>
+                  <span>${(function(){ const now=Date.now(); const tiers=(event.spousePricing||[]).map((t:any)=>({ ...t, s:t.startDate? new Date(t.startDate).getTime():-Infinity, e:t.endDate? new Date(t.endDate).getTime():Infinity })).sort((a:any,b:any)=>a.s-b.s); const active=tiers.find((t:any)=> now>=t.s && now<=t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length-1].e ? tiers[tiers.length-1] : (tiers.find((t:any)=> now < t.s) || tiers[tiers.length-1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
                 </div>
               )}
               {(formData as any).spouseBreakfast && typeof event.breakfastPrice === 'number' && (

@@ -1,43 +1,49 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const eventController_1 = require("../controllers/eventController");
+const userController_1 = require("../controllers/userController");
 const router = (0, express_1.Router)();
-let eventController;
+let userController;
 const initController = async () => {
-    if (!eventController) {
+    if (!userController) {
         const db = globalThis.databaseService;
         if (db) {
-            eventController = new eventController_1.EventController(db);
+            userController = new userController_1.UserController(db);
         }
     }
 };
 const ensureController = async (req, res, next) => {
     await initController();
-    if (!eventController) {
+    if (!userController) {
         return res.status(500).json({
             success: false,
             error: 'Database not initialized'
         });
     }
-    req.eventController = eventController;
+    req.userController = userController;
     next();
 };
 router.use(ensureController);
+router.post('/login', async (req, res) => {
+    await req.userController.login(req, res);
+});
+router.post('/register', async (req, res) => {
+    await req.userController.register(req, res);
+});
 router.get('/', async (req, res) => {
-    await req.eventController.getEvents(req, res);
+    await req.userController.getUsers(req, res);
 });
 router.get('/:id', async (req, res) => {
-    await req.eventController.getEventById(req, res);
+    await req.userController.getUserById(req, res);
 });
 router.post('/', async (req, res) => {
-    await req.eventController.createEvent(req, res);
+    await req.userController.createUser(req, res);
 });
 router.put('/:id', async (req, res) => {
-    await req.eventController.updateEvent(req, res);
+    await req.userController.updateUser(req, res);
 });
 router.delete('/:id', async (req, res) => {
-    await req.eventController.deleteEvent(req, res);
+    await req.userController.deleteUser(req, res);
 });
 exports.default = router;
-//# sourceMappingURL=eventRoutes.js.map
+//# sourceMappingURL=userRoutes.js.map
