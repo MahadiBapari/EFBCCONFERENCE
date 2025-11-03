@@ -1,0 +1,46 @@
+import { Registration as IRegistration } from '../types';
+export declare class Registration {
+    id?: number;
+    userId: number;
+    eventId: number;
+    firstName: string;
+    lastName: string;
+    badgeName: string;
+    email: string;
+    secondaryEmail?: string;
+    organization: string;
+    jobTitle: string;
+    address: string;
+    mobile: string;
+    officePhone?: string;
+    isFirstTimeAttending: boolean;
+    companyType: string;
+    companyTypeOther?: string;
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
+    wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
+    wednesdayReception: 'I will attend' | 'I will NOT attend';
+    thursdayBreakfast: 'I will attend' | 'I will NOT attend';
+    thursdayLunch: 'I will attend' | 'I will NOT attend';
+    thursdayReception: 'I will attend' | 'I will NOT attend';
+    fridayBreakfast: 'I will attend' | 'I will NOT attend';
+    fridayDinner: 'I will attend' | 'I will NOT attend';
+    dietaryRestrictions?: string;
+    clubRentals?: boolean;
+    golfHandicap?: string;
+    spouseBreakfast?: boolean;
+    spouseFirstName?: string;
+    spouseLastName?: string;
+    spouseDinnerTicket: 'Yes' | 'No';
+    totalPrice: number;
+    paymentMethod: 'Card' | 'Check';
+    name: string;
+    category: string;
+    createdAt?: string;
+    updatedAt?: string;
+    constructor(data: Partial<IRegistration>);
+    toJSON(): IRegistration;
+    toDatabase(): any;
+    static fromDatabase(row: any): Registration;
+}
+//# sourceMappingURL=Registration.d.ts.map
