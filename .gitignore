@@ -3,3 +3,6 @@ frontend/build
 backend/dist
 node_modules
 frontend/build
+node_modules
+frontend/build
+backend/dist
