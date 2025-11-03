@@ -276,8 +276,29 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
           )}
           {submitError && (
             <div className="error-message" style={{ marginBottom: '12px' }}>
-              <span>⚠️</span>
+              
               {submitError}
+              <div style={{ marginTop: 8 }}>
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={async()=>{
+                    setResendMsg('');
+                    setResending(true);
+                    try {
+                      const em = (formData.email||'').trim();
+                      if(!em){ setResendMsg('Enter your email above first.'); return; }
+                      await authApi.resendVerification(em);
+                      setResendMsg('If an account exists and is unverified, a verification email has been sent.');
+                    } catch(e:any){ setResendMsg(e?.response?.data?.error || 'Failed to resend verification'); }
+                    finally { setResending(false); }
+                  }}
+                  disabled={resending}
+                >
+                  {resending ? 'Sending…' : 'Resend verification email'}
+                </button>
+                {resendMsg && <div className="info-message" style={{ marginTop: 6 }}>{resendMsg}</div>}
+              </div>
             </div>
           )}
 
