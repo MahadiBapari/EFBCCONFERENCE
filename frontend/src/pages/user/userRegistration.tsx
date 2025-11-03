@@ -152,7 +152,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     setIsSubmitting(true);
     try {
       const registrationData: Registration = {
-        id: registration?.id || Date.now(),
+        ...(registration?.id ? { id: registration.id } : {} as any),
         userId: user.id,
         eventId: event.id,
         ...formData,

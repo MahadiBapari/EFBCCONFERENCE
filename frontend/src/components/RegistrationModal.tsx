@@ -140,7 +140,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     
     try {
       const registrationData: Registration = {
-        id: registration?.id || Date.now(),
+        // Do not set id for new registrations; backend will assign
+        ...(registration?.id ? { id: registration.id } : {} as any),
         userId: user.id,
         eventId: event.id,
         ...formData,
