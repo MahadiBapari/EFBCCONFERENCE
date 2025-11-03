@@ -96,5 +96,8 @@ export const authApi = {
   },
   async resetPassword(payload: { token: string; newPassword: string }): Promise<any> {
     return apiClient.post('/auth/reset-password', payload);
+  },
+  async resendVerification(email: string): Promise<any> {
+    return apiClient.post('/auth/resend-verification', { email });
   }
 };
