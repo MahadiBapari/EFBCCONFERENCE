@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Event, Registration, User } from '../../types';
 import { isEventExpired } from '../../types';
-import { RegistrationModal } from '../../components/RegistrationModal';
+// Removed modal in favor of dedicated page
 import '../../styles/UserEvents.css';
 
 interface UserEventsProps {
@@ -10,6 +10,7 @@ interface UserEventsProps {
   handleSaveRegistration: (regData: Registration) => void;
   handleCancelRegistration: (regId: number) => void;
   user: User;
+  onBeginRegistration: (eventId: number) => void;
 }
 
 export const UserEvents: React.FC<UserEventsProps> = ({ 
@@ -17,11 +18,10 @@ export const UserEvents: React.FC<UserEventsProps> = ({
   registrations, 
   handleSaveRegistration, 
   handleCancelRegistration, 
-  user 
+  user,
+  onBeginRegistration,
 }) => {
-  const [showRegModal, setShowRegModal] = useState(false);
-  const [editingReg, setEditingReg] = useState<Registration | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  // Local edit state no longer needed here
 
   // Debug log to see current events
   console.log('UserEvents - Current events:', events);
@@ -31,20 +31,10 @@ export const UserEvents: React.FC<UserEventsProps> = ({
     [registrations, user]
   );
 
-  const onSave = (regData: Registration) => {
-    handleSaveRegistration(regData);
-    setShowRegModal(false);
-    setEditingReg(null);
-    setSelectedEvent(null);
-  };
+  // Saves are handled in the registration page
 
   const handleRegister = (event: Event) => {
-    const existingReg = userRegistrations.find(r => r.eventId === event.id);
-    if (existingReg) {
-      setEditingReg(existingReg);
-    }
-    setSelectedEvent(event);
-    setShowRegModal(true);
+    onBeginRegistration(event.id);
   };
 
   const handleCancel = (regId: number) => {
@@ -89,10 +79,10 @@ export const UserEvents: React.FC<UserEventsProps> = ({
                     <div className="event-actions">
                       {!isExpired && (
                         <>
-                          <button
-                            className="btn btn-primary"
-                            onClick={() => handleRegister(event)}
-                          >
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => handleRegister(event)}
+                      >
                             Edit Registration
                           </button>
                           <button
@@ -130,15 +120,7 @@ export const UserEvents: React.FC<UserEventsProps> = ({
         </div>
       )}
 
-      {showRegModal && selectedEvent && (
-        <RegistrationModal
-          event={selectedEvent}
-          registration={editingReg}
-          user={user}
-          onClose={() => { setShowRegModal(false); setEditingReg(null); setSelectedEvent(null); }}
-          onSave={onSave}
-        />
-      )}
+      {/* Registration now happens in a dedicated page */}
     </div>
   );
 };

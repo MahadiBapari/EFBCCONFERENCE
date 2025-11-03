@@ -7,6 +7,7 @@ import ResetPasswordPage from './pages/authentication/resetPassword';
 import { Sidebar } from './components/Sidebar';
 import { UserDashboard } from './pages/user/userDashboard';
 import { UserEvents } from './pages/user/userEvents';
+import { UserRegistration } from './pages/user/userRegistration';
 import { UserProfile } from './pages/user/userProfile';
 import { AdminEvents } from './pages/admin/adminEvents';
 import { AdminAttendees } from './pages/admin/adminAttendees';
@@ -76,6 +77,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User>({ id: 999, name: "Current User", email: "current.user@example.com" });
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
+  const [registrationTargetEventId, setRegistrationTargetEventId] = useState<number | null>(null);
 
   useEffect(() => {
     document.body.className = `${theme}-theme`;
@@ -265,6 +267,11 @@ const handleLogout = () => {
   const handleShowRegistration = () => {
     setShowRegistration(true);
   };
+
+  const beginRegistration = (eventId?: number) => {
+    setRegistrationTargetEventId(eventId ?? null);
+    setView('registration');
+  };
   
   const handleSaveRegistration = (regData: Registration, currentUserId?: number) => {
     const registrationId = regData.id || Date.now();
@@ -407,6 +414,7 @@ const handleLogout = () => {
             handleSaveRegistration={(regData) => handleSaveRegistration(regData, user.id)}
             handleCancelRegistration={handleCancelRegistration}
             user={user}
+            onBeginRegistration={(eventId?: number) => beginRegistration(eventId)}
           />;
         case 'profile':
           return <UserProfile user={user} onUpdateProfile={handleUpdateProfile} />;
@@ -418,6 +426,16 @@ const handleLogout = () => {
             handleSaveRegistration={(regData) => handleSaveRegistration(regData, user.id)}
             handleCancelRegistration={handleCancelRegistration}
             user={user} 
+            onBeginRegistration={() => beginRegistration()}
+          />;
+        case 'registration':
+          return <UserRegistration
+            events={events}
+            registrations={registrations}
+            user={user}
+            targetEventId={registrationTargetEventId}
+            onBack={() => setView('dashboard')}
+            onSave={(regData) => handleSaveRegistration(regData, user.id)}
           />;
       }
     }

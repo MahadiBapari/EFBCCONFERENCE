@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Event, Registration, User } from '../../types';
 import { isEventExpired } from '../../types';
-import { RegistrationModal } from '../../components/RegistrationModal';
+// Removed modal in favor of dedicated page
 import '../../styles/UserDashboard.css';
 
 interface UserDashboardProps {
@@ -10,6 +10,7 @@ interface UserDashboardProps {
   handleSaveRegistration: (regData: Registration) => void;
   handleCancelRegistration: (regId: number) => void;
   user: User;
+  onBeginRegistration: (eventId?: number) => void;
 }
 
 export const UserDashboard: React.FC<UserDashboardProps> = ({ 
@@ -17,10 +18,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   registrations, 
   handleSaveRegistration, 
   handleCancelRegistration, 
-  user 
+  user,
+  onBeginRegistration,
 }) => {
-  const [showRegModal, setShowRegModal] = useState(false);
-  const [editingReg, setEditingReg] = useState<Registration | null>(null);
 
   // Debug log to see current events
   console.log('UserDashboard - Current events:', events);
@@ -40,11 +40,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     [events]
   );
 
-  const onSave = (regData: Registration) => {
-    handleSaveRegistration(regData);
-    setShowRegModal(false);
-    setEditingReg(null);
-  };
+  // Saves are handled in the registration page
 
   return (
     <div className="container">
@@ -80,7 +76,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               <div className="event-actions">
                 <button
                   className="btn btn-primary"
-                  onClick={() => { setEditingReg(userRegistration); setShowRegModal(true); }}
+                  onClick={() => onBeginRegistration(activeEvent.id)}
                 >
                   Edit Registration
                 </button>
@@ -98,7 +94,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               <div className="event-actions">
                 <button
                   className="btn btn-primary"
-                  onClick={() => setShowRegModal(true)}
+                  onClick={() => onBeginRegistration(activeEvent.id)}
                 >
                   Register Now
                 </button>
@@ -113,15 +109,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         </div>
       )}
 
-      {showRegModal && activeEvent && (
-        <RegistrationModal
-          event={activeEvent}
-          registration={editingReg}
-          user={user}
-          onClose={() => { setShowRegModal(false); setEditingReg(null); }}
-          onSave={onSave}
-        />
-      )}
+      {/* Registration now happens in a dedicated page */}
     </div>
   );
 };
