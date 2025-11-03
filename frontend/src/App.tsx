@@ -274,28 +274,48 @@ const handleLogout = () => {
   };
   
   const handleSaveRegistration = (regData: Registration, currentUserId?: number) => {
-    const registrationId = regData.id || Date.now();
     const userId = regData.userId || currentUserId || user.id;
-
-    const finalRegistration: Registration = { ...regData, id: registrationId, userId };
+    const finalRegistration: Registration = { ...regData, userId, id: regData.id || 0 } as any;
 
     // Persist to backend and then refresh list.
     const save = async () => {
       try {
         // Do not send timestamps on write
         const { createdAt, updatedAt, ...payload } = finalRegistration as any;
-        if (regData.id) {
-          await apiClient.put(`/registrations/${registrationId}`, payload);
+
+        // Decide create vs update based on existing local registration
+        const existing = registrations.find(r => r.userId === userId && r.eventId === (payload.eventId as number));
+        if (existing || regData.id) {
+          const idToUpdate = regData.id || existing?.id;
+          if (!idToUpdate) {
+            // should not happen, but fall back to create
+            const { id, ...createPayload } = payload as any;
+            await apiClient.post(`/registrations`, createPayload);
+          } else {
+            try {
+              await apiClient.put(`/registrations/${idToUpdate}`, { ...payload, id: idToUpdate });
+            } catch (err: any) {
+              if (err?.status === 404 || err?.response?.status === 404) {
+                const { id, ...createPayload } = payload as any;
+                await apiClient.post(`/registrations`, createPayload);
+              } else {
+                throw err;
+              }
+            }
+          }
         } else {
-          await apiClient.post(`/registrations`, payload);
+          const { id, ...createPayload } = payload as any;
+          await apiClient.post(`/registrations`, createPayload);
         }
       } catch (e) {
         console.error('Failed to save registration to API, falling back to local:', e);
         // Fallback local upsert if API fails
+        const localId = regData.id || Date.now();
+        const localFinal = { ...finalRegistration, id: localId } as Registration;
         setRegistrations(prev => {
-          const exists = prev.some(r => r.id === registrationId);
-          if (exists) return prev.map(r => (r.id === registrationId ? finalRegistration : r));
-          return [...prev, finalRegistration];
+          const exists = prev.some(r => r.id === localId);
+          if (exists) return prev.map(r => (r.id === localId ? localFinal : r));
+          return [...prev, localFinal];
         });
         return;
       }
