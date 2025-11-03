@@ -1,13 +1,13 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 import dotenv from 'dotenv';
 // Load .env only in non-production to avoid overriding platform env vars
 if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
   dotenv.config();
 }
 
-const ensureTransporter = () => {
+const ensureTransporter = (): Transporter | null => {
   const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || '587');
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   if (!host || !user || !pass) {
@@ -16,13 +16,26 @@ const ensureTransporter = () => {
     if (!user) missing.push('SMTP_USER');
     if (!pass) missing.push('SMTP_PASS');
     console.warn('⚠️ SMTP not fully configured. Missing:', missing.join(', ') || 'none', '- emails will be logged to console.');
-    return null as any;
+    return null;
   }
   const secure = port === 465;
-  return nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+  // Force IPv4 and add sane timeouts; use STARTTLS on 587
+  return nodemailer.createTransport({
+    // @ts-expect-error: host/port/secure are valid for SMTP transport
+    host,
+    port,
+    secure,
+    auth: { user, pass },
+    requireTLS: !secure,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
+    family: 4,
+    tls: secure ? undefined : { minVersion: 'TLSv1.2', servername: host }
+  });
 };
 
-const transporter = ensureTransporter();
+const transporter: Transporter | null = ensureTransporter();
 let smtpVerifiedLogged = false;
 
 // Basic, responsive-ish HTML email wrapper
@@ -123,8 +136,9 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
     try {
       await transporter.verify();
       console.log('✅ SMTP OK - transporter verified');
-    } catch (e: any) {
-      console.error('❌ SMTP FAIL -', e?.message || e);
+    } catch (e: unknown) {
+      const msg = (e as { message?: string })?.message || String(e);
+      console.error('❌ SMTP FAIL -', msg);
     } finally {
       smtpVerifiedLogged = true;
     }
@@ -168,8 +182,9 @@ export async function sendRegistrationConfirmationEmail(params: {
     try {
       await transporter.verify();
       console.log('✅ SMTP OK - transporter verified');
-    } catch (e: any) {
-      console.error('❌ SMTP FAIL -', e?.message || e);
+    } catch (e: unknown) {
+      const msg = (e as { message?: string })?.message || String(e);
+      console.error('❌ SMTP FAIL -', msg);
     } finally {
       smtpVerifiedLogged = true;
     }
@@ -200,7 +215,15 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
     return;
   }
   if (!smtpVerifiedLogged) {
-    try { await transporter.verify(); console.log('✅ SMTP OK - transporter verified'); } catch (e:any) { console.error('❌ SMTP FAIL -', e?.message||e); } finally { smtpVerifiedLogged = true; }
+    try {
+      await transporter.verify();
+      console.log('✅ SMTP OK - transporter verified');
+    } catch (e: unknown) {
+      const msg = (e as { message?: string })?.message || String(e);
+      console.error('❌ SMTP FAIL -', msg);
+    } finally {
+      smtpVerifiedLogged = true;
+    }
   }
   await transporter.sendMail({ from, to, subject, text, html });
 }
