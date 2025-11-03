@@ -338,13 +338,7 @@ const handleLogout = () => {
     }
   };
 
-  const handleDeleteEvent = (eventId: number) => {
-    if (window.confirm("Are you sure you want to delete this event? This will also remove all associated registrations and groups.")) {
-      setEvents(prev => prev.filter(e => e.id !== eventId));
-      setRegistrations(prev => prev.filter(r => r.eventId !== eventId));
-      setGroups(prev => prev.filter(g => g.eventId !== eventId));
-    }
-  };
+  // Removed unused handleDeleteEvent to satisfy CI lint rules
 
   const handleDeleteGroup = (groupId: number) => {
     if (window.confirm("Are you sure you want to delete this group? All members will become unassigned.")) {

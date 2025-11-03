@@ -23,7 +23,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   const [filter, setFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
-  const [, setEditingReg] = useState<Registration | null>(null);
+  // Removed unused local edit state to satisfy CI lint rules
   const [selectedRegIds, setSelectedRegIds] = useState<number[]>([]);
   const [detailsReg, setDetailsReg] = useState<Registration | null>(null);
 
