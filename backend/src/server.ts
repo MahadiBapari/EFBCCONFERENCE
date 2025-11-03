@@ -12,8 +12,10 @@ import groupRoutes from './routes/groupRoutes';
 import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables (only from .env in non-production)
+if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
+  dotenv.config();
+}
 
 // Express app
 const app: Application = express();

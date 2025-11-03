@@ -1,8 +1,9 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
-
-
-dotenv.config();
+// Load .env only in non-production to avoid overriding platform env vars
+if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
+  dotenv.config();
+}
 
 const ensureTransporter = () => {
   const host = process.env.SMTP_HOST;
