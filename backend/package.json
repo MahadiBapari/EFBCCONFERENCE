@@ -8,11 +8,15 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "nodemon --exec npx ts-node src/server.ts",
-    "dev:build": "tsc --watch"
+    "dev:build": "tsc --watch",
+    "postinstall": "npm rebuild bcrypt --build-from-source"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": "20.x"
+  },
   "type": "commonjs",
   "dependencies": {
     "bcrypt": "^5.1.1",
