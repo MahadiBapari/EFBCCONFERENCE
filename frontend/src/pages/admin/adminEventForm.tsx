@@ -35,14 +35,17 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   useEffect(() => {
     if (!event) return;
     setName(event.name || '');
-    setDate(event.date || '');
+    // Ensure date string is in YYYY-MM-DD for input[type=date]
+    const normalizedDate = (event.date || '').toString();
+    setDate(normalizedDate.includes('T') ? normalizedDate.slice(0, 10) : normalizedDate);
     setLocation(event.location || '');
     setDescription(event.description || '');
     setActivities(event.activities || []);
     setRegistrationPricing(event.registrationPricing || registrationPricing);
     setSpousePricing(event.spousePricing && event.spousePricing.length ? event.spousePricing : spousePricing);
     setBreakfastPrice(event.breakfastPrice);
-    setBreakfastEndDate(event.breakfastEndDate);
+    const be = (event.breakfastEndDate || '') as string;
+    setBreakfastEndDate(be ? (be.includes('T') ? be.slice(0, 10) : be) : undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -2,6 +2,9 @@
 
 .event-form-container {
   padding: 0;
+  /* Extra bottom space so native date pickers are fully visible near page bottom */
+  padding-bottom: 12rem;
+  overflow: visible;
 }
 
 .event-form {
