@@ -15,16 +15,16 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   const [description, setDescription] = useState('');
   const [activities, setActivities] = useState<string[]>([]);
   const [newActivity, setNewActivity] = useState('');
-  const [registrationPricing, setRegistrationPricing] = useState<Array<{ label: string; price: number; startDate?: string; endDate?: string }>>([
-    { label: 'Priority Registration Fee', price: 0 },
-    { label: 'Early Bird Registration Fee', price: 0 },
-    { label: 'Advance Registration Fee', price: 0 },
-    { label: 'Registration Fee', price: 0 },
+  const [registrationPricing, setRegistrationPricing] = useState<Array<{ label: string; price?: number; startDate?: string; endDate?: string }>>([
+    { label: 'Priority Registration Fee', price: undefined },
+    { label: 'Early Bird Registration Fee', price: undefined },
+    { label: 'Advance Registration Fee', price: undefined },
+    { label: 'Registration Fee', price: undefined },
   ]);
-  const [spousePricing, setSpousePricing] = useState<Array<{ label: string; price: number; startDate?: string; endDate?: string }>>([
-    { label: 'Early Bird Dinner Ticket', price: 0 },
-    { label: 'Dinner Ticket', price: 0 },
-    { label: 'On-Site Dinner Ticket', price: 0 },
+  const [spousePricing, setSpousePricing] = useState<Array<{ label: string; price?: number; startDate?: string; endDate?: string }>>([
+    { label: 'Early Bird Dinner Ticket', price: undefined },
+    { label: 'Dinner Ticket', price: undefined },
+    { label: 'On-Site Dinner Ticket', price: undefined },
   ]);
   const [breakfastPrice, setBreakfastPrice] = useState<number | undefined>(undefined);
   const [breakfastEndDate, setBreakfastEndDate] = useState<string | undefined>(undefined);
@@ -166,8 +166,8 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
                       placeholder="Price"
                       aria-label="Registration Tier Price"
                       min={0}
-                      value={tier.price}
-                      onChange={(e)=>{ const v=[...registrationPricing]; v[idx]={...v[idx], price:Number(e.target.value)||0}; setRegistrationPricing(v); }}
+                      value={tier.price ?? ''}
+                      onChange={(e)=>{ const raw=e.target.value; const v=[...registrationPricing]; v[idx]={...v[idx], price: raw === '' ? undefined : Number(raw)}; setRegistrationPricing(v); }}
                       disabled={isSubmitting}
                     />
                     <input
@@ -197,7 +197,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
                     </button>
                   </div>
                 ))}
-                <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setRegistrationPricing([...registrationPricing,{label:'',price:0}])} disabled={isSubmitting}>Add Tier</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setRegistrationPricing([...registrationPricing,{label:'',price:undefined}])} disabled={isSubmitting}>Add Tier</button>
               </div>
             </div>
 
@@ -221,8 +221,8 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
                       placeholder="Price"
                       aria-label="Spouse Tier Price"
                       min={0}
-                      value={tier.price}
-                      onChange={(e)=>{ const v=[...spousePricing]; v[idx]={...v[idx], price:Number(e.target.value)||0}; setSpousePricing(v); }}
+                      value={tier.price ?? ''}
+                      onChange={(e)=>{ const raw=e.target.value; const v=[...spousePricing]; v[idx]={...v[idx], price: raw === '' ? undefined : Number(raw)}; setSpousePricing(v); }}
                       disabled={isSubmitting}
                     />
                     <input
@@ -252,7 +252,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
                     </button>
                   </div>
                 ))}
-                <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setSpousePricing([...spousePricing,{label:'',price:0}])} disabled={isSubmitting}>Add Tier</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setSpousePricing([...spousePricing,{label:'',price:undefined}])} disabled={isSubmitting}>Add Tier</button>
               </div>
             </div>
 
