@@ -10,6 +10,7 @@ import { UserEvents } from './pages/user/userEvents';
 import { UserRegistration } from './pages/user/userRegistration';
 import { UserProfile } from './pages/user/userProfile';
 import { AdminEvents } from './pages/admin/adminEvents';
+import { AdminEventForm } from './pages/admin/adminEventForm';
 import { AdminAttendees } from './pages/admin/adminAttendees';
 import { AdminGroups } from './pages/admin/adminGroups';
 import { EventDetailsPage } from './pages/admin/eventsDetails';
@@ -78,6 +79,7 @@ const App: React.FC = () => {
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
   const [registrationTargetEventId, setRegistrationTargetEventId] = useState<number | null>(null);
+  const [adminEditingEvent, setAdminEditingEvent] = useState<Event | null>(null);
 
   useEffect(() => {
     document.body.className = `${theme}-theme`;
@@ -271,6 +273,37 @@ const handleLogout = () => {
   const beginRegistration = (eventId?: number) => {
     setRegistrationTargetEventId(eventId ?? null);
     setView('registration');
+  };
+  const openAdminEventForm = (ev?: Event | null) => {
+    setAdminEditingEvent(ev || null);
+    setView('eventForm');
+  };
+
+  const handleSaveAdminEvent = async (eventData: Event) => {
+    try {
+      const existingEventForYear = events.find(e => e.year === eventData.year && e.id !== eventData.id);
+      if (existingEventForYear) {
+        alert(`An event for ${eventData.year} already exists.`);
+        return;
+      }
+      if (eventData.id && adminEditingEvent) {
+        const { createdAt, updatedAt, ...updatePayload } = eventData as any;
+        const res = await apiClient.put(`/events/${eventData.id}`, updatePayload);
+        if (!res.success) throw new Error('Update failed');
+        alert('Event updated successfully!');
+      } else {
+        const { id, createdAt, updatedAt, ...createPayload } = eventData as any;
+        const res = await apiClient.post(`/events`, createPayload);
+        if (!res.success) throw new Error('Create failed');
+        alert('Event created successfully!');
+      }
+      await loadEventsFromApi();
+      setAdminEditingEvent(null);
+      setView('events');
+    } catch (e) {
+      console.error('Failed to save event', e);
+      alert('Failed to save event');
+    }
   };
   
   const handleSaveRegistration = (regData: Registration, currentUserId?: number) => {
@@ -473,6 +506,13 @@ const handleLogout = () => {
           return <AdminEvents 
             onViewEvent={setViewingEventId}
             onRefreshEvents={loadEventsFromApi}
+            onOpenEventForm={openAdminEventForm}
+          />;
+        case 'eventForm':
+          return <AdminEventForm 
+            event={adminEditingEvent}
+            onCancel={()=>{ setAdminEditingEvent(null); setView('events'); }}
+            onSave={handleSaveAdminEvent}
           />;
         case 'security':
           return <AdminSecurity />;

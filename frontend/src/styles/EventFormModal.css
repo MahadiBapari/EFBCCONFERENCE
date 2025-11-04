@@ -449,3 +449,6 @@ select {
 .pricing-tiers > .btn {
   width: fit-content;
 }
+
+/* Utility: margin-top half rem to replace inline styles */
+.mt-half { margin-top: 0.5rem; }

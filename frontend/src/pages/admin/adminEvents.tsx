@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Event } from '../../types';
 import { isEventExpired } from '../../types';
-import { EventFormModal } from '../../components/EventFormModal';
+// Event form moved to a dedicated page; we navigate via onOpenEventForm
 import { apiClient } from '../../services/apiClient';
 import '../../styles/AdminEvents.css';
 
 interface AdminEventsProps {
   onViewEvent: (eventId: number) => void;
   onRefreshEvents?: () => Promise<void> | void;
+  onOpenEventForm?: (ev?: Event | null) => void;
 }
 
 export const AdminEvents: React.FC<AdminEventsProps> = ({ 
   onViewEvent,
-  onRefreshEvents
+  onRefreshEvents,
+  onOpenEventForm
 }) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showEventModal, setShowEventModal] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  // Modal removed; navigation handled by parent view
 
   // Load events from API
   useEffect(() => {
@@ -47,47 +48,7 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
   // Debug log to see current events
   console.log('AdminEvents - Current events:', events);
 
-  const handleSaveEvent = async (eventData: Event) => {
-    try {
-      console.log('Saving event:', eventData);
-      
-      const existingEventForYear = events.find(e => e.year === eventData.year && e.id !== eventData.id);
-      if (existingEventForYear) {
-        alert(`An event for ${eventData.year} already exists.`);
-        return;
-      }
-      
-      if (editingEvent) {
-        // Update existing event
-        const { createdAt, updatedAt, ...updatePayload } = eventData;
-        const response = await apiClient.put(`/events/${eventData.id}`, updatePayload);
-        if (response.success) {
-          await loadEvents(); // Reload events from API
-          if (onRefreshEvents) await onRefreshEvents();
-          alert('Event updated successfully!');
-        } else {
-          alert('Failed to update event');
-        }
-      } else {
-        // Create new event
-        const { id, createdAt, updatedAt, ...createPayload } = eventData;
-        const response = await apiClient.post('/events', createPayload);
-        if (response.success) {
-          await loadEvents(); // Reload events from API
-          if (onRefreshEvents) await onRefreshEvents();
-          alert('Event created successfully!');
-        } else {
-          alert('Failed to create event');
-        }
-      }
-      
-      setShowEventModal(false);
-      setEditingEvent(null);
-    } catch (error) {
-      console.error('Error saving event:', error);
-      alert('Failed to save event');
-    }
-  };
+  // Saving is handled in AdminEventForm page
 
   const handleDeleteEvent = async (eventId: number) => {
     if (window.confirm('Are you sure you want to delete this event?')) {
@@ -119,16 +80,9 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
 
   return (
     <div className="container">
-      {showEventModal && (
-        <EventFormModal
-          event={editingEvent}
-          onClose={() => { setShowEventModal(false); setEditingEvent(null); }}
-          onSave={handleSaveEvent}
-        />
-      )}
       <div className="page-header">
         <h1>Event Management</h1>
-        <button className="btn btn-primary" onClick={() => { setEditingEvent(null); setShowEventModal(true); }}>
+        <button className="btn btn-primary" onClick={() => onOpenEventForm && onOpenEventForm(null)}>
           Create New Event
         </button>
       </div>
@@ -147,7 +101,7 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
               </div>
               <div className="event-card-footer">
                 <button className="btn btn-secondary btn-sm" onClick={() => onViewEvent(event.id)}>Details</button>
-                <button className="btn btn-secondary btn-sm" onClick={() => { setEditingEvent(event); setShowEventModal(true); }}>Edit</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => onOpenEventForm && onOpenEventForm(event)}>Edit</button>
                 <button className="btn btn-danger btn-sm" onClick={() => handleDeleteEvent(event.id)}>Delete</button>
               </div>
             </div>
