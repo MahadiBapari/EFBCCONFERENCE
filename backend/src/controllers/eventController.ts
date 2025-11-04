@@ -110,6 +110,17 @@ export class EventController {
           (eventData as any).date = dt.toISOString().slice(0, 10);
         }
       }
+      // Normalize optional breakfast_end_date
+      if ((eventData as any).breakfastEndDate) {
+        const bed = new Date((eventData as any).breakfastEndDate as any);
+        if (!isNaN(bed.getTime())) {
+          (eventData as any).breakfastEndDate = bed.toISOString().slice(0, 10);
+        } else {
+          // handle strings like '2026-02-12T00:00:00.000Z'
+          const raw = String((eventData as any).breakfastEndDate);
+          (eventData as any).breakfastEndDate = raw.slice(0, 10);
+        }
+      }
       const event = new Event(eventData);
       
       const result = await this.db.insert('events', event.toDatabase());
@@ -143,6 +154,16 @@ export class EventController {
         const dt = new Date((updateData as any).date as any);
         if (!isNaN(dt.getTime())) {
           (updateData as any).date = dt.toISOString().slice(0, 10);
+        }
+      }
+      // Normalize optional breakfast_end_date
+      if ((updateData as any).breakfastEndDate) {
+        const bed = new Date((updateData as any).breakfastEndDate as any);
+        if (!isNaN(bed.getTime())) {
+          (updateData as any).breakfastEndDate = bed.toISOString().slice(0, 10);
+        } else {
+          const raw = String((updateData as any).breakfastEndDate);
+          (updateData as any).breakfastEndDate = raw.slice(0, 10);
         }
       }
       
