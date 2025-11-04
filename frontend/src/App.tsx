@@ -281,11 +281,6 @@ const handleLogout = () => {
 
   const handleSaveAdminEvent = async (eventData: Event) => {
     try {
-      const existingEventForYear = events.find(e => e.year === eventData.year && e.id !== eventData.id);
-      if (existingEventForYear) {
-        alert(`An event for ${eventData.year} already exists.`);
-        return;
-      }
       if (eventData.id && adminEditingEvent) {
         const { createdAt, updatedAt, ...updatePayload } = eventData as any;
         const res = await apiClient.put(`/events/${eventData.id}`, updatePayload);
