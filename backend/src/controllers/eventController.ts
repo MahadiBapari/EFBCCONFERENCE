@@ -103,6 +103,13 @@ export class EventController {
   async createEvent(req: Request, res: Response): Promise<void> {
     try {
       const eventData: CreateEventRequest = req.body;
+      // Normalize date to YYYY-MM-DD to avoid locale-specific formats from browsers
+      if (eventData.date) {
+        const dt = new Date(eventData.date);
+        if (!isNaN(dt.getTime())) {
+          (eventData as any).date = dt.toISOString().slice(0, 10);
+        }
+      }
       const event = new Event(eventData);
       
       const result = await this.db.insert('events', event.toDatabase());
@@ -131,6 +138,13 @@ export class EventController {
     try {
       const { id } = req.params;
       const updateData: UpdateEventRequest = req.body;
+      // Normalize incoming date if provided
+      if ((updateData as any).date) {
+        const dt = new Date((updateData as any).date as any);
+        if (!isNaN(dt.getTime())) {
+          (updateData as any).date = dt.toISOString().slice(0, 10);
+        }
+      }
       
       const existingEventData = await this.db.findById('events', Number(id));
       if (!existingEventData) {

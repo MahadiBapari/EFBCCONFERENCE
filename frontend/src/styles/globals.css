@@ -137,6 +137,7 @@ body {
   min-height: 100vh;
   background-color: var(--background-color);
   transition: background-color 0.3s;
+  overflow-y: auto; 
 }
 
 .container {
