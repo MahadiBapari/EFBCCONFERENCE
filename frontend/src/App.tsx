@@ -68,7 +68,7 @@ const AdminSecurity: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [role, setRole] = useState<'admin' | 'user' | null>(null);
   const [view, setView] = useState<string>('');
   const [events, setEvents] = useState<Event[]>([]);
@@ -233,6 +233,8 @@ const handleLogout = () => {
     setView('');
     setShowRegistration(false);
   localStorage.removeItem('token');
+  // Ensure auth pages default to light theme
+  setTheme('light');
   };
 
   const handleRegister = async (formData: RegisterForm) => {
