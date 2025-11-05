@@ -15,7 +15,7 @@ const ensureTransporter = (): Transporter | null => {
     if (!host) missing.push('SMTP_HOST');
     if (!user) missing.push('SMTP_USER');
     if (!pass) missing.push('SMTP_PASS');
-    console.warn('⚠️ SMTP not fully configured. Missing:', missing.join(', ') || 'none', '- emails will be logged to console.');
+    console.warn('SMTP not fully configured. Missing:', missing.join(', ') || 'none', '- emails will be logged to console.');
     return null;
   }
   // Allow overriding secure mode via env; default: implicit TLS on 465, STARTTLS otherwise
@@ -45,6 +45,61 @@ const ensureTransporter = (): Transporter | null => {
 
 const transporter: Transporter | null = ensureTransporter();
 let smtpVerifiedLogged = false;
+
+// Generic send helper with HTTP API fallback (Resend)
+type MailPayload = { to: string; subject: string; text: string; html: string };
+
+const sendUsingTransporter = async (payload: MailPayload): Promise<void> => {
+  if (!transporter) throw new Error('No SMTP transporter');
+  if (!smtpVerifiedLogged) {
+    try {
+      await transporter.verify();
+      console.log('SMTP OK - transporter verified');
+    } catch (e: unknown) {
+      const msg = (e as { message?: string })?.message || String(e);
+      console.error('❌ SMTP FAIL -', msg);
+    } finally {
+      smtpVerifiedLogged = true;
+    }
+  }
+  const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
+  await transporter.sendMail({ from, ...payload });
+};
+
+const sendUsingResend = async (payload: MailPayload): Promise<void> => {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error('RESEND_API_KEY not set');
+  const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
+  const fetchAny: any = (globalThis as any).fetch;
+  const res = await fetchAny('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ from, to: payload.to, subject: payload.subject, html: payload.html, text: payload.text })
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Resend API failed (${res.status}): ${body}`);
+  }
+};
+
+const sendMail = async (payload: MailPayload): Promise<void> => {
+  try {
+    if (transporter) {
+      await sendUsingTransporter(payload);
+      return;
+    }
+  } catch (e) {
+    console.error('SMTP send failed, falling back to HTTP API:', (e as any)?.message || e);
+  }
+  if (process.env.RESEND_API_KEY) {
+    await sendUsingResend(payload);
+    return;
+  }
+  console.warn('⚠️ No email transport available (SMTP or RESEND_API_KEY). Email not sent.');
+};
 
 // Basic, responsive-ish HTML email wrapper
 const renderEmailTemplate = (params: {
@@ -134,25 +189,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   });
   const text = `Verify your email: ${link}`;
 
-  if (!transporter) {
-    console.log('📧 [DEV] Would send verification email to:', to, 'link:', link);
-    return;
-  }
-
-  // Log SMTP verification once per process for easier diagnostics
-  if (!smtpVerifiedLogged) {
-    try {
-      await transporter.verify();
-      console.log('✅ SMTP OK - transporter verified');
-    } catch (e: unknown) {
-      const msg = (e as { message?: string })?.message || String(e);
-      console.error('❌ SMTP FAIL -', msg);
-    } finally {
-      smtpVerifiedLogged = true;
-    }
-  }
-
-  await transporter.sendMail({ from, to, subject, text, html });
+  await sendMail({ to, subject, text, html });
 }
 
 export async function sendRegistrationConfirmationEmail(params: {
@@ -181,24 +218,7 @@ export async function sendRegistrationConfirmationEmail(params: {
   });
   const text = `Thank you for registering for EFBC Conference. ${eventName ? `Event: ${eventName}.` : ''} ${eventDate ? `Date: ${eventDate}.` : ''} ${priceText}`.trim();
 
-  if (!transporter) {
-    console.log('📧 [DEV] Would send registration confirmation to:', to, { name, eventName, eventDate, totalPrice });
-    return;
-  }
-
-  if (!smtpVerifiedLogged) {
-    try {
-      await transporter.verify();
-      console.log('✅ SMTP OK - transporter verified');
-    } catch (e: unknown) {
-      const msg = (e as { message?: string })?.message || String(e);
-      console.error('❌ SMTP FAIL -', msg);
-    } finally {
-      smtpVerifiedLogged = true;
-    }
-  }
-
-  await transporter.sendMail({ from, to, subject, text, html });
+  await sendMail({ to, subject, text, html });
 }
 
 export async function sendPasswordResetEmail(to: string, token: string): Promise<void> {
@@ -218,22 +238,7 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
   });
   const text = `Reset your password: ${link}`;
 
-  if (!transporter) {
-    console.log('📧 [DEV] Would send password reset email to:', to, 'link:', link);
-    return;
-  }
-  if (!smtpVerifiedLogged) {
-    try {
-      await transporter.verify();
-      console.log('✅ SMTP OK - transporter verified');
-    } catch (e: unknown) {
-      const msg = (e as { message?: string })?.message || String(e);
-      console.error('❌ SMTP FAIL -', msg);
-    } finally {
-      smtpVerifiedLogged = true;
-    }
-  }
-  await transporter.sendMail({ from, to, subject, text, html });
+  await sendMail({ to, subject, text, html });
 }
 
 
