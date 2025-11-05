@@ -1,0 +1,12 @@
+.cancel-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.cancel-table th,
+.cancel-table td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+.mr-8 { margin-right: 8px; }
+

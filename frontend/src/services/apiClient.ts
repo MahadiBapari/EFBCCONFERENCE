@@ -101,3 +101,19 @@ export const authApi = {
     return apiClient.post('/auth/resend-verification', { email });
   }
 };
+
+// Cancellation helpers
+export const cancelApi = {
+  async request(registrationId: number, reason: string): Promise<any> {
+    return apiClient.post(`/registrations/${registrationId}/cancel-request`, { reason });
+  },
+  async list(status: 'pending' | 'approved' | 'rejected' = 'pending'): Promise<any> {
+    return apiClient.get(`/cancel-requests?status=${status}`);
+  },
+  async approve(id: number, adminNote?: string): Promise<any> {
+    return apiClient.put(`/cancel-requests/${id}/approve`, { adminNote });
+  },
+  async reject(id: number, adminNote?: string): Promise<any> {
+    return apiClient.put(`/cancel-requests/${id}/reject`, { adminNote });
+  }
+};

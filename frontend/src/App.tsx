@@ -16,6 +16,8 @@ import { AdminGroups } from './pages/admin/adminGroups';
 import { EventDetailsPage } from './pages/admin/eventsDetails';
 import { Event, Registration, Group, User, RegisterForm } from './types';
 import apiClient, { authApi } from './services/apiClient';
+import { cancelApi } from './services/apiClient';
+import { AdminCancellations } from './pages/admin/adminCancellations';
 
 const AdminSecurity: React.FC = () => {
   const [currentPassword, setCurrentPassword] = React.useState('');
@@ -354,13 +356,13 @@ const handleLogout = () => {
     save();
   };
 
-  const handleCancelRegistration = (regId: number) => {
-    if (window.confirm("Are you sure you want to cancel your registration for this event?")) {
-      setRegistrations(regs => regs.filter(r => r.id !== regId));
-      setGroups(grps => grps.map(g => ({
-        ...g,
-        members: g.members.filter(m => m !== regId)
-      })));
+  const handleCancelRegistration = async (regId: number) => {
+    const reason = window.prompt('Please share a brief reason for cancellation (optional):') || '';
+    try {
+      await cancelApi.request(regId, reason);
+      alert('Cancellation request submitted. An admin will review it.');
+    } catch (e) {
+      alert('Failed to submit cancellation request');
     }
   };
 
@@ -531,6 +533,8 @@ const handleLogout = () => {
             handleDeleteGroup={handleDeleteGroup}
             handleCreateGroup={handleCreateGroup}
           />;
+        case 'cancellations':
+          return <AdminCancellations />;
         default:
           return <AdminEvents 
             onViewEvent={setViewingEventId}

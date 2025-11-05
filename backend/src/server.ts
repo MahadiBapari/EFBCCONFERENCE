@@ -11,6 +11,7 @@ import registrationRoutes from './routes/registrationRoutes';
 import groupRoutes from './routes/groupRoutes';
 import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
+import cancellationRoutes from './routes/cancellationRoutes';
 
 // Load environment variables (only from .env in non-production)
 if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
@@ -34,6 +35,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/registrations', registrationRoutes);
 app.use('/api/groups', groupRoutes);
+app.use('/api', cancellationRoutes);
 
 // Global database service
 let databaseService: DatabaseService;
@@ -47,13 +49,13 @@ const initializeDatabase = async () => {
     // Make database service globally available
     (globalThis as any).databaseService = databaseService;
     
-    console.log('🚀 Database service initialized');
+    console.log('Database service initialized');
     
     // Create tables if they don't exist
     await createTables();
     
   } catch (error) {
-    console.error('❌ Failed to initialize database:', error);
+    console.error('Failed to initialize database:', error);
     process.exit(1);
   }
 };
@@ -137,6 +139,9 @@ const createTables = async () => {
     // Add/verify spouse_pricing on events and rentals fields on registrations
     await migrateEventsAndRegistrationsEnhancements();
 
+    // Add cancellation requests feature
+    await migrateCancellationFeature();
+
     // Groups table
     await databaseService.query(`
       CREATE TABLE IF NOT EXISTS \`groups\` (
@@ -150,9 +155,9 @@ const createTables = async () => {
       )
     `);
 
-    console.log('✅ Database tables created/verified');
+    console.log('Database tables created/verified');
   } catch (error) {
-    console.error('❌ Error creating tables:', error);
+    console.error('Error creating tables:', error);
     throw error;
   }
 };
@@ -180,7 +185,7 @@ const migrateUsersEmailVerification = async (): Promise<void> => {
       console.log('🛠️ Added users.email verification columns');
     }
   } catch (e) {
-    console.warn('⚠️ Skipping users email verification migration:', e);
+    console.warn('Skipping users email verification migration:', e);
   }
 };
 
@@ -279,7 +284,7 @@ const migrateRegistrationsTable = async () => {
       console.log('🛠️ Migrated registrations table schema');
     }
   } catch (e) {
-    console.warn('⚠️ Skipping registrations schema migration:', e);
+    console.warn('Skipping registrations schema migration:', e);
   }
 };
 
@@ -324,7 +329,50 @@ const migrateEventsAndRegistrationsEnhancements = async () => {
       console.log('🛠️ Added registrations.club_rentals/golf_handicap');
     }
   } catch(e) {
-    console.warn('⚠️ Enhancement migration skipped:', e);
+    console.warn('Enhancement migration skipped:', e);
+  }
+};
+
+// Migration helper to add cancellation_requests table and registration status columns
+const migrateCancellationFeature = async () => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    const getCols = async (table: string) => await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',[dbName, table]
+    );
+
+    // registrations: add status/cancellation fields if missing
+    const regCols: any[] = await getCols('registrations');
+    const regAlter: string[] = [];
+    if (!regCols.some((c:any)=>c.COLUMN_NAME==='status')) regAlter.push("ADD COLUMN `status` ENUM('active','cancelled') DEFAULT 'active'");
+    if (!regCols.some((c:any)=>c.COLUMN_NAME==='cancellation_reason')) regAlter.push('ADD COLUMN `cancellation_reason` TEXT NULL');
+    if (!regCols.some((c:any)=>c.COLUMN_NAME==='cancellation_at')) regAlter.push('ADD COLUMN `cancellation_at` TIMESTAMP NULL');
+    if (regAlter.length>0) {
+      await databaseService.query(`ALTER TABLE \`registrations\` ${regAlter.join(', ')}`);
+      console.log('🛠️ Added registrations cancellation fields');
+    }
+
+    // cancellation_requests table
+    await databaseService.query(`
+      CREATE TABLE IF NOT EXISTS cancellation_requests (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        registration_id INT NOT NULL,
+        user_id INT NOT NULL,
+        event_id INT NOT NULL,
+        reason TEXT,
+        status ENUM('pending','approved','rejected') DEFAULT 'pending',
+        admin_id INT NULL,
+        admin_note TEXT NULL,
+        processed_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (registration_id) REFERENCES registrations(id) ON DELETE CASCADE
+      )`);
+  } catch(e) {
+    console.warn('⚠️ Cancellation feature migration skipped:', e);
   }
 };
 
@@ -439,17 +487,17 @@ const startServer = async () => {
     
     const PORT = parseInt(process.env.PORT || '5000');
     app.listen(PORT, () => {
-      console.log(`🚀 Server is running on port ${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-      console.log(`🎯 Demo setup: http://localhost:${PORT}/api/demo/setup`);
-      console.log(`📝 API Documentation:`);
+      console.log(`   Server is running on port ${PORT}`);
+      console.log(`   Health check: http://localhost:${PORT}/api/health`);
+      console.log(`   Demo setup: http://localhost:${PORT}/api/demo/setup`);
+      console.log(`   API Documentation:`);
       console.log(`   Events: http://localhost:${PORT}/api/events`);
       console.log(`   Registrations: http://localhost:${PORT}/api/registrations`);
       console.log(`   Groups: http://localhost:${PORT}/api/groups`);
       console.log(`   Auth: http://localhost:${PORT}/api/auth/login`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
