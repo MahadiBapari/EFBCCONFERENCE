@@ -169,8 +169,14 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
 
   // Filter by selected event first, then by category
   const eventFilteredRegistrations = selectedEventId !== null 
-    ? registrations.filter(r => r.eventId === selectedEventId && (r as any).status !== 'cancelled')
-    : registrations.filter(r => (r as any).status !== 'cancelled');
+    ? registrations.filter(r => {
+        const cancelled = (r as any).status === 'cancelled' || !!(r as any).cancellationAt || !!(r as any).cancellationReason;
+        return r.eventId === selectedEventId && !cancelled;
+      })
+    : registrations.filter(r => {
+        const cancelled = (r as any).status === 'cancelled' || !!(r as any).cancellationAt || !!(r as any).cancellationReason;
+        return !cancelled;
+      });
   
   const eventFilteredGroups = selectedEventId !== null 
     ? groups.filter(g => g.eventId === selectedEventId)

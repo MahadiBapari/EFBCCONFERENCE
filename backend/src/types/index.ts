@@ -31,6 +31,9 @@ export interface Registration {
   id: number;
   userId: number;
   eventId: number;
+  status?: 'active' | 'cancelled';
+  cancellationReason?: string;
+  cancellationAt?: string;
   
   // Personal Information
   firstName: string;

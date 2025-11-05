@@ -39,6 +39,9 @@ export class Registration {
   public category: string;
   public createdAt?: string;
   public updatedAt?: string;
+  public status?: 'active' | 'cancelled';
+  public cancellationReason?: string;
+  public cancellationAt?: string;
 
   constructor(data: Partial<IRegistration>) {
     this.id = data.id;
@@ -79,11 +82,15 @@ export class Registration {
     this.category = data.category || 'Networking';
     this.createdAt = data.createdAt || new Date().toISOString();
     this.updatedAt = data.updatedAt || new Date().toISOString();
+    // optional cancellation fields
+    this.status = (data as any).status as any;
+    this.cancellationReason = (data as any).cancellationReason as any;
+    this.cancellationAt = (data as any).cancellationAt as any;
   }
 
   // Convert to JSON
   toJSON(): IRegistration {
-    return {
+    const base: any = {
       id: this.id!,
       userId: this.userId,
       eventId: this.eventId,
@@ -122,6 +129,10 @@ export class Registration {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
     };
+    if (this.status) (base as any).status = this.status;
+    if (this.cancellationReason) (base as any).cancellationReason = this.cancellationReason;
+    if (this.cancellationAt) (base as any).cancellationAt = this.cancellationAt;
+    return base as any;
   }
 
   // Convert to database format
@@ -201,6 +212,9 @@ export class Registration {
       paymentMethod: row.payment_method,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+      status: row.status,
+      cancellationReason: row.cancellation_reason,
+      cancellationAt: row.cancellation_at,
       // Legacy fields are not mapped from DB in this version
       name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
       category: row.wednesday_activity || 'Networking',
