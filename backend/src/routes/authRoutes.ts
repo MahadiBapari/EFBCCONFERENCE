@@ -95,12 +95,14 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
       const token = crypto.randomBytes(32).toString('hex');
       // Rely on DB time to avoid timezone conversions
       await db.query('UPDATE users SET password_reset_token=?, password_reset_expires_at=DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id=?', [token, users[0].id]);
-      try {
-        await sendPasswordResetEmail(email, token);
-      } catch (e: any) {
-        console.error('SMTP sendPasswordResetEmail failed:', e?.message || e);
-        // Do not fail the request; token is stored and can be used manually
-      }
+      // Fire-and-forget email send so API returns immediately
+      setImmediate(async () => {
+        try {
+          await sendPasswordResetEmail(email, token);
+        } catch (e: any) {
+          console.error('SMTP sendPasswordResetEmail failed:', e?.message || e);
+        }
+      });
     }
     return res.json({ success: true, message: 'If an account exists for that email, a reset link has been sent.' });
   } catch {
@@ -166,12 +168,14 @@ router.post('/resend-verification', async (req: Request, res: Response) => {
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
     await db.query('UPDATE users SET email_verification_token=?, email_verification_expires_at=? WHERE id=?', [token, expires, u.id]);
-    try {
-      await sendVerificationEmail(email, token);
-    } catch (e: any) {
-      console.error('SMTP sendVerificationEmail failed:', e?.message || e);
-      // Still return success; token is stored and can be verified via link
-    }
+    // Fire-and-forget email send
+    setImmediate(async () => {
+      try {
+        await sendVerificationEmail(email, token);
+      } catch (e: any) {
+        console.error('SMTP sendVerificationEmail failed:', e?.message || e);
+      }
+    });
     return res.json({ success: true, message: 'Verification email sent' });
   } catch (e) {
     return res.status(500).json({ success: false, error: 'Resend failed' });
