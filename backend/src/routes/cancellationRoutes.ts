@@ -51,16 +51,17 @@ router.get('/cancel-requests', async (req: Request, res: Response) => {
     const { status = 'pending', page = 1, limit = 20 } = req.query as any;
     const off = (Number(page) - 1) * Number(limit);
     const db = getDb();
-    const rows = await db.query(
-      `SELECT cr.*, u.name as user_name, u.email as user_email, e.name as event_name
-       FROM cancellation_requests cr
-       LEFT JOIN users u ON u.id=cr.user_id
-       LEFT JOIN events e ON e.id=cr.event_id
-       WHERE cr.status=?
-       ORDER BY cr.created_at DESC
-       LIMIT ? OFFSET ?`,
-      [status, Number(limit), off]
-    );
+    const safeLimit = Math.max(1, Number(limit) || 20);
+    const safeOffset = Math.max(0, off || 0);
+    const sql =
+      `SELECT cr.*, u.name as user_name, u.email as user_email, e.name as event_name ` +
+      `FROM cancellation_requests cr ` +
+      `LEFT JOIN users u ON u.id=cr.user_id ` +
+      `LEFT JOIN events e ON e.id=cr.event_id ` +
+      `WHERE cr.status=? ` +
+      `ORDER BY cr.created_at DESC ` +
+      `LIMIT ${safeLimit} OFFSET ${safeOffset}`;
+    const rows = await db.query(sql, [status]);
     return res.json({ success: true, data: rows });
   } catch {
     return res.status(500).json({ success: false, error: 'Failed to load requests' });
