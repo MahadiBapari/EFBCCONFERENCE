@@ -39,6 +39,8 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
 
   const filteredRegistrations = useMemo(() => {
     let results = registrations;
+    // Exclude cancelled registrations from attendee lists
+    results = results.filter(r => (r as any).status !== 'cancelled');
     
     // Filter by selected event
     if (selectedEventId !== null) {

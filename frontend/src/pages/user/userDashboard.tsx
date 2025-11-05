@@ -73,20 +73,29 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               <h3>Your Registration:</h3>
               <p><strong>Name:</strong> {userRegistration.name}</p>
               <p><strong>Category:</strong> {userRegistration.category}</p>
-              <div className="event-actions">
-                <button
-                  className="btn btn-primary"
-                  onClick={() => onBeginRegistration(activeEvent.id)}
-                >
-                  Edit Registration
-                </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => handleCancelRegistration(userRegistration.id)}
-                >
-                  Cancel Registration
-                </button>
-              </div>
+              {(userRegistration as any).status === 'cancelled' ? (
+                <div>
+                  <span className="event-status status-expired">Cancelled</span>
+                  { (userRegistration as any).cancellationReason && (
+                    <p style={{ marginTop: '0.5rem' }}><strong>Reason:</strong> {(userRegistration as any).cancellationReason}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="event-actions">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => onBeginRegistration(activeEvent.id)}
+                  >
+                    Edit Registration
+                  </button>
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => handleCancelRegistration(userRegistration.id)}
+                  >
+                    Cancel Registration
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div>

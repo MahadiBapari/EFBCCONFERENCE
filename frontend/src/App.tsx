@@ -162,6 +162,9 @@ useEffect(() => {
         id: r.id,
         userId: r.userId ?? r.user_id ?? 0,
         eventId: r.eventId ?? r.event_id ?? r.event ?? 0,
+        status: r.status ?? 'active',
+        cancellationReason: r.cancellation_reason,
+        cancellationAt: r.cancellation_at,
         // Personal
         firstName: r.firstName ?? r.first_name ?? '',
         lastName: r.lastName ?? r.last_name ?? '',
