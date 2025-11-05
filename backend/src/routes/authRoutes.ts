@@ -22,7 +22,10 @@ router.post('/login', async (req: Request, res: Response) => {
     if (!u) return res.status(401).json({ success: false, error: 'Invalid credentials' });
     const ok = await bcrypt.compare(password, u.password);
     if (!ok) return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    // Email verification disabled: allow login without verified email
+    // Require email verification before issuing token
+    if (!u.email_verified_at) {
+      return res.status(403).json({ success: false, error: 'Email not verified' });
+    }
     const user = { id: u.id, name: u.name, email: u.email, role: u.role };
     return res.json({ success: true, data: { user, token: sign(user) } });
   } catch (e: any) {

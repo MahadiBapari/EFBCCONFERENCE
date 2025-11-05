@@ -351,16 +351,18 @@ export class UserController {
       const result = await this.db.insert('users', user.toDatabase());
       user.id = result.insertId;
 
-      // Disable email verification: mark user as verified immediately
+      // Generate verification token, store expiry, and send email
+      const token = crypto.randomBytes(32).toString('hex');
       await this.db.query(
-        'UPDATE users SET email_verified_at=NOW(), email_verification_token=NULL, email_verification_expires_at=NULL WHERE id=?',
-        [user.id]
+        'UPDATE users SET email_verification_token=?, email_verification_expires_at=DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE id=?',
+        [token, user.id]
       );
+      await sendVerificationEmail(email, token);
 
       const response: AuthResponse = {
         success: true,
         user: user.toJSON(),
-        message: 'Registration successful.'
+        message: 'Registration successful. Please check your email to verify your account.'
       };
 
       res.status(201).json(response);
