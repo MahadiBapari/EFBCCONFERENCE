@@ -357,7 +357,12 @@ export class UserController {
         'UPDATE users SET email_verification_token=?, email_verification_expires_at=DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE id=?',
         [token, user.id]
       );
-      await sendVerificationEmail(email, token);
+      try {
+        await sendVerificationEmail(email, token);
+      } catch (e: any) {
+        console.error('SMTP sendVerificationEmail (register) failed:', e?.message || e);
+        // Do not fail registration if SMTP is temporarily unavailable
+      }
 
       const response: AuthResponse = {
         success: true,
