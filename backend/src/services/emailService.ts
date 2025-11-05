@@ -18,10 +18,15 @@ const ensureTransporter = (): Transporter | null => {
     console.warn('⚠️ SMTP not fully configured. Missing:', missing.join(', ') || 'none', '- emails will be logged to console.');
     return null;
   }
-  const secure = port === 465;
-  // Force IPv4 and add sane timeouts; use STARTTLS on 587
-  return nodemailer.createTransport({
-    // @ts-expect-error: host/port/secure are valid for SMTP transport
+  // Allow overriding secure mode via env; default: implicit TLS on 465, STARTTLS otherwise
+  const secure = (process.env.SMTP_SECURE || '').length
+    ? /^(1|true|yes)$/i.test(process.env.SMTP_SECURE as string)
+    : port === 465;
+  // Optional IP family override (4, 6). If not provided, use IPv4 by default.
+  const familyEnv = process.env.SMTP_FAMILY;
+  const family = familyEnv ? Number(familyEnv) : 4;
+  // Add sane timeouts; use STARTTLS on 587
+  const transport = nodemailer.createTransport({
     host,
     port,
     secure,
@@ -30,9 +35,12 @@ const ensureTransporter = (): Transporter | null => {
     connectionTimeout: 15000,
     greetingTimeout: 15000,
     socketTimeout: 20000,
-    family: 4,
-    tls: secure ? undefined : { minVersion: 'TLSv1.2', servername: host }
+    ...(family ? { family } : {}),
+    tls: secure ? { minVersion: 'TLSv1.2', servername: host } : { minVersion: 'TLSv1.2', servername: host },
+    logger: /^(1|true|yes)$/i.test(process.env.SMTP_DEBUG || ''),
+    debug: /^(1|true|yes)$/i.test(process.env.SMTP_DEBUG || ''),
   });
+  return transport;
 };
 
 const transporter: Transporter | null = ensureTransporter();
