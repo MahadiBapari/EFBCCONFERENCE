@@ -193,7 +193,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   return (
     <div className="container">
       <div className="page-header">
-        <h1>{registration ? 'Edit Registration' : 'Register for Event'}</h1>
+        <h1>{registration ? 'Edit' : 'Register'}</h1>
         <p className="modal-subtitle">{event.name} - {new Date(event.date).toLocaleDateString()}</p>
       </div>
 

@@ -537,7 +537,7 @@ const handleLogout = () => {
             handleCreateGroup={handleCreateGroup}
           />;
         case 'cancellations':
-          return <AdminCancellations />;
+          return <AdminCancellations onChanged={loadRegistrationsFromApi} />;
         default:
           return <AdminEvents 
             onViewEvent={setViewingEventId}

@@ -15,7 +15,7 @@ type CancelRow = {
   event_name?: string;
 };
 
-export const AdminCancellations: React.FC = () => {
+export const AdminCancellations: React.FC<{ onChanged?: () => void | Promise<void> }> = ({ onChanged }) => {
   const [rows, setRows] = useState<CancelRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState<Record<number,string>>({});
@@ -34,10 +34,12 @@ export const AdminCancellations: React.FC = () => {
   const approve = async (id: number) => {
     await cancelApi.approve(id, note[id]);
     await load();
+    if (onChanged) await onChanged();
   };
   const reject = async (id: number) => {
     await cancelApi.reject(id, note[id]);
     await load();
+    if (onChanged) await onChanged();
   };
 
   if (loading) {
