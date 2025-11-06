@@ -213,12 +213,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     <span className="pricing-amount">${t.price}{(t.startDate || t.endDate) ? ` ${t.startDate ? 'between ' + new Date(t.startDate).toLocaleDateString() : ''}${t.startDate && t.endDate ? ' to ' : ''}${t.endDate ? new Date(t.endDate).toLocaleDateString() : ''}` : ''}</span>
                   </div>
                 ))}
-                {typeof event.breakfastPrice === 'number' && (
-                  <div className="pricing-item">
-                    <span className="pricing-label">Spouse breakfast/lunch:</span>
-                    <span className="pricing-amount">${event.breakfastPrice.toFixed(2)}{event.breakfastEndDate ? ` prior to ${new Date(event.breakfastEndDate).toLocaleDateString()}` : ''} (upon request)</span>
-                  </div>
-                )}
               </div>
             </div>
             <div className="registration-includes">
