@@ -83,7 +83,7 @@ export const UserEvents: React.FC<UserEventsProps> = ({
                         className="btn btn-primary"
                         onClick={() => handleRegister(event)}
                       >
-                            Edit Registration
+                            Edit
                           </button>
                           <button
                             className="btn btn-danger"

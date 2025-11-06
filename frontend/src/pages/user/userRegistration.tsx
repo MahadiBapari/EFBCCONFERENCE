@@ -84,6 +84,26 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Address fields (split)
+  const parseAddress = (addr?: string) => {
+    const res = { street:'', city:'', state:'', zip:'', country:'' };
+    if (!addr) return res;
+    const lines = String(addr).split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    if (lines[0]) res.street = lines[0];
+    if (lines[1]) {
+      const m = lines[1].match(/^(.*?)[,]\s*(\w{2,})\s*(\w+)?$/);
+      if (m) { res.city = m[1] || ''; res.state = m[2] || ''; res.zip = (m[3]||''); }
+      else { res.city = lines[1]; }
+    }
+    if (lines[2]) res.country = lines[2];
+    return res;
+  };
+  const initialAddr = parseAddress(registration?.address);
+  const [addrStreet, setAddrStreet] = useState<string>(initialAddr.street);
+  const [addrCity, setAddrCity] = useState<string>(initialAddr.city);
+  const [addrState, setAddrState] = useState<string>(initialAddr.state);
+  const [addrZip, setAddrZip] = useState<string>(initialAddr.zip);
+  const [addrCountry, setAddrCountry] = useState<string>(initialAddr.country);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const spouseDinnerSelected = !!formData.spouseDinnerTicket;
@@ -124,7 +144,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (!formData.email?.trim()) newErrors.email = 'Email is required';
     if (!formData.organization?.trim()) newErrors.organization = 'Organization is required';
     if (!formData.jobTitle?.trim()) newErrors.jobTitle = 'Job title is required';
-    if (!formData.address?.trim()) newErrors.address = 'Address is required';
+    if (!addrStreet.trim()) newErrors.address = 'Address is required';
+    if (!addrCity.trim()) newErrors.city = 'City is required';
+    if (!addrState.trim()) newErrors.state = 'State is required';
+    if (!addrZip.trim()) newErrors.zip = 'Zip code is required';
+    if (!addrCountry.trim()) newErrors.country = 'Country is required';
     if (!formData.mobile?.trim()) newErrors.mobile = 'Mobile number is required';
     if (!formData.companyType?.trim()) newErrors.companyType = 'Company type is required';
     if (!formData.wednesdayActivity?.trim()) newErrors.wednesdayActivity = 'Wednesday activity is required';
@@ -145,11 +169,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (!validateForm()) return;
     setIsSubmitting(true);
     try {
+      // Compose address string for persistence
+      const composedAddress = [
+        addrStreet.trim(),
+        `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
+        addrCountry.trim()
+      ].filter(Boolean).join('\n');
+
       const registrationData: Registration = {
         ...(registration?.id ? { id: registration.id } : {} as any),
         userId: user.id,
         eventId: event.id,
         ...formData,
+        address: composedAddress,
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
       } as Registration;
@@ -272,9 +304,33 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               </div>
             </div>
             <div className="form-group">
-              <label htmlFor="address" className="form-label">Address <span className="required-asterisk">*</span></label>
-              <textarea id="address" className={`form-control ${errors.address ? 'error' : ''}`} value={formData.address || ''} onChange={e => handleInputChange('address', e.target.value)} rows={3} required />
+              <label htmlFor="addrStreet" className="form-label">Address <span className="required-asterisk">*</span></label>
+              <input id="addrStreet" type="text" className={`form-control ${errors.address ? 'error' : ''}`} value={addrStreet} onChange={e=>{ setAddrStreet(e.target.value); if (errors.address) setErrors(prev=>({ ...prev, address:'' })); }} required />
               {errors.address && <div className="error-message">{errors.address}</div>}
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="addrCity" className="form-label">City <span className="required-asterisk">*</span></label>
+                <input id="addrCity" type="text" className={`form-control ${errors.city ? 'error' : ''}`} value={addrCity} onChange={e=>{ setAddrCity(e.target.value); if (errors.city) setErrors(prev=>({ ...prev, city:'' })); }} required />
+                {errors.city && <div className="error-message">{errors.city}</div>}
+              </div>
+              <div className="form-group">
+                <label htmlFor="addrState" className="form-label">State <span className="required-asterisk">*</span></label>
+                <input id="addrState" type="text" className={`form-control ${errors.state ? 'error' : ''}`} value={addrState} onChange={e=>{ setAddrState(e.target.value); if (errors.state) setErrors(prev=>({ ...prev, state:'' })); }} required />
+                {errors.state && <div className="error-message">{errors.state}</div>}
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="addrZip" className="form-label">Zip Code <span className="required-asterisk">*</span></label>
+                <input id="addrZip" type="text" className={`form-control ${errors.zip ? 'error' : ''}`} value={addrZip} onChange={e=>{ setAddrZip(e.target.value); if (errors.zip) setErrors(prev=>({ ...prev, zip:'' })); }} required />
+                {errors.zip && <div className="error-message">{errors.zip}</div>}
+              </div>
+              <div className="form-group">
+                <label htmlFor="addrCountry" className="form-label">Country <span className="required-asterisk">*</span></label>
+                <input id="addrCountry" type="text" className={`form-control ${errors.country ? 'error' : ''}`} value={addrCountry} onChange={e=>{ setAddrCountry(e.target.value); if (errors.country) setErrors(prev=>({ ...prev, country:'' })); }} required />
+                {errors.country && <div className="error-message">{errors.country}</div>}
+              </div>
             </div>
             <div className="form-row">
               <div className="form-group">

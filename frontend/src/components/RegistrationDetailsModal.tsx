@@ -13,6 +13,19 @@ export const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> =
   registration,
   onClose
 }) => {
+  const parseAddress = (addr?: string) => {
+    const res = { street:'', city:'', state:'', zip:'', country:'' } as any;
+    if (!addr) return res;
+    const lines = String(addr).split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    if (lines[0]) res.street = lines[0];
+    if (lines[1]) {
+      const m = lines[1].match(/^(.*?)[,]\s*(\w{2,})\s*(\S+)?$/);
+      if (m) { res.city = m[1] || ''; res.state = m[2] || ''; res.zip = (m[3]||''); } else { res.city = lines[1]; }
+    }
+    if (lines[2]) res.country = lines[2];
+    return res;
+  };
+  const addr = parseAddress(registration.address);
   const Line = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div style={{ display: 'flex', gap: '1rem', padding: '0.35rem 0', alignItems: 'baseline' }}>
       <div style={{ minWidth: 220, color: 'var(--muted-color)' }}>{label}</div>
@@ -51,7 +64,11 @@ export const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> =
           {registration.secondaryEmail && <Line label="Secondary Email" value={registration.secondaryEmail} />}
           <Line label="Organization" value={registration.organization} />
           <Line label="Job Title" value={registration.jobTitle} />
-          <Line label="Address" value={registration.address} />
+          <Line label="Address" value={addr.street || registration.address} />
+          {addr.city && <Line label="City" value={addr.city} />}
+          {addr.state && <Line label="State" value={addr.state} />}
+          {addr.zip && <Line label="Zip Code" value={addr.zip} />}
+          {addr.country && <Line label="Country" value={addr.country} />}
           <Line label="Mobile" value={registration.mobile} />
           {registration.officePhone && <Line label="Office Phone" value={registration.officePhone} />}
           <Line label="First-time Attending" value={registration.isFirstTimeAttending ? 'Yes' : 'No'} />
