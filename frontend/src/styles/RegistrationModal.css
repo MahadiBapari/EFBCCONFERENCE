@@ -513,8 +513,6 @@ select {
 .segmented-group {
   display: flex;
   width: 100%;
-  border: 2px solid var(--primary-color);
-  border-radius: 10px;
   overflow: hidden;
 }
 .segmented-label {
