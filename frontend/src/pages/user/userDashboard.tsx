@@ -86,7 +86,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     className="btn btn-primary"
                     onClick={() => onBeginRegistration(activeEvent.id)}
                   >
-                    Edit Registration
+                    Edit
                   </button>
                   <button
                     className="btn btn-danger"
