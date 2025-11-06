@@ -509,6 +509,43 @@ select {
   box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
 }
 
+/* Segmented radio group (used for payment method) */
+.segmented-group {
+  display: flex;
+  width: 100%;
+  border: 2px solid var(--primary-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.segmented-label {
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease-in-out;
+}
+.segmented-label input[type="radio"] {
+  display: none;
+}
+.segmented-label span {
+  display: block;
+  padding: 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary-color);
+  background: #fff;
+  transition: all 0.25s ease-in-out;
+}
+.segmented-label input[type="radio"]:checked + span {
+  background: var(--primary-color);
+  color: #fff;
+}
+.segmented-label:not(:last-child) span {
+  border-right: 2px solid var(--primary-color);
+}
+.segmented-label span:hover {
+  background-color: rgba(59,130,246,0.1);
+}
+
 /* Scrollbar styling for the form container */
 .registration-form-container::-webkit-scrollbar {
   width: 8px;

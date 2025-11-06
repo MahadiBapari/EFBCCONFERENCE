@@ -532,28 +532,28 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             </div>
             <div className="form-group">
               <label className="form-label">Payment Method</label>
-              <div className="radio-group">
-                <label className="radio-label">
+              <div className="segmented-group">
+                <label className="segmented-label">
                   <input
                     type="radio"
                     name="paymentMethod"
                     checked={(formData.paymentMethod || 'Card') === 'Card'}
                     onChange={() => handleInputChange('paymentMethod', 'Card')}
                   />
-                  Card
+                  <span>Card</span>
                 </label>
-                <label className="radio-label">
+                <label className="segmented-label">
                   <input
                     type="radio"
                     name="paymentMethod"
                     checked={formData.paymentMethod === 'Check'}
                     onChange={() => handleInputChange('paymentMethod', 'Check')}
                   />
-                  Check
+                  <span>Check</span>
                 </label>
               </div>
               {formData.paymentMethod === 'Card' && (
-                <div style={{ marginTop: '0.5rem' }}>
+                <div className="mt-half">
                   {/* Placeholder for card payment fields (to be added later) */}
                   <span className="text-muted">Card payment details will be collected below.</span>
                 </div>
