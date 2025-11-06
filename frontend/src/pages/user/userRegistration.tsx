@@ -535,7 +535,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               <div className="radio-group">
                 <label className="radio-label">
                   <input
-                    type="checkbox"
+                    type="radio"
+                    name="paymentMethod"
                     checked={(formData.paymentMethod || 'Card') === 'Card'}
                     onChange={() => handleInputChange('paymentMethod', 'Card')}
                   />
@@ -543,7 +544,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 </label>
                 <label className="radio-label">
                   <input
-                    type="checkbox"
+                    type="radio"
+                    name="paymentMethod"
                     checked={formData.paymentMethod === 'Check'}
                     onChange={() => handleInputChange('paymentMethod', 'Check')}
                   />
