@@ -87,6 +87,7 @@ export const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> =
 
         <div className="card" style={{ padding: '1rem' }}>
           <h3 className="section-title">Conference Meals</h3>
+          {(registration as any).tuesdayEarlyReception && <Line label="Tuesday Early Arrivals Reception" value={(registration as any).tuesdayEarlyReception} />}
           <Line label="Wednesday Reception" value={registration.wednesdayReception} />
           <Line label="Thursday Breakfast" value={registration.thursdayBreakfast} />
           <Line label="Thursday Luncheon" value={registration.thursdayLuncheon} />

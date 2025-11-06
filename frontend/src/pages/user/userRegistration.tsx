@@ -5,7 +5,6 @@ import {
   COMPANY_TYPES,
   MASSAGE_TIME_SLOTS,
   MEAL_OPTIONS,
-  PAYMENT_METHODS,
   isEventExpired,
 } from '../../types';
 import '../../styles/RegistrationModal.css';
@@ -67,6 +66,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     thursdayLuncheon: registration?.thursdayLuncheon || 'I will attend',
     thursdayDinner: registration?.thursdayDinner || 'I will attend',
     fridayBreakfast: registration?.fridayBreakfast || 'I will attend',
+    tuesdayEarlyReception: (registration as any)?.tuesdayEarlyReception || 'I will attend',
     dietaryRestrictions: registration?.dietaryRestrictions || '',
 
     // Spouse/Guest Information
@@ -182,6 +182,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         eventId: event.id,
         ...formData,
         address: composedAddress,
+        tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || 'I will attend',
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
       } as Registration;
@@ -432,6 +433,14 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           <div className="form-section">
             <h3 className="section-title">Conference Meals</h3>
             <div className="form-group">
+              <label htmlFor="tuesdayEarly" className="form-label">Tuesday Early Arrivals Reception <span className="required-asterisk">*</span></label>
+              <select id="tuesdayEarly" className="form-control" value={(formData as any).tuesdayEarlyReception || ''} onChange={e=>handleInputChange('tuesdayEarlyReception', e.target.value)} required>
+                {MEAL_OPTIONS.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
               <label htmlFor="wednesdayReception" className="form-label">Wednesday Welcome Reception <span className="required-asterisk">*</span></label>
               <select id="wednesdayReception" className="form-control" value={formData.wednesdayReception || ''} onChange={e => handleInputChange('wednesdayReception', e.target.value)} required>
                 {MEAL_OPTIONS.map(option => (
@@ -522,12 +531,31 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               </div>
             </div>
             <div className="form-group">
-              <label htmlFor="paymentMethod" className="form-label">Payment Method</label>
-              <select id="paymentMethod" className="form-control" value={formData.paymentMethod || ''} onChange={e => handleInputChange('paymentMethod', e.target.value)}>
-                {PAYMENT_METHODS.map(method => (
-                  <option key={method} value={method}>{method}</option>
-                ))}
-              </select>
+              <label className="form-label">Payment Method</label>
+              <div className="radio-group">
+                <label className="radio-label">
+                  <input
+                    type="checkbox"
+                    checked={(formData.paymentMethod || 'Card') === 'Card'}
+                    onChange={() => handleInputChange('paymentMethod', 'Card')}
+                  />
+                  Card
+                </label>
+                <label className="radio-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.paymentMethod === 'Check'}
+                    onChange={() => handleInputChange('paymentMethod', 'Check')}
+                  />
+                  Check
+                </label>
+              </div>
+              {formData.paymentMethod === 'Card' && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  {/* Placeholder for card payment fields (to be added later) */}
+                  <span className="text-muted">Card payment details will be collected below.</span>
+                </div>
+              )}
               {formData.paymentMethod === 'Check' && (
                 <p className="payment-note">If you prefer by check, please contact us at info@eastfuelconf.com</p>
               )}

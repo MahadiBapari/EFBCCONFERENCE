@@ -30,6 +30,7 @@ export class Registration {
   public clubRentals?: boolean;
   public golfHandicap?: string;
   public spouseBreakfast?: boolean;
+  public tuesdayEarlyReception?: 'I will attend' | 'I will NOT attend';
   public spouseFirstName?: string;
   public spouseLastName?: string;
   public spouseDinnerTicket: 'Yes' | 'No';
@@ -72,6 +73,7 @@ export class Registration {
     this.dietaryRestrictions = data.dietaryRestrictions;
     this.clubRentals = (data as any).clubRentals ?? false;
     this.spouseBreakfast = (data as any).spouseBreakfast ?? false;
+    this.tuesdayEarlyReception = (data as any).tuesdayEarlyReception ?? 'I will attend';
     this.golfHandicap = (data as any).golfHandicap;
     this.spouseFirstName = data.spouseFirstName;
     this.spouseLastName = data.spouseLastName;
@@ -132,6 +134,7 @@ export class Registration {
     if (this.status) (base as any).status = this.status;
     if (this.cancellationReason) (base as any).cancellationReason = this.cancellationReason;
     if (this.cancellationAt) (base as any).cancellationAt = this.cancellationAt;
+    if (this.tuesdayEarlyReception) (base as any).tuesdayEarlyReception = this.tuesdayEarlyReception;
     return base as any;
   }
 
@@ -166,6 +169,7 @@ export class Registration {
       golf_handicap: this.golfHandicap,
       spouse_dinner_ticket: this.spouseDinnerTicket === 'Yes',
       spouse_breakfast: !!this.spouseBreakfast,
+      tuesday_early_reception: this.tuesdayEarlyReception,
       spouse_first_name: this.spouseFirstName,
       spouse_last_name: this.spouseLastName,
       total_price: this.totalPrice,
@@ -215,6 +219,7 @@ export class Registration {
       status: row.status,
       cancellationReason: row.cancellation_reason,
       cancellationAt: row.cancellation_at,
+      tuesdayEarlyReception: row.tuesday_early_reception,
       // Legacy fields are not mapped from DB in this version
       name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
       category: row.wednesday_activity || 'Networking',

@@ -34,6 +34,7 @@ export interface Registration {
   status?: 'active' | 'cancelled';
   cancellationReason?: string;
   cancellationAt?: string;
+  tuesdayEarlyReception?: 'I will attend' | 'I will NOT attend';
   
   // Personal Information
   firstName: string;
@@ -146,6 +147,7 @@ export interface CreateRegistrationRequest {
   golfHandicap?: string;
   clubRentals?: boolean;
   wednesdayReception: 'I will attend' | 'I will NOT attend';
+  tuesdayEarlyReception?: 'I will attend' | 'I will NOT attend';
   thursdayBreakfast: 'I will attend' | 'I will NOT attend';
   thursdayLunch: 'I will attend' | 'I will NOT attend';
   thursdayReception: 'I will attend' | 'I will NOT attend';

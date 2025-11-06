@@ -30,6 +30,7 @@ export interface Registration {
   status?: 'active' | 'cancelled';
   cancellationReason?: string;
   cancellationAt?: string;
+  tuesdayEarlyReception?: 'I will attend' | 'I will NOT attend';
   
   // Personal Information
   firstName: string;
