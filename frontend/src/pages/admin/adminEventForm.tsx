@@ -26,8 +26,6 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     { label: 'Dinner Ticket', price: undefined },
     { label: 'On-Site Dinner Ticket', price: undefined },
   ]);
-  const [breakfastPrice, setBreakfastPrice] = useState<number | undefined>(undefined);
-  const [breakfastEndDate, setBreakfastEndDate] = useState<string | undefined>(undefined);
   const [errors, setErrors] = useState<{ name?: string; date?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,9 +41,6 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     setActivities(event.activities || []);
     setRegistrationPricing(event.registrationPricing || registrationPricing);
     setSpousePricing(event.spousePricing && event.spousePricing.length ? event.spousePricing : spousePricing);
-    setBreakfastPrice(event.breakfastPrice);
-    const be = (event.breakfastEndDate || '') as string;
-    setBreakfastEndDate(be ? (be.includes('T') ? be.slice(0, 10) : be) : undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -85,8 +80,6 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
         activities,
         registrationPricing,
         spousePricing,
-        breakfastPrice,
-        breakfastEndDate,
       } as Event);
     } finally {
       setIsSubmitting(false);
@@ -256,14 +249,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Spouse Breakfast/Lunch Price</label>
-              <input className="form-control" type="number" placeholder="e.g., 80" min={0} value={breakfastPrice ?? ''} onChange={(e)=> setBreakfastPrice(e.target.value === '' ? undefined : Number(e.target.value))} disabled={isSubmitting} />
-              <div className="mt-half">
-                <label className="form-label" htmlFor="breakfastEnd">Spouse Breakfast/Lunch End Date (optional)</label>
-                <input id="breakfastEnd" className="form-control" type="date" value={breakfastEndDate || ''} onChange={(e)=> setBreakfastEndDate(e.target.value || undefined)} disabled={isSubmitting} />
-              </div>
-            </div>
+            {/* Spouse breakfast/lunch fields removed per requirement */}
 
           </div>
         </form>

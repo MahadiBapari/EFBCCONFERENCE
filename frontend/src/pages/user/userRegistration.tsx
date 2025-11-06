@@ -87,10 +87,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const spouseDinnerSelected = !!formData.spouseDinnerTicket;
-  const spouseBreakfastSelected = !!(formData as any).spouseBreakfast;
   const regTiers = useMemo(() => event?.registrationPricing || [], [event?.registrationPricing]);
   const spouseTiers = useMemo(() => event?.spousePricing || [], [event?.spousePricing]);
-  const breakfastEnd = event?.breakfastEndDate;
 
   useEffect(() => {
     const now = Date.now();
@@ -115,12 +113,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     const spouseActive = pickTier(withBounds(spouseTiers));
     let total = regActive?.price ?? 675;
     if (spouseDinnerSelected) total += spouseActive?.price ?? 200;
-    if (spouseBreakfastSelected && typeof event?.breakfastPrice === 'number') {
-      const endOk = breakfastEnd ? now <= new Date(breakfastEnd).getTime() : true;
-      if (endOk) total += event.breakfastPrice as number;
-    }
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [spouseDinnerSelected, spouseBreakfastSelected, regTiers, spouseTiers, event?.breakfastPrice, breakfastEnd]);
+  }, [spouseDinnerSelected, regTiers, spouseTiers]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -441,14 +435,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 <span>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
               </label>
             </div>
-            {typeof event.breakfastPrice === 'number' && (
-              <div className="form-group">
-                <label className="checkbox-label">
-                  <input type="checkbox" checked={(formData as any).spouseBreakfast || false} onChange={e => handleInputChange('spouseBreakfast', e.target.checked)} />
-                  <span>Spouse/Guest breakfast/lunch (adds ${event.breakfastPrice.toFixed(2)})</span>
-                </label>
-              </div>
-            )}
+            {/* Spouse breakfast removed per requirement */}
             {formData.spouseDinnerTicket && (
               <div className="form-row">
                 <div className="form-group">
@@ -478,12 +465,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   <span>${(function () { const now = Date.now(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
                 </div>
               )}
-              {(formData as any).spouseBreakfast && typeof event.breakfastPrice === 'number' && (
-                <div className="payment-item">
-                  <span>Spouse Breakfast/Lunch:</span>
-                  <span>${event.breakfastPrice.toFixed(2)}</span>
-                </div>
-              )}
+              {/* Spouse breakfast total removed */}
               <div className="payment-total">
                 <span>Total Price:</span>
                 <span>${(formData.totalPrice || 675).toFixed(2)} USD</span>
