@@ -559,7 +559,13 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 </div>
               )}
               {formData.paymentMethod === 'Check' && (
-                <p className="payment-note">If you prefer by check, please contact us at info@eastfuelconf.com</p>
+                <p className="payment-note">If you prefer by check, 
+                <br/>Please mail check prior to deadline to: 
+                <br/>EFBC Conference Inc 
+                <br/>
+                <br/>127 Low Country Lane 
+                <br/>
+                <br/>The Woodlands, TX 77380, USA </p>
               )}
             </div>
           </div>
