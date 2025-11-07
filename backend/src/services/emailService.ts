@@ -198,11 +198,33 @@ export async function sendRegistrationConfirmationEmail(params: {
   eventName?: string;
   eventDate?: string;
   totalPrice?: number;
+  registration?: any; // optional full registration to include details in email
 }): Promise<void> {
-  const { to, name, eventName, eventDate, totalPrice } = params;
+  const { to, name, eventName, eventDate, totalPrice, registration } = params;
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
   const subject = 'Your EFBC Conference Registration is Confirmed';
   const priceText = typeof totalPrice === 'number' ? `Total: $${totalPrice.toFixed(2)}` : '';
+  const detailsHtml = registration
+    ? `
+      <table role="presentation" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:14px;">
+        ${registration.badgeName ? `<tr><td style="color:#6b7280;">Badge Name</td><td><strong>${registration.badgeName}</strong></td></tr>`:''}
+        ${registration.email ? `<tr><td style="color:#6b7280;">Email</td><td>${registration.email}</td></tr>`:''}
+        ${registration.secondaryEmail ? `<tr><td style="color:#6b7280;">Secondary Email</td><td>${registration.secondaryEmail}</td></tr>`:''}
+        ${registration.organization ? `<tr><td style="color:#6b7280;">Organization</td><td>${registration.organization}</td></tr>`:''}
+        ${registration.jobTitle ? `<tr><td style="color:#6b7280;">Job Title</td><td>${registration.jobTitle}</td></tr>`:''}
+        ${registration.address ? `<tr><td style="color:#6b7280;">Address</td><td>${String(registration.address).replace(/\n/g,'<br/>')}</td></tr>`:''}
+        ${registration.mobile ? `<tr><td style="color:#6b7280;">Mobile</td><td>${registration.mobile}</td></tr>`:''}
+        ${registration.wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${registration.wednesdayActivity}</td></tr>`:''}
+        ${registration.tuesdayEarlyReception ? `<tr><td style="color:#6b7280;">Tuesday Early Arrivals Reception</td><td>${registration.tuesdayEarlyReception}</td></tr>`:''}
+        ${registration.wednesdayReception ? `<tr><td style="color:#6b7280;">Wednesday Reception</td><td>${registration.wednesdayReception}</td></tr>`:''}
+        ${registration.thursdayBreakfast ? `<tr><td style="color:#6b7280;">Thursday Breakfast</td><td>${registration.thursdayBreakfast}</td></tr>`:''}
+        ${registration.thursdayLuncheon ? `<tr><td style="color:#6b7280;">Thursday Luncheon</td><td>${registration.thursdayLuncheon}</td></tr>`:''}
+        ${registration.thursdayDinner ? `<tr><td style="color:#6b7280;">Thursday Dinner</td><td>${registration.thursdayDinner}</td></tr>`:''}
+        ${registration.fridayBreakfast ? `<tr><td style="color:#6b7280;">Friday Breakfast</td><td>${registration.fridayBreakfast}</td></tr>`:''}
+        ${priceText ? `<tr><td style="color:#6b7280;">Total</td><td><strong>$${Number(totalPrice).toFixed(2)}</strong></td></tr>`:''}
+      </table>
+    `
+    : '';
   const html = renderEmailTemplate({
     subject,
     heading: 'Registration Confirmed',
@@ -213,6 +235,7 @@ export async function sendRegistrationConfirmationEmail(params: {
       ${eventName ? `<p style=\"margin:0;\"><strong>Event:</strong> ${eventName}</p>` : ''}
       ${eventDate ? `<p style=\"margin:4px 0 0 0;\"><strong>Date:</strong> ${eventDate}</p>` : ''}
       ${priceText ? `<p style=\"margin:8px 0 0 0;\"><strong>${priceText}</strong></p>` : ''}
+      ${detailsHtml}
       <p style="margin:12px 0 0 0;">We look forward to seeing you!</p>
     `,
   });

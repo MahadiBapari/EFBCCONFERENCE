@@ -187,6 +187,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         category: formData.wednesdayActivity || 'Networking',
       } as Registration;
       onSave(registrationData);
+      // Show success popup to the user
+      alert('Thank you. Your Registration has been successfully submitted! A copy will be emailed to you.');
       onBack();
     } catch (error) {
       console.error('Error saving registration:', error);
@@ -562,9 +564,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 <p className="payment-note">If you prefer by check, 
                 <br/>Please mail check prior to deadline to: 
                 <br/>EFBC Conference Inc 
-                <br/>
                 <br/>127 Low Country Lane 
-                <br/>
                 <br/>The Woodlands, TX 77380, USA </p>
               )}
             </div>

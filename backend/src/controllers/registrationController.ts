@@ -134,12 +134,26 @@ export class RegistrationController {
       const result = await this.db.insert('registrations', registration.toDatabase());
       registration.id = result.insertId;
 
-      // Fire-and-forget confirmation email (non-blocking)
-      sendRegistrationConfirmationEmail({
-        to: registration.email,
-        name: registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim(),
+      // Fire-and-forget confirmation emails (primary, secondary if any, and admin copy)
+      const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || 'info@efbcconference.org';
+      const toName = registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim();
+      const eventRow: any = await this.db.findById('events', registration.eventId);
+      const evName = eventRow?.name;
+      const evDate = eventRow?.date;
+      const payload = {
+        name: toName,
+        eventName: evName,
+        eventDate: evDate,
         totalPrice: registration.totalPrice,
-      }).catch((e) => console.warn('⚠️ Failed to send registration confirmation:', e));
+        registration: registration.toJSON ? registration.toJSON() : registration
+      } as any;
+      sendRegistrationConfirmationEmail({ to: registration.email, ...payload }).catch((e) => console.warn('⚠️ Failed to send registration confirmation:', e));
+      if ((registration as any).secondaryEmail) {
+        sendRegistrationConfirmationEmail({ to: (registration as any).secondaryEmail, ...payload }).catch((e) => console.warn('⚠️ Failed to send secondary confirmation:', e));
+      }
+      if (adminCopy) {
+        sendRegistrationConfirmationEmail({ to: adminCopy, ...payload }).catch((e) => console.warn('⚠️ Failed to send admin confirmation:', e));
+      }
 
       const response: ApiResponse = {
         success: true,
