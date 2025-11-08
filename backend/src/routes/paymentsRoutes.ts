@@ -1,13 +1,15 @@
 import { Router, Request, Response } from 'express';
 
 const Square: any = require('square');
-const { Client, Environment } = Square;
+const { Client } = Square;
 
 const router = Router();
 
+const squareEnvironment = (process.env.SQUARE_ENV || 'sandbox') === 'production' ? 'production' : 'sandbox';
+
 const sq = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN || '',
-  environment: (process.env.SQUARE_ENV || 'sandbox') === 'production' ? Environment.Production : Environment.Sandbox
+  environment: squareEnvironment
 });
 
 // Charge a card using Square nonce (no registration linkage here; use returned paymentId)
