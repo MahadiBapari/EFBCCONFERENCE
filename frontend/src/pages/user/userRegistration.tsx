@@ -646,11 +646,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   <span>Check</span>
                 </label>
               </div>
-              {formData.paymentMethod === 'Card' && (
-                <div className="mt-half">
-                  <div id="card-container" />
-                </div>
-              )}
+              <div className={`mt-half ${((formData.paymentMethod || 'Card') === 'Card') ? '' : 'card-fields-hidden'}`}>
+                <div id="card-container" />
+              </div>
               {formData.paymentMethod === 'Check' && (
                 <p className="payment-note">If you prefer by check, 
                 <br/>Please mail check prior to deadline to: 

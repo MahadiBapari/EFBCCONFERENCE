@@ -544,6 +544,11 @@ select {
   background-color: rgba(59,130,246,0.1);
 }
 
+/* Hide card fields when Check is selected */
+.card-fields-hidden {
+  display: none;
+}
+
 /* Scrollbar styling for the form container */
 .registration-form-container::-webkit-scrollbar {
   width: 8px;
