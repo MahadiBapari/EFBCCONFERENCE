@@ -1,13 +1,13 @@
 import { Router, Request, Response } from 'express';
 
-const Square: any = require('square');
-const { Client } = Square;
+const squareModule: any = require('square');
+const ClientCtor = (squareModule && squareModule.Client) || (squareModule && squareModule.default && squareModule.default.Client);
 
 const router = Router();
 
 const squareEnvironment = (process.env.SQUARE_ENV || 'sandbox') === 'production' ? 'production' : 'sandbox';
 
-const sq = new Client({
+const sq = new ClientCtor({
   accessToken: process.env.SQUARE_ACCESS_TOKEN || '',
   environment: squareEnvironment
 });
