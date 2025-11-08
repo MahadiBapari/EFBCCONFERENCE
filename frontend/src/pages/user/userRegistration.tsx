@@ -105,6 +105,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const [addrZip, setAddrZip] = useState<string>(initialAddr.zip);
   const [addrCountry, setAddrCountry] = useState<string>(initialAddr.country);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cardInstance, setCardInstance] = useState<any | null>(null);
 
   const spouseDinnerSelected = !!formData.spouseDinnerTicket;
   const regTiers = useMemo(() => event?.registrationPricing || [], [event?.registrationPricing]);
@@ -204,23 +205,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (!validateForm()) return;
     setIsSubmitting(true);
     try {
-      // lazy load Square
-      if (!(window as any).Square) {
-        await new Promise<void>((resolve, reject) => {
-          const s = document.createElement('script');
-          s.src = 'https://sandbox.web.squarecdn.com/v1/square.js';
-          s.async = true;
-          s.onload = () => resolve();
-          s.onerror = () => reject(new Error('Failed to load Square SDK'));
-          document.head.appendChild(s);
-        });
-      }
-      const payments = (window as any).Square.payments(
-        process.env.REACT_APP_SQUARE_APP_ID,
-        process.env.REACT_APP_SQUARE_LOCATION_ID
-      );
-      const card = await payments.card();
-      await card.attach('#card-container');
+      // ensure card is mounted
+      const card = await ensureCardMounted();
       const res = await card.tokenize();
       if (res.status !== 'OK') throw new Error('Card tokenize failed');
       const nonce = res.token;
@@ -257,6 +243,52 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       setIsSubmitting(false);
     }
   };
+
+  // Ensure Square SDK is loaded and card element attached when Card is selected (including by default)
+  const ensureSquareLoaded = async () => {
+    if ((window as any).Square) {
+      return;
+    }
+    await new Promise<void>((resolve, reject) => {
+      const existing = document.querySelector('script[data-square-sdk]');
+      if (existing) {
+        existing.addEventListener('load', () => { resolve(); });
+        existing.addEventListener('error', () => reject(new Error('Failed to load Square SDK')));
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = 'https://sandbox.web.squarecdn.com/v1/square.js';
+      s.async = true;
+      s.setAttribute('data-square-sdk', 'true');
+      s.onload = () => { resolve(); };
+      s.onerror = () => reject(new Error('Failed to load Square SDK'));
+      document.head.appendChild(s);
+    });
+  };
+
+  const ensureCardMounted = async () => {
+    await ensureSquareLoaded();
+    if (cardInstance) return cardInstance;
+    const payments = (window as any).Square.payments(
+      process.env.REACT_APP_SQUARE_APP_ID,
+      process.env.REACT_APP_SQUARE_LOCATION_ID
+    );
+    const card = await payments.card();
+    // make sure container exists and is empty before attach
+    const container = document.getElementById('card-container');
+    if (container) container.innerHTML = '';
+    await card.attach('#card-container');
+    setCardInstance(card);
+    return card;
+  };
+
+  useEffect(() => {
+    if ((formData.paymentMethod || 'Card') === 'Card') {
+      // Fire and forget; errors are handled on pay
+      ensureCardMounted().catch(() => void 0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.paymentMethod]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
