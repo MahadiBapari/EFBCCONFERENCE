@@ -43,6 +43,8 @@ export class Registration {
   public status?: 'active' | 'cancelled';
   public cancellationReason?: string;
   public cancellationAt?: string;
+  public paid?: boolean;
+  public squarePaymentId?: string;
 
   constructor(data: Partial<IRegistration>) {
     this.id = data.id;
@@ -88,6 +90,8 @@ export class Registration {
     this.status = (data as any).status as any;
     this.cancellationReason = (data as any).cancellationReason as any;
     this.cancellationAt = (data as any).cancellationAt as any;
+    this.paid = (data as any).paid as any;
+    this.squarePaymentId = (data as any).squarePaymentId as any;
   }
 
   // Convert to JSON
@@ -135,6 +139,8 @@ export class Registration {
     if (this.cancellationReason) (base as any).cancellationReason = this.cancellationReason;
     if (this.cancellationAt) (base as any).cancellationAt = this.cancellationAt;
     if (this.tuesdayEarlyReception) (base as any).tuesdayEarlyReception = this.tuesdayEarlyReception;
+    if (typeof this.paid === 'boolean') (base as any).paid = this.paid;
+    if (this.squarePaymentId) (base as any).squarePaymentId = this.squarePaymentId;
     return base as any;
   }
 
@@ -174,6 +180,8 @@ export class Registration {
       spouse_last_name: this.spouseLastName,
       total_price: this.totalPrice,
       payment_method: this.paymentMethod,
+      paid: this.paid ?? false,
+      square_payment_id: this.squarePaymentId || null,
     };
   }
 
@@ -220,6 +228,8 @@ export class Registration {
       cancellationReason: row.cancellation_reason,
       cancellationAt: row.cancellation_at,
       tuesdayEarlyReception: row.tuesday_early_reception,
+      paid: !!row.paid,
+      squarePaymentId: row.square_payment_id,
       // Legacy fields are not mapped from DB in this version
       name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
       category: row.wednesday_activity || 'Networking',

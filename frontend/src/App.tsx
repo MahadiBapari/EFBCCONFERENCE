@@ -200,6 +200,8 @@ useEffect(() => {
         // Payment
         totalPrice: Number(r.totalPrice ?? 675),
         paymentMethod: r.paymentMethod ?? 'Card',
+        paid: r.paid ?? false,
+        squarePaymentId: r.squarePaymentId ?? r.square_payment_id,
         // Legacy
         name: r.name ?? `${r.firstName || ''} ${r.lastName || ''}`.trim(),
         category: r.category ?? (r.wednesdayActivity ?? 'Networking'),

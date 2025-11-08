@@ -76,6 +76,8 @@ export interface Registration {
   // Payment Information
   totalPrice: number;
   paymentMethod: 'Card' | 'Check';
+  paid?: boolean;
+  squarePaymentId?: string;
   
   // Legacy fields for backward compatibility
   name: string;

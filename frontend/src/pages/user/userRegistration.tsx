@@ -167,6 +167,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     e.preventDefault();
     if (!event) return;
     if (!validateForm()) return;
+    if ((formData.paymentMethod || 'Card') === 'Card') return; // handled by Pay & Complete button
     setIsSubmitting(true);
     try {
       // Compose address string for persistence
@@ -193,6 +194,65 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     } catch (error) {
       console.error('Error saving registration:', error);
       alert('An error occurred while saving the registration. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCardPay = async () => {
+    if (!event) return;
+    if (!validateForm()) return;
+    setIsSubmitting(true);
+    try {
+      // lazy load Square
+      if (!(window as any).Square) {
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://sandbox.web.squarecdn.com/v1/square.js';
+          s.async = true;
+          s.onload = () => resolve();
+          s.onerror = () => reject(new Error('Failed to load Square SDK'));
+          document.head.appendChild(s);
+        });
+      }
+      const payments = (window as any).Square.payments(
+        process.env.REACT_APP_SQUARE_APP_ID,
+        process.env.REACT_APP_SQUARE_LOCATION_ID
+      );
+      const card = await payments.card();
+      await card.attach('#card-container');
+      const res = await card.tokenize();
+      if (res.status !== 'OK') throw new Error('Card tokenize failed');
+      const nonce = res.token;
+      const amountCents = Math.round(Number(formData.totalPrice || 0) * 100);
+      const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amountCents, currency: 'USD', nonce })
+      });
+      const payload = await payRes.json();
+      if (!payload?.success) throw new Error(payload?.error || 'Charge failed');
+      // Now save registration including payment markers
+      const registrationData: Registration = {
+        ...(registration?.id ? { id: registration.id } : {} as any),
+        userId: user.id,
+        eventId: event.id,
+        ...formData,
+        paid: true,
+        squarePaymentId: payload.paymentId,
+        address: [
+          addrStreet.trim(),
+          `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
+          addrCountry.trim()
+        ].filter(Boolean).join('\n'),
+        name: `${formData.firstName} ${formData.lastName}`,
+        category: formData.wednesdayActivity || 'Networking',
+      } as Registration;
+      onSave(registrationData);
+      alert('Thank you. Your Registration has been successfully submitted! A copy will be emailed to you.');
+      onBack();
+    } catch (err:any) {
+      alert(err?.message || 'Payment failed');
     } finally {
       setIsSubmitting(false);
     }
@@ -556,8 +616,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               </div>
               {formData.paymentMethod === 'Card' && (
                 <div className="mt-half">
-                  {/* Placeholder for card payment fields (to be added later) */}
-                  <span className="text-muted">Card payment details will be collected below.</span>
+                  <div id="card-container" />
                 </div>
               )}
               {formData.paymentMethod === 'Check' && (
@@ -572,9 +631,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
 
           <div className="modal-footer-actions" style={{ marginTop: '1rem' }}>
             <button type="button" className="btn btn-secondary" onClick={onBack} disabled={isSubmitting}>Cancel</button>
-            <button className="btn btn-primary btn-save" type="submit" form="registration-form" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : (registration ? 'Update Registration' : 'Complete Registration')}
-            </button>
+            {(formData.paymentMethod || 'Card') === 'Check' ? (
+              <button className="btn btn-primary btn-save" type="submit" form="registration-form" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : (registration ? 'Update Registration' : 'Complete Registration')}
+              </button>
+            ) : (
+              <button type="button" className="btn btn-primary btn-save" onClick={handleCardPay} disabled={isSubmitting}>
+                {isSubmitting ? 'Processing...' : 'Pay & Complete Registration'}
+              </button>
+            )}
           </div>
         </form>
       </div>

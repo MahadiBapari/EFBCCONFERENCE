@@ -111,6 +111,12 @@ export const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> =
           <h3 className="section-title">Payment</h3>
           <Line label="Total Price" value={`$${registration.totalPrice}.00`} />
           <Line label="Payment Method" value={registration.paymentMethod} />
+          {typeof (registration as any).paid !== 'undefined' && (
+            <Line label="Paid" value={(registration as any).paid ? 'Yes' : 'No'} />
+          )}
+          {(registration as any).squarePaymentId && (
+            <Line label="Square Payment ID" value={(registration as any).squarePaymentId} />
+          )}
         </div>
       </div>
     </Modal>

@@ -12,6 +12,7 @@ import groupRoutes from './routes/groupRoutes';
 import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
 import cancellationRoutes from './routes/cancellationRoutes';
+import paymentsRoutes from './routes/paymentsRoutes';
 
 // Load environment variables (only from .env in non-production)
 if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
@@ -36,6 +37,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/registrations', registrationRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api', cancellationRoutes);
+app.use('/api/payments', paymentsRoutes);
 
 // Global database service
 let databaseService: DatabaseService;
@@ -325,6 +327,8 @@ const migrateEventsAndRegistrationsEnhancements = async () => {
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='golf_handicap')) alter.push('ADD COLUMN `golf_handicap` VARCHAR(10)');
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='spouse_breakfast')) alter.push('ADD COLUMN `spouse_breakfast` BOOLEAN');
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='tuesday_early_reception')) alter.push("ADD COLUMN `tuesday_early_reception` VARCHAR(50)");
+    if (!regCols.some((c:any)=>c.COLUMN_NAME==='paid')) alter.push('ADD COLUMN `paid` BOOLEAN DEFAULT FALSE');
+    if (!regCols.some((c:any)=>c.COLUMN_NAME==='square_payment_id')) alter.push('ADD COLUMN `square_payment_id` VARCHAR(64)');
     if (alter.length>0) {
       await databaseService.query(`ALTER TABLE \`registrations\` ${alter.join(', ')}`);
       console.log('🛠️ Added registrations.club_rentals/golf_handicap');
