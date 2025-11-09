@@ -193,6 +193,7 @@ useEffect(() => {
         thursdayDinner: r.thursdayDinner ?? 'I will attend',
         fridayBreakfast: r.fridayBreakfast ?? 'I will attend',
         dietaryRestrictions: r.dietaryRestrictions ?? '',
+        specialRequests: r.specialRequests ?? r.special_requests ?? '',
         // Spouse
         spouseDinnerTicket: !!(r.spouseDinnerTicket ?? false),
         spouseFirstName: r.spouseFirstName ?? '',
