@@ -210,11 +210,31 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const res = await card.tokenize();
       if (res.status !== 'OK') throw new Error('Card tokenize failed');
       const nonce = res.token;
-      const amountCents = Math.round(Number(formData.totalPrice || 0) * 100);
+      const baseTotal = Number(formData.totalPrice || 0);
+      const isCard = (formData.paymentMethod || 'Card') === 'Card';
+      const cardFee = isCard ? Math.round(baseTotal * 0.035 * 100) / 100 : 0;
+      const finalTotal = baseTotal + cardFee;
+      const amountCents = Math.round(finalTotal * 100);
       const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amountCents, currency: 'USD', nonce })
+        body: JSON.stringify({
+          amountCents,
+          baseAmountCents: Math.round(baseTotal * 100),
+          applyCardFee: true,
+          currency: 'USD',
+          nonce,
+          buyerEmail: formData.email || undefined,
+          billingAddress: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            addressLine1: addrStreet,
+            locality: addrCity,
+            administrativeDistrictLevel1: addrState,
+            postalCode: addrZip,
+            country: (addrCountry && addrCountry.length === 2 ? addrCountry.toUpperCase() : 'US')
+          }
+        })
       });
       const payload = await payRes.json();
       if (!payload?.success) throw new Error(payload?.error || 'Charge failed');
@@ -607,6 +627,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
 
           <div className="form-section">
             <h3 className="section-title">Payment Information</h3>
+            {(() => {
+              const baseTotal = Number(formData.totalPrice || 0);
+              const isCard = (formData.paymentMethod || 'Card') === 'Card';
+              const cardFee = isCard ? Math.round(baseTotal * 0.035 * 100) / 100 : 0;
+              const finalTotal = baseTotal + cardFee;
+              return (
             <div className="payment-summary">
               <div className="payment-item">
                 <span>Conference Registration:</span>
@@ -618,12 +644,20 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   <span>${(function () { const now = Date.now(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
                 </div>
               )}
+              {isCard && (
+                <div className="payment-item">
+                  <span>Card Processing Fee (3.5%):</span>
+                  <span>${cardFee.toFixed(2)}</span>
+                </div>
+              )}
               {/* Spouse breakfast total removed */}
               <div className="payment-total">
-                <span>Total Price:</span>
-                <span>${(formData.totalPrice || 675).toFixed(2)} USD</span>
+                <span>Total Due:</span>
+                <span>${finalTotal.toFixed(2)} USD</span>
               </div>
             </div>
+              );
+            })()}
             <div className="form-group">
               <label className="form-label">Payment Method</label>
               <div className="segmented-group">

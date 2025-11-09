@@ -17,21 +17,55 @@ const sq = new SquareClient({
 // Charge a card using Square nonce (no registration linkage here; use returned paymentId)
 router.post('/charge', async (req: Request, res: Response) => {
   try {
-    const { amountCents, currency = 'USD', nonce } = req.body || {};
-    if (!amountCents || !nonce) return res.status(400).json({ success: false, error: 'Missing fields' });
+    const {
+      amountCents,
+      baseAmountCents,
+      applyCardFee,
+      currency = 'USD',
+      nonce,
+      billingAddress,
+      buyerEmail
+    } = req.body || {};
+    const baseCents = Number(baseAmountCents ?? amountCents);
+    if (!baseCents || !nonce) return res.status(400).json({ success: false, error: 'Missing fields' });
+    const finalCents = applyCardFee ? Math.round(baseCents * 1.035) : Number(amountCents ?? baseCents);
 
     const idempotencyKey = `${Date.now()}-${Math.random()}`;
     const resp = await sq.payments.create({
       sourceId: nonce,
       idempotencyKey,
-      amountMoney: { amount: BigInt(Number(amountCents)), currency },
-      locationId: process.env.SQUARE_LOCATION_ID || undefined
+      amountMoney: { amount: BigInt(Number(finalCents)), currency },
+      locationId: process.env.SQUARE_LOCATION_ID || undefined,
+      // Provide billing address to satisfy AVS
+      billingAddress: billingAddress
+        ? {
+            addressLine1: billingAddress.addressLine1 || undefined,
+            addressLine2: billingAddress.addressLine2 || undefined,
+            locality: billingAddress.locality || undefined,
+            administrativeDistrictLevel1: billingAddress.administrativeDistrictLevel1 || undefined,
+            postalCode: billingAddress.postalCode || undefined,
+            country: (billingAddress.country || 'US') as any,
+            firstName: billingAddress.firstName || undefined,
+            lastName: billingAddress.lastName || undefined
+          }
+        : undefined,
+      buyerEmailAddress: buyerEmail || undefined,
     });
 
-    const payment = resp?.data?.payment;
-    if (!payment) return res.status(500).json({ success: false, error: 'No payment response' });
+    const payment =
+      (resp as any)?.data?.payment ??
+      (resp as any)?.result?.payment ??
+      undefined;
+    if (!payment) {
+      // Include minimal diagnostics to help debug response shape differences
+      return res.status(502).json({
+        success: false,
+        error: 'No payment response',
+        hint: typeof (resp as any) === 'object' ? Object.keys(resp as any) : 'no-keys'
+      });
+    }
 
-    return res.json({ success: true, paymentId: payment.id, status: payment.status });
+    return res.json({ success: true, paymentId: payment.id, status: payment.status, chargedAmountCents: payment?.amountMoney?.amount ?? finalCents });
   } catch (e: any) {
     return res.status(500).json({ success: false, error: e?.message || 'Payment error' });
   }
