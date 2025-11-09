@@ -617,33 +617,35 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             </div>
           </div>
 
-          <div className="form-section">
-            <h3 className="section-title">Spouse/Guest Information</h3>
-            {!isEditing && (
-              <div className="form-group">
-                <label className="checkbox-label">
-                  <input type="checkbox" checked={!!formData.spouseDinnerTicket} onChange={e => handleInputChange('spouseDinnerTicket', e.target.checked)} />
-                  <span>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
-                </label>
-              </div>
-            )}
-            {/* In edit mode: show spouse name fields only if ticket was purchased originally.
-                In create mode: show fields when checkbox is selected. */}
-            {( (isEditing && hadSpouseTicket) || (!isEditing && formData.spouseDinnerTicket) ) && (
-              <div className="form-row">
+          {(!isEditing || hadSpouseTicket) && (
+            <div className="form-section">
+              <h3 className="section-title">Spouse/Guest Information</h3>
+              {!isEditing && (
                 <div className="form-group">
-                  <label htmlFor="spouseFirstName" className="form-label">Spouse/Guest's First Name <span className="required-asterisk">*</span></label>
-                  <input id="spouseFirstName" type="text" className={`form-control ${errors.spouseFirstName ? 'error' : ''}`} value={formData.spouseFirstName || ''} onChange={e => handleInputChange('spouseFirstName', e.target.value)} />
-                  {errors.spouseFirstName && <div className="error-message">{errors.spouseFirstName}</div>}
+                  <label className="checkbox-label">
+                    <input type="checkbox" checked={!!formData.spouseDinnerTicket} onChange={e => handleInputChange('spouseDinnerTicket', e.target.checked)} />
+                    <span>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
+                  </label>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="spouseLastName" className="form-label">Spouse/Guest's Last Name <span className="required-asterisk">*</span></label>
-                  <input id="spouseLastName" type="text" className={`form-control ${errors.spouseLastName ? 'error' : ''}`} value={formData.spouseLastName || ''} onChange={e => handleInputChange('spouseLastName', e.target.value)} />
-                  {errors.spouseLastName && <div className="error-message">{errors.spouseLastName}</div>}
+              )}
+              {/* In edit mode: show spouse name fields only if ticket was purchased originally.
+                  In create mode: show fields when checkbox is selected. */}
+              {( (isEditing && hadSpouseTicket) || (!isEditing && formData.spouseDinnerTicket) ) && (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="spouseFirstName" className="form-label">Spouse/Guest's First Name <span className="required-asterisk">*</span></label>
+                    <input id="spouseFirstName" type="text" className={`form-control ${errors.spouseFirstName ? 'error' : ''}`} value={formData.spouseFirstName || ''} onChange={e => handleInputChange('spouseFirstName', e.target.value)} />
+                    {errors.spouseFirstName && <div className="error-message">{errors.spouseFirstName}</div>}
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="spouseLastName" className="form-label">Spouse/Guest's Last Name <span className="required-asterisk">*</span></label>
+                    <input id="spouseLastName" type="text" className={`form-control ${errors.spouseLastName ? 'error' : ''}`} value={formData.spouseLastName || ''} onChange={e => handleInputChange('spouseLastName', e.target.value)} />
+                    {errors.spouseLastName && <div className="error-message">{errors.spouseLastName}</div>}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           <div className="form-section">
             <h3 className="section-title">Payment Information</h3>

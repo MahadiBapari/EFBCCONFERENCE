@@ -34,7 +34,7 @@ export class Registration {
   public tuesdayEarlyReception?: 'I will attend' | 'I will NOT attend';
   public spouseFirstName?: string;
   public spouseLastName?: string;
-  public spouseDinnerTicket: 'Yes' | 'No';
+  public spouseDinnerTicket: boolean;
   public totalPrice: number;
   public paymentMethod: 'Card' | 'Check';
   public name: string;
@@ -81,7 +81,9 @@ export class Registration {
     this.golfHandicap = (data as any).golfHandicap;
     this.spouseFirstName = data.spouseFirstName;
     this.spouseLastName = data.spouseLastName;
-    this.spouseDinnerTicket = data.spouseDinnerTicket || 'No';
+    // Accept boolean or "Yes"/"No" and normalize to boolean
+    const sdt: any = (data as any).spouseDinnerTicket;
+    this.spouseDinnerTicket = sdt === true || sdt === 'Yes' || sdt === 'yes' || sdt === 1;
     this.totalPrice = data.totalPrice || 0;
     this.paymentMethod = data.paymentMethod || 'Card';
     this.name = data.name || `${this.firstName} ${this.lastName}`;
@@ -177,7 +179,7 @@ export class Registration {
       special_requests: this.specialRequests,
       club_rentals: this.clubRentals ?? false,
       golf_handicap: this.golfHandicap,
-      spouse_dinner_ticket: this.spouseDinnerTicket === 'Yes',
+      spouse_dinner_ticket: !!this.spouseDinnerTicket,
       spouse_breakfast: !!this.spouseBreakfast,
       tuesday_early_reception: this.tuesdayEarlyReception,
       spouse_first_name: this.spouseFirstName,
@@ -221,7 +223,7 @@ export class Registration {
       specialRequests: row.special_requests,
       clubRentals: !!row.club_rentals,
       golfHandicap: row.golf_handicap,
-      spouseDinnerTicket: row.spouse_dinner_ticket ? 'Yes' : 'No',
+      spouseDinnerTicket: !!row.spouse_dinner_ticket,
       spouseBreakfast: !!row.spouse_breakfast,
       spouseFirstName: row.spouse_first_name,
       spouseLastName: row.spouse_last_name,

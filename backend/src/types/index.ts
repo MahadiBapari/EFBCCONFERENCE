@@ -72,7 +72,7 @@ export interface Registration {
   // Spouse Information
   spouseFirstName?: string;
   spouseLastName?: string;
-  spouseDinnerTicket: 'Yes' | 'No';
+  spouseDinnerTicket: boolean;
   
   // Payment Information
   totalPrice: number;
@@ -160,7 +160,7 @@ export interface CreateRegistrationRequest {
   specialRequests?: string;
   spouseFirstName?: string;
   spouseLastName?: string;
-  spouseDinnerTicket: 'Yes' | 'No';
+  spouseDinnerTicket: boolean;
   totalPrice: number;
   paymentMethod: 'Card' | 'Check';
   name: string;
