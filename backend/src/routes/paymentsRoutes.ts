@@ -63,7 +63,22 @@ router.post('/charge', async (req: Request, res: Response) => {
       });
     }
 
-    return res.json({ success: true, paymentId: payment.id, status: payment.status, chargedAmountCents: payment?.amountMoney?.amount ?? finalCents });
+    const amt = (payment as any)?.amountMoney?.amount;
+    const chargedAmountCents =
+      typeof amt === 'bigint'
+        ? Number(amt.toString())
+        : typeof amt === 'string'
+          ? Number(amt)
+          : typeof amt === 'number'
+            ? amt
+            : finalCents;
+
+    return res.json({
+      success: true,
+      paymentId: payment.id,
+      status: payment.status,
+      chargedAmountCents
+    });
   } catch (e: any) {
     return res.status(500).json({ success: false, error: e?.message || 'Payment error' });
   }
