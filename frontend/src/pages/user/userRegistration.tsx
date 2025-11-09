@@ -37,7 +37,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     [registrations, user, event]
   );
 
+  const isEditing = !!registration;
   const isAlreadyPaid = !!(registration as any)?.paid;
+  const hadSpouseTicket = !!(registration as any)?.spouseDinnerTicket;
 
   const [formData, setFormData] = useState<Partial<Registration>>({
     // Personal Information
@@ -115,6 +117,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const spouseTiers = useMemo(() => event?.spousePricing || [], [event?.spousePricing]);
 
   useEffect(() => {
+    // In edit mode, if spouse ticket was previously purchased, lock it on
+    if (isEditing && hadSpouseTicket && !formData.spouseDinnerTicket) {
+      setFormData(prev => ({ ...prev, spouseDinnerTicket: true }));
+    }
     const now = Date.now();
     const withBounds = (arr: any[] = []) =>
       arr
@@ -138,7 +144,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     let total = regActive?.price ?? 675;
     if (spouseDinnerSelected) total += spouseActive?.price ?? 200;
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [spouseDinnerSelected, regTiers, spouseTiers]);
+  }, [isEditing, hadSpouseTicket, formData.spouseDinnerTicket, spouseDinnerSelected, regTiers, spouseTiers]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -612,14 +618,17 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
 
           <div className="form-section">
             <h3 className="section-title">Spouse/Guest Information</h3>
-            <div className="form-group">
-              <label className="checkbox-label">
-                <input type="checkbox" checked={formData.spouseDinnerTicket || false} onChange={e => handleInputChange('spouseDinnerTicket', e.target.checked)} />
-                <span>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
-              </label>
-            </div>
-            {/* Spouse breakfast removed per requirement */}
-            {formData.spouseDinnerTicket && (
+            {!isEditing && (
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={!!formData.spouseDinnerTicket} onChange={e => handleInputChange('spouseDinnerTicket', e.target.checked)} />
+                  <span>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
+                </label>
+              </div>
+            )}
+            {/* In edit mode: show spouse name fields only if ticket was purchased originally.
+                In create mode: show fields when checkbox is selected. */}
+            {( (isEditing && hadSpouseTicket) || (!isEditing && formData.spouseDinnerTicket) ) && (
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="spouseFirstName" className="form-label">Spouse/Guest's First Name <span className="required-asterisk">*</span></label>
