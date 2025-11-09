@@ -37,6 +37,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     [registrations, user, event]
   );
 
+  const isEdit = !!registration;
+  const isAlreadyPaid = !!(registration as any)?.paid;
+
   const [formData, setFormData] = useState<Partial<Registration>>({
     // Personal Information
     firstName: registration?.firstName || user.name.split(' ')[0] || '',
@@ -169,7 +172,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     e.preventDefault();
     if (!event) return;
     if (!validateForm()) return;
-    if ((formData.paymentMethod || 'Card') === 'Card') return; // handled by Pay & Complete button
+    if ((formData.paymentMethod || 'Card') === 'Card' && !isAlreadyPaid) return; // handled by Pay & Complete button when not already paid
     setIsSubmitting(true);
     try {
       // Compose address string for persistence
@@ -203,6 +206,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   };
 
   const handleCardPay = async () => {
+    if (isAlreadyPaid) return; // prevent double charge on edit
     if (!event) return;
     if (!validateForm()) return;
     setIsSubmitting(true);
@@ -634,75 +638,91 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
 
           <div className="form-section">
             <h3 className="section-title">Payment Information</h3>
-            {(() => {
-              const baseTotal = Number(formData.totalPrice || 0);
-              const isCard = (formData.paymentMethod || 'Card') === 'Card';
-              const cardFee = isCard ? Math.round(baseTotal * 0.035 * 100) / 100 : 0;
-              const finalTotal = baseTotal + cardFee;
-              return (
-            <div className="payment-summary">
-              <div className="payment-item">
-                <span>Conference Registration:</span>
-                <span>${(event.registrationPricing && event.registrationPricing.length ? (function () { const now = Date.now(); const tiers = (event.registrationPricing || []).map((t: any) => ({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
-              </div>
-              {formData.spouseDinnerTicket && (
+            {isAlreadyPaid ? (
+              <div className="payment-summary">
                 <div className="payment-item">
-                  <span>Spouse Dinner Ticket:</span>
-                  <span>${(function () { const now = Date.now(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
+                  <span>Paid:</span>
+                  <span>Yes</span>
                 </div>
-              )}
-              {isCard && (
-                <div className="payment-item">
-                  <span>Card Processing Fee (3.5%):</span>
-                  <span>${cardFee.toFixed(2)}</span>
+                {(registration as any)?.squarePaymentId && (
+                  <div className="payment-item">
+                    <span>Square Payment ID:</span>
+                    <span>{(registration as any).squarePaymentId}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                {(() => {
+                  const baseTotal = Number(formData.totalPrice || 0);
+                  const isCard = (formData.paymentMethod || 'Card') === 'Card';
+                  const cardFee = isCard ? Math.round(baseTotal * 0.035 * 100) / 100 : 0;
+                  const finalTotal = baseTotal + cardFee;
+                  return (
+                <div className="payment-summary">
+                  <div className="payment-item">
+                    <span>Conference Registration:</span>
+                    <span>${(event.registrationPricing && event.registrationPricing.length ? (function () { const now = Date.now(); const tiers = (event.registrationPricing || []).map((t: any) => ({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
+                  </div>
+                  {formData.spouseDinnerTicket && (
+                    <div className="payment-item">
+                      <span>Spouse Dinner Ticket:</span>
+                      <span>${(function () { const now = Date.now(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
+                    </div>
+                  )}
+                  {isCard && (
+                    <div className="payment-item">
+                      <span>Card Processing Fee (3.5%):</span>
+                      <span>${cardFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="payment-total">
+                    <span>Total Due:</span>
+                    <span>${finalTotal.toFixed(2)} USD</span>
+                  </div>
                 </div>
-              )}
-              {/* Spouse breakfast total removed */}
-              <div className="payment-total">
-                <span>Total Due:</span>
-                <span>${finalTotal.toFixed(2)} USD</span>
-              </div>
-            </div>
-              );
-            })()}
-            <div className="form-group">
-              <label className="form-label">Payment Method</label>
-              <div className="segmented-group">
-                <label className="segmented-label">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    checked={(formData.paymentMethod || 'Card') === 'Card'}
-                    onChange={() => handleInputChange('paymentMethod', 'Card')}
-                  />
-                  <span>Card</span>
-                </label>
-                <label className="segmented-label">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    checked={formData.paymentMethod === 'Check'}
-                    onChange={() => handleInputChange('paymentMethod', 'Check')}
-                  />
-                  <span>Check</span>
-                </label>
-              </div>
-              <div className={`mt-half ${((formData.paymentMethod || 'Card') === 'Card') ? '' : 'card-fields-hidden'}`}>
-                <div id="card-container" />
-              </div>
-              {formData.paymentMethod === 'Check' && (
-                <p className="payment-note">If you prefer by check, 
-                <br/>Please mail check prior to deadline to: 
-                <br/>EFBC Conference Inc 
-                <br/>127 Low Country Lane 
-                <br/>The Woodlands, TX 77380, USA </p>
-              )}
-            </div>
+                  );
+                })()}
+                <div className="form-group">
+                  <label className="form-label">Payment Method</label>
+                  <div className="segmented-group">
+                    <label className="segmented-label">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        checked={(formData.paymentMethod || 'Card') === 'Card'}
+                        onChange={() => handleInputChange('paymentMethod', 'Card')}
+                      />
+                      <span>Card</span>
+                    </label>
+                    <label className="segmented-label">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        checked={formData.paymentMethod === 'Check'}
+                        onChange={() => handleInputChange('paymentMethod', 'Check')}
+                      />
+                      <span>Check</span>
+                    </label>
+                  </div>
+                  <div className={`mt-half ${((formData.paymentMethod || 'Card') === 'Card') ? '' : 'card-fields-hidden'}`}>
+                    <div id="card-container" />
+                  </div>
+                  {formData.paymentMethod === 'Check' && (
+                    <p className="payment-note">If you prefer by check, 
+                    <br/>Please mail check prior to deadline to: 
+                    <br/>EFBC Conference Inc 
+                    <br/>127 Low Country Lane 
+                    <br/>The Woodlands, TX 77380, USA </p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="modal-footer-actions" style={{ marginTop: '1rem' }}>
             <button type="button" className="btn btn-secondary" onClick={onBack} disabled={isSubmitting}>Cancel</button>
-            {(formData.paymentMethod || 'Card') === 'Check' ? (
+            {isAlreadyPaid || (formData.paymentMethod || 'Card') === 'Check' ? (
               <button className="btn btn-primary btn-save" type="submit" form="registration-form" disabled={isSubmitting}>
                 {isSubmitting ? 'Saving...' : (registration ? 'Update Registration' : 'Complete Registration')}
               </button>
