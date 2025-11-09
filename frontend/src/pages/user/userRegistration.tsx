@@ -37,7 +37,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     [registrations, user, event]
   );
 
-  const isEdit = !!registration;
   const isAlreadyPaid = !!(registration as any)?.paid;
 
   const [formData, setFormData] = useState<Partial<Registration>>({
