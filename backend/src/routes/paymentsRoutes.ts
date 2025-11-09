@@ -31,7 +31,7 @@ router.post('/charge', async (req: Request, res: Response) => {
     const finalCents = applyCardFee ? Math.round(baseCents * 1.035) : Number(amountCents ?? baseCents);
 
     const idempotencyKey = `${Date.now()}-${Math.random()}`;
-    const resp = await sq.payments.create({
+    const respRaw = await sq.payments.create({
       sourceId: nonce,
       idempotencyKey,
       amountMoney: { amount: BigInt(Number(finalCents)), currency },
@@ -50,18 +50,16 @@ router.post('/charge', async (req: Request, res: Response) => {
           }
         : undefined,
       buyerEmailAddress: buyerEmail || undefined,
-    });
+    }).withRawResponse();
 
-    const payment =
-      (resp as any)?.data?.payment ??
-      (resp as any)?.result?.payment ??
-      undefined;
+    const resultData: any = respRaw?.data;
+    const payment = resultData?.payment;
     if (!payment) {
       // Include minimal diagnostics to help debug response shape differences
       return res.status(502).json({
         success: false,
         error: 'No payment response',
-        hint: typeof (resp as any) === 'object' ? Object.keys(resp as any) : 'no-keys'
+        hint: resultData?.errors || 'no-errors'
       });
     }
 
