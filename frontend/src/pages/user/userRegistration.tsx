@@ -26,6 +26,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   onBack,
   onSave,
 }) => {
+  const toBooleanYesNo = (v: any): boolean => v === true || v === 'Yes' || v === 'yes' || v === 1;
   const activeEvent = useMemo(() => events.find(e => !isEventExpired(e.date)), [events]);
   const event = useMemo(
     () => (targetEventId ? (events.find(e => e.id === targetEventId) || activeEvent) : activeEvent),
@@ -39,7 +40,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
 
   const isEditing = !!registration;
   const isAlreadyPaid = !!(registration as any)?.paid;
-  const hadSpouseTicket = !!(registration as any)?.spouseDinnerTicket;
+  const hadSpouseTicket = toBooleanYesNo((registration as any)?.spouseDinnerTicket);
 
   const [formData, setFormData] = useState<Partial<Registration>>({
     // Personal Information
@@ -75,7 +76,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     specialRequests: (registration as any)?.specialRequests || '',
 
     // Spouse/Guest Information
-    spouseDinnerTicket: registration?.spouseDinnerTicket || false,
+    spouseDinnerTicket: toBooleanYesNo((registration as any)?.spouseDinnerTicket) || false,
     spouseFirstName: registration?.spouseFirstName || '',
     spouseLastName: registration?.spouseLastName || '',
 
