@@ -67,6 +67,7 @@ export interface Registration {
   fridayBreakfast: 'I will attend' | 'I will NOT attend';
   fridayDinner: 'I will attend' | 'I will NOT attend';
   dietaryRestrictions?: string;
+  specialRequests?: string;
   
   // Spouse Information
   spouseFirstName?: string;
@@ -156,6 +157,7 @@ export interface CreateRegistrationRequest {
   fridayBreakfast: 'I will attend' | 'I will NOT attend';
   fridayDinner: 'I will attend' | 'I will NOT attend';
   dietaryRestrictions?: string;
+  specialRequests?: string;
   spouseFirstName?: string;
   spouseLastName?: string;
   spouseDinnerTicket: 'Yes' | 'No';

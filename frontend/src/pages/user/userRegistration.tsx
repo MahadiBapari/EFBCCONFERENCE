@@ -68,6 +68,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     fridayBreakfast: registration?.fridayBreakfast || 'I will attend',
     tuesdayEarlyReception: (registration as any)?.tuesdayEarlyReception || 'I will attend',
     dietaryRestrictions: registration?.dietaryRestrictions || '',
+    specialRequests: (registration as any)?.specialRequests || '',
 
     // Spouse/Guest Information
     spouseDinnerTicket: registration?.spouseDinnerTicket || false,
@@ -183,6 +184,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         userId: user.id,
         eventId: event.id,
         ...formData,
+        specialRequests: (formData as any).specialRequests || '',
         address: composedAddress,
         tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || 'I will attend',
         name: `${formData.firstName} ${formData.lastName}`,
@@ -244,6 +246,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         userId: user.id,
         eventId: event.id,
         ...formData,
+        specialRequests: (formData as any).specialRequests || '',
         paid: true,
         squarePaymentId: payload.paymentId,
         address: [
@@ -595,8 +598,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               </select>
             </div>
             <div className="form-group">
-              <label htmlFor="dietaryRestrictions" className="form-label">Dietary Restrictions/Special Requests</label>
-              <textarea id="dietaryRestrictions" className="form-control" value={formData.dietaryRestrictions || ''} onChange={e => handleInputChange('dietaryRestrictions', e.target.value)} rows={3} placeholder="Please specify any dietary restrictions or special requests..." />
+              <label htmlFor="dietaryRestrictions" className="form-label">Dietary Restrictions</label>
+              <textarea id="dietaryRestrictions" className="form-control" value={formData.dietaryRestrictions || ''} onChange={e => handleInputChange('dietaryRestrictions', e.target.value)} rows={3} placeholder="Please specify any dietary restrictions..." />
+            </div>
+            <div className="form-group">
+              <label htmlFor="specialRequests" className="form-label">Special Requests</label>
+              <textarea id="specialRequests" className="form-control" value={(formData as any).specialRequests || ''} onChange={e => handleInputChange('specialRequests', e.target.value)} rows={3} placeholder="Please specify any special requests..." />
             </div>
           </div>
 

@@ -62,6 +62,7 @@ export interface Registration {
   thursdayDinner: 'I will attend' | 'I will NOT attend';
   fridayBreakfast: 'I will attend' | 'I will NOT attend';
   dietaryRestrictions?: string;
+  specialRequests?: string;
   
   // Spouse/Guest Information
   spouseDinnerTicket: boolean;
@@ -137,15 +138,22 @@ export const CATEGORIES = ["Golf", "Fishing", "Networking"];
 export const COMPANY_TYPES = [
   "Utility Company",
   "Media",
+  "Supplier: Ash (Fly, Bottom, Coal) ",
+  "Supplier: Broker",
   "Supplier: Coal Mine/Coal Producer",
   "Supplier: Consultant",
   "Supplier: Gas",
   "Supplier: Laboratory",
+  "Supplier: LDC (Local distribution company)",
   "Supplier: Lime/Cement",
   "Supplier: Petcoke",
+  "Supplier: Pipeline Operator",
+  "Supplier: Rail",
+  "Supplier: Shipping",
   "Supplier: Solar",
-  "Supplier: Trader / Broker",
-  "Supplier: Transportation/Rail/Shipping/Terminal",
+  "Supplier: Terminal",
+  "Supplier: Trader",
+  "Supplier: Transportation",
   "Other"
 ];
 
