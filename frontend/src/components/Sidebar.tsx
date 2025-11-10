@@ -73,7 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   
   const userNav = [
     { key: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
-    { key: 'events', label: 'All Events', icon: <CalendarIcon /> },
+    //{ key: 'events', label: 'All Events', icon: <CalendarIcon /> },
     { key: 'profile', label: 'My Profile', icon: <UserIcon /> },
   ];
   
