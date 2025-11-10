@@ -200,23 +200,68 @@ export class RegistrationController {
 
       console.log(`[UPDATE] Found existing registration ${id}`);
       
-      // Convert database row to Registration object, then merge with updateData
-      // Exclude id from updateData as it's not updatable
+      // Map camelCase fields from updateData to snake_case database columns
+      const fieldMapping: Record<string, string> = {
+        userId: 'user_id',
+        eventId: 'event_id',
+        firstName: 'first_name',
+        lastName: 'last_name',
+        badgeName: 'badge_name',
+        email: 'email',
+        secondaryEmail: 'secondary_email',
+        organization: 'organization',
+        jobTitle: 'job_title',
+        address: 'address',
+        mobile: 'mobile',
+        officePhone: 'office_phone',
+        isFirstTimeAttending: 'is_first_time_attending',
+        companyType: 'company_type',
+        companyTypeOther: 'company_type_other',
+        emergencyContactName: 'emergency_contact_name',
+        emergencyContactPhone: 'emergency_contact_phone',
+        wednesdayActivity: 'wednesday_activity',
+        wednesdayReception: 'wednesday_reception',
+        thursdayBreakfast: 'thursday_breakfast',
+        thursdayLuncheon: 'thursday_luncheon',
+        thursdayDinner: 'thursday_dinner',
+        fridayBreakfast: 'friday_breakfast',
+        dietaryRestrictions: 'dietary_restrictions',
+        specialRequests: 'special_requests',
+        clubRentals: 'club_rentals',
+        golfHandicap: 'golf_handicap',
+        spouseDinnerTicket: 'spouse_dinner_ticket',
+        spouseBreakfast: 'spouse_breakfast',
+        tuesdayEarlyReception: 'tuesday_early_reception',
+        spouseFirstName: 'spouse_first_name',
+        spouseLastName: 'spouse_last_name',
+        totalPrice: 'total_price',
+        paymentMethod: 'payment_method',
+        paid: 'paid',
+        squarePaymentId: 'square_payment_id',
+      };
+      
+      // Build update payload by mapping fields and converting values
+      const dbPayload: any = {
+        updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+      };
+      
       const updateDataObj = updateData as any || {};
-      const updateDataWithoutId: any = {};
-      for (const key in updateDataObj) {
-        if (key !== 'id' && updateDataObj.hasOwnProperty(key)) {
-          updateDataWithoutId[key] = updateDataObj[key];
+      for (const [camelKey, dbKey] of Object.entries(fieldMapping)) {
+        if (camelKey in updateDataObj && camelKey !== 'id') {
+          let value = updateDataObj[camelKey];
+          
+          // Handle special conversions
+          if (camelKey === 'spouseDinnerTicket') {
+            value = value === true || value === 'Yes' || value === 'yes' || value === 1 ? 1 : 0;
+          } else if (camelKey === 'isFirstTimeAttending' || camelKey === 'spouseBreakfast' || camelKey === 'paid') {
+            value = value === true || value === 1 ? 1 : 0;
+          } else if (value === null || value === undefined) {
+            value = null;
+          }
+          
+          dbPayload[dbKey] = value;
         }
       }
-      
-      const existingRegistration = Registration.fromDatabase(existingRow);
-      const registration = new Registration({ ...existingRegistration.toJSON(), ...updateDataWithoutId });
-      registration.updatedAt = new Date().toISOString();
-      
-      const dbPayload = registration.toDatabase();
-      // Ensure id is not in the payload (it's used in WHERE clause only)
-      delete (dbPayload as any).id;
       console.log(`[UPDATE] Database payload keys:`, Object.keys(dbPayload));
       console.log(`[UPDATE] Sample DB fields:`, {
         first_name: dbPayload.first_name,
@@ -237,9 +282,12 @@ export class RegistrationController {
         wednesday_activity: verifyRow?.wednesday_activity
       });
 
+      // Convert the updated row back to Registration object for response
+      const updatedRegistration = Registration.fromDatabase(verifyRow);
+
       const response: ApiResponse = {
         success: true,
-        data: registration.toJSON(),
+        data: updatedRegistration.toJSON(),
         message: 'Registration updated successfully'
       };
 
