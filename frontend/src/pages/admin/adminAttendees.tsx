@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Registration, Event, Group } from '../../types';
 import '../../styles/AdminAttendees.css';
-import { RegistrationDetailsModal } from '../../components/RegistrationDetailsModal';
+import { RegistrationPreview } from '../../components/RegistrationPreview';
 
 interface AdminAttendeesProps {
   registrations: Registration[];
@@ -25,7 +25,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   // Removed unused local edit state to satisfy CI lint rules
   const [selectedRegIds, setSelectedRegIds] = useState<number[]>([]);
-  const [detailsReg, setDetailsReg] = useState<Registration | null>(null);
+  const [previewRegId, setPreviewRegId] = useState<number | null>(null);
 
   // Automatically select the most recent event on component mount
   useEffect(() => {
@@ -248,7 +248,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                   <td className="no-print">
                     <button 
                       className="btn btn-secondary btn-sm" 
-                      onClick={() => setDetailsReg(reg)}
+                      onClick={() => setPreviewRegId(reg.id)}
                       title="Details"
                     >
                       🔍 Details
@@ -263,13 +263,17 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
         <p>No attendees found for this filter.</p>
       )}
 
-      {detailsReg && (
-        <RegistrationDetailsModal
-          event={events.find(e => e.id === detailsReg.eventId)}
-          registration={detailsReg}
-          onClose={() => setDetailsReg(null)}
-        />
-      )}
+      {previewRegId && (() => {
+        const reg = filteredRegistrations.find(r => r.id === previewRegId) || registrations.find(r => r.id === previewRegId);
+        const event = reg ? events.find(e => e.id === reg.eventId) : undefined;
+        return (
+          <RegistrationPreview
+            event={event}
+            registrationId={previewRegId}
+            onClose={() => setPreviewRegId(null)}
+          />
+        );
+      })()}
     </div>
   );
 };
