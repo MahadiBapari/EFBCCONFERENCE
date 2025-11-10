@@ -253,7 +253,7 @@ const handleLogout = () => {
       const me = payload?.data || payload;
       const newUser: User = {
         id: me.id,
-        name: me.name || formData.name,
+        name: me.name || `${(formData as any).firstName} ${(formData as any).lastName}`.trim(),
         email: me.email || formData.email,
         role: me.role || 'user'
       };
@@ -264,11 +264,11 @@ const handleLogout = () => {
       alert(`Welcome to EFBC Conference Portal, ${newUser.name}! Your account has been created successfully.`);
     } catch {
       // Fallback if /auth/me not available yet; still proceed with minimal state
-      setUser({ id: 0, name: formData.name, email: formData.email, role: 'user' });
+      setUser({ id: 0, name: `${(formData as any).firstName} ${(formData as any).lastName}`.trim(), email: formData.email, role: 'user' });
       setRole('user');
       setView('dashboard');
       setShowRegistration(false);
-      alert(`Welcome to EFBC Conference Portal, ${formData.name}! Your account has been created successfully.`);
+      alert(`Welcome to EFBC Conference Portal, ${(formData as any).firstName}! Your account has been created successfully.`);
     }
   };
 

@@ -10,7 +10,8 @@ interface RegistrationPageProps {
 
 export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, onBackToLogin }) => {
   const [formData, setFormData] = useState<RegisterForm>({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -28,10 +29,11 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
     const newErrors: Partial<RegisterForm> = {};
 
     // Name validation
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+    if (!formData.firstName.trim()) {
+      (newErrors as any).firstName = 'First name is required';
+    }
+    if (!formData.lastName.trim()) {
+      (newErrors as any).lastName = 'Last name is required';
     }
 
     // Email validation
@@ -74,7 +76,8 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
     
     try {
       // Call backend register
-      const res = await authApi.register({ name: formData.name, email: formData.email, password: formData.password });
+      const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
+      const res = await authApi.register({ name: fullName, email: formData.email, password: formData.password });
       const payload: any = (res as any).data || res;
       const msg = payload?.message || 'Registration successful. Please check your email to verify your account.';
       setSubmitMessage(msg);
@@ -95,10 +98,10 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
     }));
     
     // Clear error when user starts typing
-    if (errors[name as keyof RegisterForm]) {
+    if ((errors as any)[name as keyof RegisterForm]) {
       setErrors(prev => ({
         ...prev,
-        [name]: undefined
+        [name]: undefined as any
       }));
     }
   };
@@ -122,23 +125,43 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
         
         <form className="registration-form" onSubmit={handleSubmit}>
           
-          <div className="form-group">
-            <label htmlFor="name">Full Name</label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Enter your full name"
-              required
-            />
-            {errors.name && (
-              <div className="error-message">
-                <span>⚠️</span>
-                {errors.name}
-              </div>
-            )}
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="firstName">First Name</label>
+              <input
+                type="text"
+                id="firstName"
+                name="firstName"
+                value={(formData as any).firstName}
+                onChange={handleChange}
+                placeholder="Enter your first name"
+                required
+              />
+              {(errors as any).firstName && (
+                <div className="error-message">
+                  <span>⚠️</span>
+                  {(errors as any).firstName}
+                </div>
+              )}
+            </div>
+            <div className="form-group">
+              <label htmlFor="lastName">Last Name</label>
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                value={(formData as any).lastName}
+                onChange={handleChange}
+                placeholder="Enter your last name"
+                required
+              />
+              {(errors as any).lastName && (
+                <div className="error-message">
+                  <span>⚠️</span>
+                  {(errors as any).lastName}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="form-group">

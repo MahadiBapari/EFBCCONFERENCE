@@ -126,7 +126,8 @@ export interface LoginForm {
 }
 
 export interface RegisterForm {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   confirmPassword: string;

@@ -11,7 +11,8 @@ interface UserProfileProps {
 export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateProfile }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user.name,
+    firstName: (user.name || '').split(' ').slice(0, -1).join(' ') || (user.name || '').split(' ')[0] || '',
+    lastName: (user.name || '').split(' ').slice(-1).join(' ') || '',
     email: user.email,
   });
 
@@ -23,13 +24,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateProfile 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateProfile(formData);
+    const name = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
+    onUpdateProfile({ name, email: formData.email });
     setIsEditing(false);
   };
 
   const handleCancel = () => {
     setFormData({
-      name: user.name,
+      firstName: (user.name || '').split(' ').slice(0, -1).join(' ') || (user.name || '').split(' ')[0] || '',
+      lastName: (user.name || '').split(' ').slice(-1).join(' ') || '',
       email: user.email,
     });
     setIsEditing(false);
@@ -82,19 +85,32 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateProfile 
 
         {isEditing ? (
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="name">Name</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="firstName">First Name</label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="lastName">Last Name</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
             <div className="form-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email">Email (Read Only)</label>
               <input
                 type="email"
                 id="email"
