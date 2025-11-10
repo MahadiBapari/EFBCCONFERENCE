@@ -176,7 +176,7 @@ export class RegistrationController {
   async updateRegistration(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const updateData: UpdateRegistrationRequest = req.body;
+      const updateData: UpdateRegistrationRequest = req.body || {};
       
       console.log(`[UPDATE] Received update request for registration ${id}`);
       console.log(`[UPDATE] Update data keys:`, Object.keys(updateData));
@@ -202,7 +202,14 @@ export class RegistrationController {
       
       // Convert database row to Registration object, then merge with updateData
       // Exclude id from updateData as it's not updatable
-      const { id: _, ...updateDataWithoutId } = updateData as any;
+      const updateDataObj = updateData as any || {};
+      const updateDataWithoutId: any = {};
+      for (const key in updateDataObj) {
+        if (key !== 'id' && updateDataObj.hasOwnProperty(key)) {
+          updateDataWithoutId[key] = updateDataObj[key];
+        }
+      }
+      
       const existingRegistration = Registration.fromDatabase(existingRow);
       const registration = new Registration({ ...existingRegistration.toJSON(), ...updateDataWithoutId });
       registration.updatedAt = new Date().toISOString();
