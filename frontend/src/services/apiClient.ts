@@ -102,6 +102,13 @@ export const authApi = {
   }
 };
 
+// Registration helpers
+export const registrationsApi = {
+  async getById(id: number): Promise<any> {
+    return apiClient.get(`/registrations/${id}`);
+  }
+};
+
 // Cancellation helpers
 export const cancelApi = {
   async request(registrationId: number, reason: string): Promise<any> {
