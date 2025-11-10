@@ -48,7 +48,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         <h1>Dashboard</h1>
       </div>
 
-      <div className="stats-grid">
+      {/* <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-number">{totalEvents}</div>
           <div className="stat-label">Total Events</div>
@@ -57,7 +57,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           <div className="stat-number">{activeEventsCount}</div>
           <div className="stat-label">Active Events</div>
         </div>
-      </div>
+      </div> */}
 
       {activeEvent ? (
         <div className="card event-card">
