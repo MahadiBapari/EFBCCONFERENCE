@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Event, Registration, User } from '../../types';
 import { isEventExpired } from '../../types';
+import { RegistrationPreview } from '../../components/RegistrationPreview';
 // Removed modal in favor of dedicated page
 import '../../styles/UserDashboard.css';
 
@@ -21,6 +22,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   user,
   onBeginRegistration,
 }) => {
+  const [showPreview, setShowPreview] = useState(false);
 
   // Debug log to see current events
   console.log('UserDashboard - Current events:', events);
@@ -62,8 +64,18 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       {activeEvent ? (
         <div className="card event-card">
           <div className="event-header">
-            <h2>{activeEvent.name}</h2>
-            <span className="event-status status-active">Active</span>
+            <div className="event-header-left">
+              <h2>{activeEvent.name}</h2>
+              <span className="event-status status-active">Active</span>
+            </div>
+            {userRegistration && (userRegistration as any).status !== 'cancelled' && (
+              <button
+                className="btn btn-outline btn-preview"
+                onClick={() => setShowPreview(true)}
+              >
+                Preview
+              </button>
+            )}
           </div>
           <ul className="event-details">
             <li>Date: {new Date(activeEvent.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</li>
@@ -77,7 +89,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 <div>
                   <span className="event-status status-expired">Cancelled</span>
                   { (userRegistration as any).cancellationReason && (
-                    <p style={{ marginTop: '0.5rem' }}><strong>Reason:</strong> {(userRegistration as any).cancellationReason}</p>
+                    <p className="cancellation-reason"><strong>Reason:</strong> {(userRegistration as any).cancellationReason}</p>
                   )}
                 </div>
               ) : (
@@ -119,6 +131,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       )}
 
       {/* Registration now happens in a dedicated page */}
+      {showPreview && userRegistration?.id && activeEvent && (
+        <RegistrationPreview
+          event={activeEvent}
+          registrationId={userRegistration.id}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
     </div>
   );
 };

@@ -9,7 +9,6 @@ import {
   isEventExpired,
 } from '../../types';
 import '../../styles/RegistrationModal.css';
-import { RegistrationPreview } from '../../components/RegistrationPreview';
 
 interface UserRegistrationProps {
   events: Event[];
@@ -113,7 +112,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const [addrZip, setAddrZip] = useState<string>(initialAddr.zip);
   const [addrCountry, setAddrCountry] = useState<string>(initialAddr.country);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
   const [cardInstance, setCardInstance] = useState<any | null>(null);
   
   // Club rentals state: track if user needs rentals (Yes/No) and their preference
@@ -887,11 +885,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
 
           <div className="modal-footer-actions" style={{ marginTop: '1rem' }}>
             <button type="button" className="btn btn-secondary" onClick={onBack} disabled={isSubmitting}>Cancel</button>
-            {registration?.id && (
-              <button type="button" className="btn btn-outline" onClick={() => setShowPreview(true)} disabled={isSubmitting}>
-                Preview
-              </button>
-            )}
             {isAlreadyPaid || (formData.paymentMethod || 'Card') === 'Check' ? (
               <button className="btn btn-primary btn-save" type="submit" form="registration-form" disabled={isSubmitting}>
                 {isSubmitting ? 'Saving...' : (registration ? 'Update Registration' : 'Complete Registration')}
@@ -904,13 +897,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           </div>
         </form>
       </div>
-      {showPreview && registration?.id && (
-        <RegistrationPreview
-          event={event}
-          registrationId={registration.id}
-          onClose={() => setShowPreview(false)}
-        />
-      )}
     </div>
   );
 };
