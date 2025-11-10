@@ -222,9 +222,17 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       ].filter(Boolean).join('\n');
 
       // Determine clubRentals value based on user selection
-      const clubRentalsValue = needsClubRentals && golfClubPreference 
-        ? golfClubPreference 
-        : (!needsClubRentals ? 'I will bring my own' : undefined);
+      const isGolf = (formData.wednesdayActivity || '').toLowerCase().includes('golf');
+      const isMassage = (formData.wednesdayActivity || '').toLowerCase().includes('massage');
+      
+      const clubRentalsValue = isGolf 
+        ? (needsClubRentals && golfClubPreference 
+            ? golfClubPreference 
+            : (!needsClubRentals ? 'I will bring my own' : undefined))
+        : undefined; // Clear if not golf
+      
+      const golfHandicapValue = isGolf ? formData.golfHandicap : undefined; // Clear if not golf
+      const massageTimeSlotValue = isMassage ? (formData as any).massageTimeSlot : undefined; // Clear if not massage
 
       const registrationData: Registration = {
         ...(registration?.id ? { id: registration.id } : {} as any),
@@ -233,6 +241,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         ...formData,
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
+        golfHandicap: golfHandicapValue,
+        massageTimeSlot: massageTimeSlotValue,
         address: composedAddress,
         tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || 'I will attend',
         name: `${formData.firstName} ${formData.lastName}`,
@@ -289,10 +299,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       });
       const payload = await payRes.json();
       if (!payload?.success) throw new Error(payload?.error || 'Charge failed');
+      
       // Determine clubRentals value based on user selection
-      const clubRentalsValue = needsClubRentals && golfClubPreference 
-        ? golfClubPreference 
-        : (!needsClubRentals ? 'I will bring my own' : undefined);
+      const isGolf = (formData.wednesdayActivity || '').toLowerCase().includes('golf');
+      const isMassage = (formData.wednesdayActivity || '').toLowerCase().includes('massage');
+      
+      const clubRentalsValue = isGolf 
+        ? (needsClubRentals && golfClubPreference 
+            ? golfClubPreference 
+            : (!needsClubRentals ? 'I will bring my own' : undefined))
+        : undefined; // Clear if not golf
+      
+      const golfHandicapValue = isGolf ? formData.golfHandicap : undefined; // Clear if not golf
+      const massageTimeSlotValue = isMassage ? (formData as any).massageTimeSlot : undefined; // Clear if not massage
 
       // Now save registration including payment markers
       const registrationData: Registration = {
@@ -302,6 +321,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         ...formData,
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
+        golfHandicap: golfHandicapValue,
+        massageTimeSlot: massageTimeSlotValue,
         paid: true,
         squarePaymentId: payload.paymentId,
         address: [
@@ -369,7 +390,30 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   }, [formData.paymentMethod]);
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Clear golf-related fields if activity is not golf
+      if (field === 'wednesdayActivity') {
+        const isGolf = (value || '').toLowerCase().includes('golf');
+        const isMassage = (value || '').toLowerCase().includes('massage');
+        
+        if (!isGolf) {
+          // Clear golf fields when not golf
+          updated.clubRentals = undefined;
+          updated.golfHandicap = '';
+          setNeedsClubRentals(false);
+          setGolfClubPreference('');
+        }
+        
+        if (!isMassage) {
+          // Clear massage field when not massage
+          (updated as any).massageTimeSlot = '';
+        }
+      }
+      
+      return updated;
+    });
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
