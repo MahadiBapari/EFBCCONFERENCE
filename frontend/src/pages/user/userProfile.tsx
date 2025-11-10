@@ -100,8 +100,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateProfile 
                 id="email"
                 name="email"
                 value={formData.email}
-                onChange={handleChange}
-                required
+                readOnly
               />
             </div>
             <div className="profile-actions">
