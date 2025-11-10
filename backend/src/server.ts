@@ -320,10 +320,18 @@ const migrateEventsAndRegistrationsEnhancements = async () => {
       console.log('🛠️ Added events.breakfast_end_date');
     }
 
-    // registrations.club_rentals (BOOLEAN) and golf_handicap (VARCHAR(10))
+    // registrations.club_rentals (VARCHAR) and golf_handicap (VARCHAR(10))
     const regCols: any[] = await getCols('registrations');
     const alter: string[] = [];
-    if (!regCols.some((c:any)=>c.COLUMN_NAME==='club_rentals')) alter.push('ADD COLUMN `club_rentals` BOOLEAN');
+    if (!regCols.some((c:any)=>c.COLUMN_NAME==='club_rentals')) {
+      alter.push('ADD COLUMN `club_rentals` VARCHAR(50)');
+    } else {
+      // Migrate existing BOOLEAN to VARCHAR if needed
+      const clubRentalsCol = regCols.find((c:any)=>c.COLUMN_NAME==='club_rentals');
+      if (clubRentalsCol && clubRentalsCol.DATA_TYPE === 'tinyint') {
+        alter.push('MODIFY COLUMN `club_rentals` VARCHAR(50)');
+      }
+    }
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='golf_handicap')) alter.push('ADD COLUMN `golf_handicap` VARCHAR(10)');
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='spouse_breakfast')) alter.push('ADD COLUMN `spouse_breakfast` BOOLEAN');
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='tuesday_early_reception')) alter.push("ADD COLUMN `tuesday_early_reception` VARCHAR(50)");

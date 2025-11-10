@@ -56,7 +56,7 @@ export interface Registration {
   // Conference Events
   wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
   golfHandicap?: string;
-  clubRentals?: boolean;
+  clubRentals?: string;
   spouseBreakfast?: boolean;
   
   // Conference Meals
@@ -148,7 +148,7 @@ export interface CreateRegistrationRequest {
   emergencyContactPhone?: string;
   wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
   golfHandicap?: string;
-  clubRentals?: boolean;
+  clubRentals?: string;
   wednesdayReception: 'I will attend' | 'I will NOT attend';
   tuesdayEarlyReception?: 'I will attend' | 'I will NOT attend';
   thursdayBreakfast: 'I will attend' | 'I will NOT attend';

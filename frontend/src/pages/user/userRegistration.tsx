@@ -5,6 +5,7 @@ import {
   COMPANY_TYPES,
   MASSAGE_TIME_SLOTS,
   MEAL_OPTIONS,
+  GOLF_CLUB_PREFERENCES,
   isEventExpired,
 } from '../../types';
 import '../../styles/RegistrationModal.css';
@@ -112,6 +113,30 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const [addrCountry, setAddrCountry] = useState<string>(initialAddr.country);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cardInstance, setCardInstance] = useState<any | null>(null);
+  
+  // Club rentals state: track if user needs rentals (Yes/No) and their preference
+  const initialNeedsRentals = useMemo(() => {
+    const cr = registration?.clubRentals;
+    // If clubRentals is a string and not 'I will bring my own', they need rentals
+    return !!(cr && cr !== 'I will bring my own' && cr !== '');
+  }, [registration?.clubRentals]);
+  
+  const [needsClubRentals, setNeedsClubRentals] = useState<boolean>(initialNeedsRentals);
+  const [golfClubPreference, setGolfClubPreference] = useState<string>(
+    initialNeedsRentals && registration?.clubRentals ? registration.clubRentals : ''
+  );
+  
+  // Update needsClubRentals when registration changes
+  useEffect(() => {
+    const cr = registration?.clubRentals;
+    const needs = !!(cr && cr !== 'I will bring my own' && cr !== '');
+    setNeedsClubRentals(needs);
+    if (needs && cr) {
+      setGolfClubPreference(cr);
+    } else {
+      setGolfClubPreference('');
+    }
+  }, [registration?.clubRentals]);
 
   const spouseDinnerSelected = !!formData.spouseDinnerTicket;
   const regTiers = useMemo(() => event?.registrationPricing || [], [event?.registrationPricing]);
@@ -166,6 +191,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
+    // Validate golf club preference if rentals are needed
+    if (needsClubRentals && !golfClubPreference?.trim()) {
+      newErrors.golfClubPreference = 'Please select a club preference';
+    }
     if (formData.spouseDinnerTicket) {
       if (!formData.spouseFirstName?.trim()) newErrors.spouseFirstName = 'Spouse first name is required';
       if (!formData.spouseLastName?.trim()) newErrors.spouseLastName = 'Spouse last name is required';
@@ -188,12 +217,18 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         addrCountry.trim()
       ].filter(Boolean).join('\n');
 
+      // Determine clubRentals value based on user selection
+      const clubRentalsValue = needsClubRentals && golfClubPreference 
+        ? golfClubPreference 
+        : (!needsClubRentals ? 'I will bring my own' : undefined);
+
       const registrationData: Registration = {
         ...(registration?.id ? { id: registration.id } : {} as any),
         userId: user.id,
         eventId: event.id,
         ...formData,
         specialRequests: (formData as any).specialRequests || '',
+        clubRentals: clubRentalsValue,
         address: composedAddress,
         tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || 'I will attend',
         name: `${formData.firstName} ${formData.lastName}`,
@@ -250,6 +285,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       });
       const payload = await payRes.json();
       if (!payload?.success) throw new Error(payload?.error || 'Charge failed');
+      // Determine clubRentals value based on user selection
+      const clubRentalsValue = needsClubRentals && golfClubPreference 
+        ? golfClubPreference 
+        : (!needsClubRentals ? 'I will bring my own' : undefined);
+
       // Now save registration including payment markers
       const registrationData: Registration = {
         ...(registration?.id ? { id: registration.id } : {} as any),
@@ -257,6 +297,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         eventId: event.id,
         ...formData,
         specialRequests: (formData as any).specialRequests || '',
+        clubRentals: clubRentalsValue,
         paid: true,
         squarePaymentId: payload.paymentId,
         address: [
@@ -530,15 +571,58 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   <label className="form-label">Club rentals needed?</label>
                   <div className="radio-group">
                     <label className="radio-label">
-                      <input type="radio" name="clubRentals" checked={!!formData.clubRentals} onChange={() => handleInputChange('clubRentals', true)} />
+                      <input 
+                        type="radio" 
+                        name="clubRentals" 
+                        checked={needsClubRentals} 
+                        onChange={() => {
+                          setNeedsClubRentals(true);
+                          setGolfClubPreference('');
+                        }} 
+                      />
                       Yes
                     </label>
                     <label className="radio-label">
-                      <input type="radio" name="clubRentals" checked={!formData.clubRentals} onChange={() => handleInputChange('clubRentals', false)} />
+                      <input 
+                        type="radio" 
+                        name="clubRentals" 
+                        checked={!needsClubRentals} 
+                        onChange={() => {
+                          setNeedsClubRentals(false);
+                          setGolfClubPreference('');
+                        }} 
+                      />
                       No
                     </label>
                   </div>
                 </div>
+                {needsClubRentals && (
+                  <div className="form-group">
+                    <label htmlFor="golfClubPreference" className="form-label">Select club preference <span className="required-asterisk">*</span></label>
+                    <select 
+                      id="golfClubPreference" 
+                      className={`form-control ${errors.golfClubPreference ? 'error' : ''}`}
+                      value={golfClubPreference} 
+                      onChange={e => {
+                        setGolfClubPreference(e.target.value);
+                        if (errors.golfClubPreference) {
+                          setErrors(prev => {
+                            const newErr = { ...prev };
+                            delete newErr.golfClubPreference;
+                            return newErr;
+                          });
+                        }
+                      }}
+                      required
+                    >
+                      <option value="" disabled>Please select a preference</option>
+                      {GOLF_CLUB_PREFERENCES.map(pref => (
+                        <option key={pref} value={pref}>{pref}</option>
+                      ))}
+                    </select>
+                    {errors.golfClubPreference && <div className="error-message">{errors.golfClubPreference}</div>}
+                  </div>
+                )}
                 <div className="form-group">
                   <label htmlFor="golfHandicap" className="form-label">Your handicap (1-36)</label>
                   <input id="golfHandicap" type="number" min={1} max={36} className="form-control" value={formData.golfHandicap || ''} onChange={e => handleInputChange('golfHandicap', e.target.value)} />

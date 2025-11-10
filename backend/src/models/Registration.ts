@@ -28,7 +28,7 @@ export class Registration {
   public fridayDinner: 'I will attend' | 'I will NOT attend';
   public dietaryRestrictions?: string;
   public specialRequests?: string;
-  public clubRentals?: boolean;
+  public clubRentals?: string;
   public golfHandicap?: string;
   public spouseBreakfast?: boolean;
   public tuesdayEarlyReception?: 'I will attend' | 'I will NOT attend';
@@ -75,7 +75,16 @@ export class Registration {
     this.fridayDinner = data.fridayDinner || 'I will attend';
     this.dietaryRestrictions = data.dietaryRestrictions;
     this.specialRequests = (data as any).specialRequests;
-    this.clubRentals = (data as any).clubRentals ?? false;
+    // Handle clubRentals as string (preference or 'I will bring my own')
+    // Support backward compatibility with boolean values
+    const cr = (data as any).clubRentals;
+    if (typeof cr === 'boolean') {
+      this.clubRentals = cr ? undefined : 'I will bring my own';
+    } else if (typeof cr === 'string') {
+      this.clubRentals = cr || undefined;
+    } else {
+      this.clubRentals = undefined;
+    }
     this.spouseBreakfast = (data as any).spouseBreakfast ?? false;
     this.tuesdayEarlyReception = (data as any).tuesdayEarlyReception ?? 'I will attend';
     this.golfHandicap = (data as any).golfHandicap;
@@ -177,7 +186,7 @@ export class Registration {
       friday_breakfast: this.fridayBreakfast,
       dietary_restrictions: this.dietaryRestrictions,
       special_requests: this.specialRequests,
-      club_rentals: this.clubRentals ?? false,
+      club_rentals: this.clubRentals || null,
       golf_handicap: this.golfHandicap,
       spouse_dinner_ticket: !!this.spouseDinnerTicket,
       spouse_breakfast: !!this.spouseBreakfast,
@@ -221,7 +230,7 @@ export class Registration {
       fridayDinner: row.friday_dinner,
       dietaryRestrictions: row.dietary_restrictions,
       specialRequests: row.special_requests,
-      clubRentals: !!row.club_rentals,
+      clubRentals: row.club_rentals || undefined,
       golfHandicap: row.golf_handicap,
       spouseDinnerTicket: !!row.spouse_dinner_ticket,
       spouseBreakfast: !!row.spouse_breakfast,
