@@ -178,8 +178,8 @@ export class RegistrationController {
       const { id } = req.params;
       const updateData: UpdateRegistrationRequest = req.body;
       
-      const existingRegistration = await this.db.findById('registrations', Number(id));
-      if (!existingRegistration) {
+      const existingRow = await this.db.findById('registrations', Number(id));
+      if (!existingRow) {
         const response: ApiResponse = {
           success: false,
           error: 'Registration not found'
@@ -188,10 +188,14 @@ export class RegistrationController {
         return;
       }
 
-      const registration = new Registration({ ...existingRegistration, ...updateData });
+      // Convert database row to Registration object, then merge with updateData
+      const existingRegistration = Registration.fromDatabase(existingRow);
+      const registration = new Registration({ ...existingRegistration.toJSON(), ...updateData });
       registration.updatedAt = new Date().toISOString();
       
-      await this.db.update('registrations', Number(id), registration.toDatabase());
+      const dbPayload = registration.toDatabase();
+      console.log(`[UPDATE] Registration ${id} - clubRentals: ${dbPayload.club_rentals || 'null'}`);
+      await this.db.update('registrations', Number(id), dbPayload);
 
       const response: ApiResponse = {
         success: true,
