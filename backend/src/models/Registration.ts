@@ -70,8 +70,9 @@ export class Registration {
     this.wednesdayActivity = data.wednesdayActivity || 'None';
     this.wednesdayReception = data.wednesdayReception || 'I will attend';
     this.thursdayBreakfast = data.thursdayBreakfast || 'I will attend';
-    this.thursdayLunch = data.thursdayLunch || 'I will attend';
-    this.thursdayReception = data.thursdayReception || 'I will attend';
+    // Support both thursdayLunch/thursdayLuncheon and thursdayReception/thursdayDinner for frontend compatibility
+    this.thursdayLunch = (data as any).thursdayLunch || (data as any).thursdayLuncheon || 'I will attend';
+    this.thursdayReception = (data as any).thursdayReception || (data as any).thursdayDinner || 'I will attend';
     this.fridayBreakfast = data.fridayBreakfast || 'I will attend';
     this.fridayDinner = data.fridayDinner || 'I will attend';
     this.dietaryRestrictions = data.dietaryRestrictions;
@@ -134,7 +135,9 @@ export class Registration {
       wednesdayReception: this.wednesdayReception,
       thursdayBreakfast: this.thursdayBreakfast,
       thursdayLunch: this.thursdayLunch,
+      thursdayLuncheon: this.thursdayLunch, // Map for frontend compatibility
       thursdayReception: this.thursdayReception,
+      thursdayDinner: this.thursdayReception, // Map for frontend compatibility
       fridayBreakfast: this.fridayBreakfast,
       fridayDinner: this.fridayDinner,
       dietaryRestrictions: this.dietaryRestrictions,
