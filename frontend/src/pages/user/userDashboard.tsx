@@ -34,11 +34,11 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   // NOTE: Per requirements, dashboard cards show global event counts now
 
   // Aggregate event stats (global, not user-specific)
-  const totalEvents = useMemo(() => events.length, [events]);
-  const activeEventsCount = useMemo(
-    () => events.filter(e => !isEventExpired(e.date)).length,
-    [events]
-  );
+  // const totalEvents = useMemo(() => events.length, [events]);
+  // const activeEventsCount = useMemo(
+  //   () => events.filter(e => !isEventExpired(e.date)).length,
+  //   [events]
+  // );
 
   // Saves are handled in the registration page
 
