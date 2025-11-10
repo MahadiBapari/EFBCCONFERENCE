@@ -3,7 +3,6 @@ import { Event, Registration } from '../types';
 import { Modal } from './Modal';
 import { registrationsApi } from '../services/apiClient';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import '../styles/RegistrationPreview.css';
 
 interface RegistrationPreviewProps {
