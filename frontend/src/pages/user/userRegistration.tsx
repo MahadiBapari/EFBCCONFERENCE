@@ -598,7 +598,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 </div>
                 {needsClubRentals && (
                   <div className="form-group">
-                    <label htmlFor="golfClubPreference" className="form-label">Select club preference <span className="required-asterisk">*</span></label>
+                    <label htmlFor="golfClubPreference" className="form-label">Rental clubs are available for a fee, must be reserved in advance to ensure availability. Let us know your club preference. <span className="required-asterisk">*</span></label>
                     <select 
                       id="golfClubPreference" 
                       className={`form-control ${errors.golfClubPreference ? 'error' : ''}`}
