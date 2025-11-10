@@ -57,6 +57,7 @@ export interface Registration {
   wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
   golfHandicap?: string;
   clubRentals?: string;
+  massageTimeSlot?: string;
   spouseBreakfast?: boolean;
   
   // Conference Meals

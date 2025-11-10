@@ -272,13 +272,8 @@ const migrateRegistrationsTable = async () => {
         }
       });
 
-    // Drop removed columns if present
-    drop('golfHandicap');
-    drop('golfClubPreference');
-    drop('massageTimeSlot');
-    drop('golf_handicap');
-    drop('golf_club_preference');
-    drop('massage_time_slot');
+    // Drop removed columns if present (if any need to be removed in the future)
+    // Note: massage_time_slot is now a valid column, so don't drop it
 
     if (alter.length > 0) {
       const sql = `ALTER TABLE \`registrations\` ${alter.join(', ')}`;
@@ -336,6 +331,7 @@ const migrateEventsAndRegistrationsEnhancements = async () => {
       }
     }
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='golf_handicap')) alter.push('ADD COLUMN `golf_handicap` VARCHAR(10)');
+    if (!regCols.some((c:any)=>c.COLUMN_NAME==='massage_time_slot')) alter.push('ADD COLUMN `massage_time_slot` VARCHAR(50) NULL');
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='spouse_breakfast')) alter.push('ADD COLUMN `spouse_breakfast` BOOLEAN');
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='tuesday_early_reception')) alter.push("ADD COLUMN `tuesday_early_reception` VARCHAR(50)");
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='paid')) alter.push('ADD COLUMN `paid` BOOLEAN DEFAULT FALSE');

@@ -195,6 +195,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (needsClubRentals && !golfClubPreference?.trim()) {
       newErrors.golfClubPreference = 'Please select a club preference';
     }
+    // Validate massage time slot if Massage is selected
+    if ((formData.wednesdayActivity || '').toLowerCase().includes('massage') && !(formData as any).massageTimeSlot?.trim()) {
+      newErrors.massageTimeSlot = 'Please select a preferred time slot';
+    }
     if (formData.spouseDinnerTicket) {
       if (!formData.spouseFirstName?.trim()) newErrors.spouseFirstName = 'Spouse first name is required';
       if (!formData.spouseLastName?.trim()) newErrors.spouseLastName = 'Spouse last name is required';
@@ -629,14 +633,34 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 </div>
               </>
             )}
-            {formData.wednesdayActivity === 'Networking' && (
+            {((event.activities || []).some(a => a.toLowerCase().includes('massage')) && (formData.wednesdayActivity || '').toLowerCase().includes('massage')) && (
               <div className="form-group">
-                <label htmlFor="massageTimeSlot" className="form-label">Select your preferred time slot; We will get back to you confirming your appointment time.</label>
-                <select id="massageTimeSlot" className="form-control" value={(formData as any).massageTimeSlot || ''} onChange={e => handleInputChange('massageTimeSlot', e.target.value)}>
+                <label htmlFor="massageTimeSlot" className="form-label">If you Chose Massage: <span className="required-asterisk">*</span></label>
+                <label htmlFor="massageTimeSlot" className="form-label" style={{ fontWeight: 'normal', fontSize: '0.9rem', marginTop: '0.25rem', display: 'block' }}>
+                  Select your preferred time slot; We will get back to you confirming your appointment time.
+                </label>
+                <select 
+                  id="massageTimeSlot" 
+                  className={`form-control ${errors.massageTimeSlot ? 'error' : ''}`}
+                  value={(formData as any).massageTimeSlot || ''} 
+                  onChange={e => {
+                    handleInputChange('massageTimeSlot', e.target.value);
+                    if (errors.massageTimeSlot) {
+                      setErrors(prev => {
+                        const newErr = { ...prev };
+                        delete newErr.massageTimeSlot;
+                        return newErr;
+                      });
+                    }
+                  }}
+                  required
+                >
+                  <option value="" disabled>Select an option</option>
                   {MASSAGE_TIME_SLOTS.map(slot => (
                     <option key={slot} value={slot}>{slot}</option>
                   ))}
                 </select>
+                {errors.massageTimeSlot && <div className="error-message">{errors.massageTimeSlot}</div>}
               </div>
             )}
           </div>

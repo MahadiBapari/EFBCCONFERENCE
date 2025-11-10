@@ -30,6 +30,7 @@ export class Registration {
   public specialRequests?: string;
   public clubRentals?: string;
   public golfHandicap?: string;
+  public massageTimeSlot?: string;
   public spouseBreakfast?: boolean;
   public tuesdayEarlyReception?: 'I will attend' | 'I will NOT attend';
   public spouseFirstName?: string;
@@ -88,6 +89,7 @@ export class Registration {
     this.spouseBreakfast = (data as any).spouseBreakfast ?? false;
     this.tuesdayEarlyReception = (data as any).tuesdayEarlyReception ?? 'I will attend';
     this.golfHandicap = (data as any).golfHandicap;
+    this.massageTimeSlot = (data as any).massageTimeSlot;
     this.spouseFirstName = data.spouseFirstName;
     this.spouseLastName = data.spouseLastName;
     // Accept boolean or "Yes"/"No" and normalize to boolean
@@ -139,6 +141,7 @@ export class Registration {
       specialRequests: this.specialRequests,
       clubRentals: this.clubRentals,
       golfHandicap: this.golfHandicap,
+      massageTimeSlot: this.massageTimeSlot,
       spouseFirstName: this.spouseFirstName,
       spouseLastName: this.spouseLastName,
       spouseDinnerTicket: this.spouseDinnerTicket,
@@ -189,6 +192,7 @@ export class Registration {
       special_requests: this.specialRequests,
       club_rentals: this.clubRentals || null,
       golf_handicap: this.golfHandicap,
+      massage_time_slot: this.massageTimeSlot || null,
       spouse_dinner_ticket: !!this.spouseDinnerTicket,
       spouse_breakfast: !!this.spouseBreakfast,
       tuesday_early_reception: this.tuesdayEarlyReception,
@@ -234,6 +238,7 @@ export class Registration {
       specialRequests: row.special_requests,
       clubRentals: row.club_rentals || undefined,
       golfHandicap: row.golf_handicap,
+      massageTimeSlot: row.massage_time_slot,
       spouseDinnerTicket: !!row.spouse_dinner_ticket,
       spouseBreakfast: !!row.spouse_breakfast,
       spouseFirstName: row.spouse_first_name,
