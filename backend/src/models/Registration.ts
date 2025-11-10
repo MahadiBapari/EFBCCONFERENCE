@@ -160,7 +160,8 @@ export class Registration {
 
   // Convert to database format
   toDatabase(): any {
-    return {
+    // Exclude id from update payload (it's used in WHERE clause, not SET)
+    const payload: any = {
       user_id: this.userId,
       event_id: this.eventId,
       first_name: this.firstName,
@@ -197,6 +198,7 @@ export class Registration {
       payment_method: this.paymentMethod,
       paid: this.paid ?? false,
       square_payment_id: this.squarePaymentId || null,
+      updated_at: this.updatedAt || new Date().toISOString().slice(0, 19).replace('T', ' '),
     };
   }
 

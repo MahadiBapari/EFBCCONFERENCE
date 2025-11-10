@@ -178,8 +178,18 @@ export class RegistrationController {
       const { id } = req.params;
       const updateData: UpdateRegistrationRequest = req.body;
       
+      console.log(`[UPDATE] Received update request for registration ${id}`);
+      console.log(`[UPDATE] Update data keys:`, Object.keys(updateData));
+      console.log(`[UPDATE] Sample fields:`, {
+        firstName: updateData.firstName,
+        email: updateData.email,
+        clubRentals: updateData.clubRentals,
+        wednesdayActivity: updateData.wednesdayActivity
+      });
+      
       const existingRow = await this.db.findById('registrations', Number(id));
       if (!existingRow) {
+        console.log(`[UPDATE] Registration ${id} not found in database`);
         const response: ApiResponse = {
           success: false,
           error: 'Registration not found'
@@ -188,14 +198,37 @@ export class RegistrationController {
         return;
       }
 
+      console.log(`[UPDATE] Found existing registration ${id}`);
+      
       // Convert database row to Registration object, then merge with updateData
+      // Exclude id from updateData as it's not updatable
+      const { id: _, ...updateDataWithoutId } = updateData as any;
       const existingRegistration = Registration.fromDatabase(existingRow);
-      const registration = new Registration({ ...existingRegistration.toJSON(), ...updateData });
+      const registration = new Registration({ ...existingRegistration.toJSON(), ...updateDataWithoutId });
       registration.updatedAt = new Date().toISOString();
       
       const dbPayload = registration.toDatabase();
-      console.log(`[UPDATE] Registration ${id} - clubRentals: ${dbPayload.club_rentals || 'null'}`);
-      await this.db.update('registrations', Number(id), dbPayload);
+      // Ensure id is not in the payload (it's used in WHERE clause only)
+      delete (dbPayload as any).id;
+      console.log(`[UPDATE] Database payload keys:`, Object.keys(dbPayload));
+      console.log(`[UPDATE] Sample DB fields:`, {
+        first_name: dbPayload.first_name,
+        email: dbPayload.email,
+        club_rentals: dbPayload.club_rentals,
+        wednesday_activity: dbPayload.wednesday_activity
+      });
+      
+      const updateResult = await this.db.update('registrations', Number(id), dbPayload);
+      console.log(`[UPDATE] Database update result:`, updateResult);
+      
+      // Verify the update by fetching the updated record
+      const verifyRow = await this.db.findById('registrations', Number(id));
+      console.log(`[UPDATE] Verification - Updated record:`, {
+        first_name: verifyRow?.first_name,
+        email: verifyRow?.email,
+        club_rentals: verifyRow?.club_rentals,
+        wednesday_activity: verifyRow?.wednesday_activity
+      });
 
       const response: ApiResponse = {
         success: true,
