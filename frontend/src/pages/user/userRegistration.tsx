@@ -201,7 +201,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       } as Registration;
       onSave(registrationData);
       // Show success popup to the user
-      alert('Thank you. Your Registration has been successfully submitted! A copy will be emailed to you.');
+      alert('Registration updated successfully');
       onBack();
     } catch (error) {
       console.error('Error saving registration:', error);
