@@ -298,7 +298,7 @@ const migrateEventsAndRegistrationsEnhancements = async () => {
     if (!dbName) return;
 
     const getCols = async (table: string) => await databaseService.query(
-      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',[dbName, table]
+      'SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',[dbName, table]
     );
 
     // events.spouse_pricing JSON
@@ -324,12 +324,15 @@ const migrateEventsAndRegistrationsEnhancements = async () => {
     const regCols: any[] = await getCols('registrations');
     const alter: string[] = [];
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='club_rentals')) {
-      alter.push('ADD COLUMN `club_rentals` VARCHAR(50)');
+      alter.push('ADD COLUMN `club_rentals` VARCHAR(50) NULL');
     } else {
-      // Migrate existing BOOLEAN to VARCHAR if needed
+      // Migrate existing BOOLEAN/TINYINT/INT to VARCHAR if needed
       const clubRentalsCol = regCols.find((c:any)=>c.COLUMN_NAME==='club_rentals');
-      if (clubRentalsCol && clubRentalsCol.DATA_TYPE === 'tinyint') {
-        alter.push('MODIFY COLUMN `club_rentals` VARCHAR(50)');
+      const dataType = (clubRentalsCol?.DATA_TYPE || '').toLowerCase();
+      const columnType = (clubRentalsCol?.COLUMN_TYPE || '').toLowerCase();
+      if (clubRentalsCol && (dataType === 'tinyint' || dataType === 'int' || dataType === 'smallint' || columnType.includes('int') || columnType.includes('bool'))) {
+        alter.push('MODIFY COLUMN `club_rentals` VARCHAR(50) NULL');
+        console.log(`🛠️ Migrating club_rentals from ${dataType} to VARCHAR`);
       }
     }
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='golf_handicap')) alter.push('ADD COLUMN `golf_handicap` VARCHAR(10)');
