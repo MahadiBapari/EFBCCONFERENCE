@@ -13,6 +13,7 @@ import { AdminEvents } from './pages/admin/adminEvents';
 import { AdminEventForm } from './pages/admin/adminEventForm';
 import { AdminAttendees } from './pages/admin/adminAttendees';
 import { AdminGroups } from './pages/admin/adminGroups';
+import { AdminUsers } from './pages/admin/adminUsers';
 import { EventDetailsPage } from './pages/admin/eventsDetails';
 import { Event, Registration, Group, User, RegisterForm } from './types';
 import apiClient, { authApi } from './services/apiClient';
@@ -549,6 +550,8 @@ const handleLogout = () => {
           />;
         case 'cancellations':
           return <AdminCancellations onChanged={loadRegistrationsFromApi} />;
+        case 'allUsers':
+          return <AdminUsers />;
         case 'editRegistration':
           const editingReg = registrations.find(r => r.id === adminEditingRegistrationId);
           if (!editingReg) {
