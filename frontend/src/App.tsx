@@ -529,6 +529,7 @@ const handleLogout = () => {
             handleSaveRegistration={handleSaveRegistration}
             handleDeleteRegistrations={handleDeleteRegistrations}
             handleBulkAssignGroup={handleBulkAssignGroup}
+            user={user}
           />;
         case 'groups':
           return <AdminGroups 

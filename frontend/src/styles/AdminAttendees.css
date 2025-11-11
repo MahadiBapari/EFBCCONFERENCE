@@ -174,3 +174,8 @@
   color: var(--text-primary);
   white-space: nowrap;
 }
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}

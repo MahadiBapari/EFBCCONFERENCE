@@ -245,7 +245,7 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       doc.text((registration as any).paid ? 'Yes' : 'No', margin + 60, yPos);
       yPos += 6;
     }
-    if ((registration as any).squarePaymentId) {
+    if (registration.paymentMethod === 'Card' && (registration as any).squarePaymentId) {
       doc.setFont('helvetica', 'bold');
       doc.text('Square Payment ID:', margin, yPos);
       doc.setFont('helvetica', 'normal');
@@ -371,7 +371,7 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
           {typeof (registration as any).paid !== 'undefined' && (
             <Line label="Paid" value={(registration as any).paid ? 'Yes' : 'No'} />
           )}
-          {(registration as any).squarePaymentId && (
+          {registration.paymentMethod === 'Card' && (registration as any).squarePaymentId && (
             <Line label="Square Payment ID" value={(registration as any).squarePaymentId} />
           )}
         </div>
