@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Registration, Event, Group } from '../../types';
 import '../../styles/AdminAttendees.css';
 import { RegistrationPreview } from '../../components/RegistrationPreview';
-import { UserRegistration } from '../user/userRegistration';
 
 interface AdminAttendeesProps {
   registrations: Registration[];
@@ -12,6 +11,7 @@ interface AdminAttendeesProps {
   handleDeleteRegistrations: (regIds: number[]) => void;
   handleBulkAssignGroup: (regIds: number[], targetGroupId: number) => void;
   user: { id: number; name: string; email: string };
+  onEditRegistration: (registrationId: number) => void;
 }
 
 export const AdminAttendees: React.FC<AdminAttendeesProps> = ({ 
@@ -21,7 +21,8 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   handleSaveRegistration, 
   handleDeleteRegistrations, 
   handleBulkAssignGroup,
-  user
+  user,
+  onEditRegistration
 }) => {
   const [filter, setFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,7 +30,6 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   // Removed unused local edit state to satisfy CI lint rules
   const [selectedRegIds, setSelectedRegIds] = useState<number[]>([]);
   const [previewRegId, setPreviewRegId] = useState<number | null>(null);
-  const [editingRegId, setEditingRegId] = useState<number | null>(null);
 
   // Automatically select the most recent event on component mount
   useEffect(() => {
@@ -260,7 +260,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                       </button>
                       <button 
                         className="btn btn-primary btn-sm" 
-                        onClick={() => setEditingRegId(reg.id)}
+                        onClick={() => onEditRegistration(reg.id)}
                         title="Edit"
                       >
                         ✏️ Edit
@@ -284,26 +284,6 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
             event={event}
             registrationId={previewRegId}
             onClose={() => setPreviewRegId(null)}
-          />
-        );
-      })()}
-      
-      {editingRegId && (() => {
-        const reg = filteredRegistrations.find(r => r.id === editingRegId) || registrations.find(r => r.id === editingRegId);
-        if (!reg) return null;
-        // Use the registration's user ID for admin editing
-        const regUser = { id: reg.userId, name: reg.name, email: reg.email };
-        return (
-          <UserRegistration
-            events={events}
-            registrations={registrations}
-            user={regUser}
-            targetEventId={reg.eventId}
-            onBack={() => setEditingRegId(null)}
-            onSave={(regData) => {
-              handleSaveRegistration(regData);
-              setEditingRegId(null);
-            }}
           />
         );
       })()}

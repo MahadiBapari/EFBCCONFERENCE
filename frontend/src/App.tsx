@@ -82,6 +82,7 @@ const App: React.FC = () => {
   const [showRegistration, setShowRegistration] = useState(false);
   const [registrationTargetEventId, setRegistrationTargetEventId] = useState<number | null>(null);
   const [adminEditingEvent, setAdminEditingEvent] = useState<Event | null>(null);
+  const [adminEditingRegistrationId, setAdminEditingRegistrationId] = useState<number | null>(null);
 
   useEffect(() => {
     document.body.className = `${theme}-theme`;
@@ -283,6 +284,11 @@ const handleLogout = () => {
   const beginRegistration = (eventId?: number) => {
     setRegistrationTargetEventId(eventId ?? null);
     setView('registration');
+  };
+  
+  const beginAdminEditRegistration = (registrationId: number) => {
+    setAdminEditingRegistrationId(registrationId);
+    setView('editRegistration');
   };
   const openAdminEventForm = (ev?: Event | null) => {
     setAdminEditingEvent(ev || null);
@@ -530,6 +536,7 @@ const handleLogout = () => {
             handleDeleteRegistrations={handleDeleteRegistrations}
             handleBulkAssignGroup={handleBulkAssignGroup}
             user={user}
+            onEditRegistration={beginAdminEditRegistration}
           />;
         case 'groups':
           return <AdminGroups 
@@ -542,6 +549,28 @@ const handleLogout = () => {
           />;
         case 'cancellations':
           return <AdminCancellations onChanged={loadRegistrationsFromApi} />;
+        case 'editRegistration':
+          const editingReg = registrations.find(r => r.id === adminEditingRegistrationId);
+          if (!editingReg) {
+            setView('attendees');
+            return null;
+          }
+          const regUser = { id: editingReg.userId, name: editingReg.name, email: editingReg.email };
+          return <UserRegistration
+            events={events}
+            registrations={registrations}
+            user={regUser}
+            targetEventId={editingReg.eventId}
+            onBack={() => {
+              setAdminEditingRegistrationId(null);
+              setView('attendees');
+            }}
+            onSave={(regData) => {
+              handleSaveRegistration(regData);
+              setAdminEditingRegistrationId(null);
+              setView('attendees');
+            }}
+          />;
         default:
           return <AdminEvents 
             onViewEvent={setViewingEventId}
