@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../../styles/AdminUsers.css';
 import { apiClient } from '../../services/apiClient';
 
@@ -11,23 +11,53 @@ interface User {
   createdAt?: string;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+interface UsersApiResponse {
+  success: boolean;
+  data?: User[];
+  pagination?: PaginationInfo;
+  error?: string;
+}
+
 export const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 5,
+    total: 0,
+    totalPages: 0
+  });
+  const usersPerPage = 5; // For testing, will be 30 later
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiClient.get<User[]>('/users');
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append('page', currentPage.toString());
+      params.append('limit', usersPerPage.toString());
+      if (searchQuery.trim()) {
+        params.append('search', searchQuery.trim());
+      }
+      
+      const response = await apiClient.get<User[]>(`/users?${params.toString()}`) as UsersApiResponse;
       if (response.success && response.data) {
         setUsers(Array.isArray(response.data) ? response.data : []);
+        if (response.pagination) {
+          setPagination(response.pagination);
+        }
       } else {
         setError('Failed to load users');
       }
@@ -36,7 +66,11 @@ export const AdminUsers: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchQuery, usersPerPage]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   // Split name into first and last name
   const splitName = (name: string): { firstName: string; lastName: string } => {
@@ -48,16 +82,17 @@ export const AdminUsers: React.FC = () => {
     return { firstName, lastName };
   };
 
-  const filteredUsers = users.filter(user => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    const { firstName, lastName } = splitName(user.name);
-    return (
-      firstName.toLowerCase().includes(query) ||
-      lastName.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query)
-    );
-  });
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   if (loading) {
     return (
@@ -86,16 +121,16 @@ export const AdminUsers: React.FC = () => {
             placeholder="Search by name or email..."
             className="search-input"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
           />
           <button className="btn btn-secondary" onClick={loadUsers}>
-            🔄 Refresh
+            Refresh
           </button>
         </div>
       </div>
 
       <div className="admin-users-table-container">
-        {filteredUsers.length > 0 ? (
+        {users.length > 0 ? (
           <table className="admin-users-table">
             <thead>
               <tr>
@@ -108,7 +143,7 @@ export const AdminUsers: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => {
+              {users.map((user) => {
                 const { firstName, lastName } = splitName(user.name);
                 return (
                   <tr key={user.id}>
@@ -138,8 +173,38 @@ export const AdminUsers: React.FC = () => {
         )}
       </div>
 
+      {pagination.totalPages > 1 && (
+        <div className="admin-users-pagination">
+          <button
+            className="btn btn-secondary"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+          <div className="pagination-info">
+            <span>
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+            <span className="pagination-total">
+              (Total: {pagination.total} users)
+            </span>
+          </div>
+          <button
+            className="btn btn-secondary"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === pagination.totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
+
       <div className="admin-users-footer">
-        <p>Total users: {filteredUsers.length}</p>
+        <p>
+          Showing {users.length} of {pagination.total} users
+          {searchQuery && ` matching "${searchQuery}"`}
+        </p>
       </div>
     </div>
   );
