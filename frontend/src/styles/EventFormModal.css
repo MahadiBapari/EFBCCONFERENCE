@@ -453,5 +453,21 @@ select {
   width: fit-content;
 }
 
+.description-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.description-item-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.description-item-input {
+  flex: 1;
+}
+
 /* Utility: margin-top half rem to replace inline styles */
 .mt-half { margin-top: 0.5rem; }

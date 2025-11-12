@@ -14,7 +14,7 @@ export interface Event {
   date: string;
   activities?: string[];
   location?: string;
-  description?: string;
+  description?: string[];
   createdAt?: string;
   updatedAt?: string;
   spousePricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;

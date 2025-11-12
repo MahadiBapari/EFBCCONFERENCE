@@ -143,6 +143,7 @@ const createTables = async () => {
 
     // Add cancellation requests feature
     await migrateCancellationFeature();
+    await migrateEventDescriptionToArray();
 
     // Groups table
     await databaseService.query(`
@@ -343,6 +344,53 @@ const migrateEventsAndRegistrationsEnhancements = async () => {
     }
   } catch(e) {
     console.warn('Enhancement migration skipped:', e);
+  }
+};
+
+// Migration helper to convert event description from TEXT to JSON array
+const migrateEventDescriptionToArray = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    // Check if description column exists and is not already JSON
+    const cols = await databaseService.query(
+      'SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+      [dbName, 'events', 'description']
+    );
+    
+    if (Array.isArray(cols) && cols.length > 0) {
+      const col = cols[0];
+      const dataType = col.DATA_TYPE?.toUpperCase();
+      const columnType = col.COLUMN_TYPE?.toUpperCase() || '';
+      
+      // If description is TEXT or VARCHAR, convert to JSON
+      if (dataType === 'TEXT' || dataType === 'VARCHAR' || columnType.includes('TEXT')) {
+        // First, migrate existing data: convert single string descriptions to JSON arrays
+        const events = await databaseService.query('SELECT id, description FROM events WHERE description IS NOT NULL');
+        for (const event of events) {
+          if (event.description && typeof event.description === 'string') {
+            try {
+              // Try to parse as JSON first
+              JSON.parse(event.description);
+            } catch {
+              // If not JSON, convert to array
+              await databaseService.query(
+                'UPDATE events SET description = ? WHERE id = ?',
+                [JSON.stringify([event.description]), event.id]
+              );
+            }
+          }
+        }
+        
+        // Now alter the column type to JSON
+        await databaseService.query('ALTER TABLE `events` MODIFY COLUMN `description` JSON NULL');
+        console.log('🛠️ Migrated events.description to JSON array');
+      }
+    }
+  } catch (error: any) {
+    console.error('Error migrating event description:', error?.message || error);
   }
 };
 

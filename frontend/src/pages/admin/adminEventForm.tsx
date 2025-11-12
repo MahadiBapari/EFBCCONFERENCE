@@ -12,7 +12,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [location, setLocation] = useState('');
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState<string[]>([]);
   const [activities, setActivities] = useState<string[]>([]);
   const [newActivity, setNewActivity] = useState('');
   const [registrationPricing, setRegistrationPricing] = useState<Array<{ label: string; price?: number; startDate?: string; endDate?: string }>>([
@@ -37,7 +37,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     const normalizedDate = (event.date || '').toString();
     setDate(normalizedDate.includes('T') ? normalizedDate.slice(0, 10) : normalizedDate);
     setLocation(event.location || '');
-    setDescription(event.description || '');
+    setDescription(Array.isArray(event.description) ? event.description : (event.description ? [event.description] : []));
     setActivities(event.activities || []);
     setRegistrationPricing(event.registrationPricing || registrationPricing);
     setSpousePricing(event.spousePricing && event.spousePricing.length ? event.spousePricing : spousePricing);
@@ -76,7 +76,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
         date,
         year,
         location: location.trim(),
-        description: description.trim(),
+        description: description.filter(d => d.trim().length > 0),
         activities,
         registrationPricing,
         spousePricing,
@@ -117,8 +117,47 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
             </div>
 
             <div className="form-group">
-              <label htmlFor="description" className="form-label">Event Description</label>
-              <textarea id="description" className="form-control" rows={3} value={description} onChange={(e)=>setDescription(e.target.value)} disabled={isSubmitting} />
+              <label className="form-label">Registration Form Includes</label>
+              <div className="description-items">
+                {description.map((item, idx) => (
+                  <div key={idx} className="description-item-row">
+                    <input
+                      className="form-control description-item-input"
+                      type="text"
+                      placeholder="e.g., All Education Sessions"
+                      aria-label="Description item"
+                      value={item}
+                      onChange={(e) => {
+                        const v = [...description];
+                        v[idx] = e.target.value;
+                        setDescription(v);
+                      }}
+                      disabled={isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      aria-label="Remove description item"
+                      onClick={() => {
+                        const v = [...description];
+                        v.splice(idx, 1);
+                        setDescription(v);
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setDescription([...description, ''])}
+                  disabled={isSubmitting}
+                >
+                  Add Item
+                </button>
+              </div>
             </div>
 
             <div className="form-group">

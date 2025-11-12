@@ -466,15 +466,26 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             </div>
             <div className="registration-includes">
               <h4 className="includes-title">Registration Form Includes:</h4>
-              <ul className="includes-list">
-                <li>All Education Sessions</li>
-                <li>Wednesday Golf Tournament OR Alternate Activity</li>
-                <li>Welcome Reception</li>
-                <li>Breakfasts</li>
-                <li>Coffee Break</li>
-                <li>Lunch</li>
-                <li>Reception/Dinner</li>
-              </ul>
+              {event.description && Array.isArray(event.description) && event.description.length > 0 ? (
+                <ul className="includes-list">
+                  {event.description.map((item, idx) => (
+                    <li key={idx} className="includes-item">
+                      <span className="checkmark">✓</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul className="includes-list">
+                  <li>All Education Sessions</li>
+                  <li>Wednesday Golf Tournament OR Alternate Activity</li>
+                  <li>Welcome Reception</li>
+                  <li>Breakfasts</li>
+                  <li>Coffee Break</li>
+                  <li>Lunch</li>
+                  <li>Reception/Dinner</li>
+                </ul>
+              )}
             </div>
           </div>
 
