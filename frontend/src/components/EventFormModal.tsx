@@ -13,7 +13,9 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
   const [name, setName] = useState(event?.name || "");
   const [date, setDate] = useState(event?.date || "");
   const [location, setLocation] = useState(event?.location || "");
-  const [description, setDescription] = useState(event?.description || "");
+  const [description, setDescription] = useState<string[]>(
+    Array.isArray(event?.description) ? event.description : (event?.description ? [event.description] : [])
+  );
   const [activities, setActivities] = useState<string[]>(event?.activities || []);
   const [newActivity, setNewActivity] = useState('');
   const defaultSpouseTiers = [
@@ -33,7 +35,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
   ]);
   const [breakfastPrice, setBreakfastPrice] = useState<number | undefined>(event?.breakfastPrice);
   const [breakfastEndDate, setBreakfastEndDate] = useState<string | undefined>(event?.breakfastEndDate);
-  const [errors, setErrors] = useState<{name?: string; date?: string; location?: string; description?: string}>({});
+  const [errors, setErrors] = useState<{name?: string; date?: string; location?: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Clear errors when inputs change
@@ -100,6 +102,10 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
       const eventDate = new Date(date);
       const year = eventDate.getFullYear();
       
+      // Ensure description is always an array
+      const descriptionArray: string[] = Array.isArray(description) 
+        ? description.filter(d => d.trim().length > 0)
+        : [];
       onSave({ 
         ...event, 
         id: event?.id || Date.now(),
@@ -107,7 +113,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
         date, 
         year,
         location: location.trim(),
-        description: description.trim(),
+        description: descriptionArray,
         activities: activities,
         spousePricing,
         registrationPricing,
@@ -235,19 +241,47 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
             </div>
 
             <div className="form-group">
-              <label htmlFor="description" className="form-label">
-                Event Description
-              </label>
-              <textarea 
-                id="description" 
-                className={`form-control ${errors.description ? 'error' : ''}`}
-                value={description} 
-                onChange={(e) => setDescription(e.target.value)} 
-                placeholder="Brief description of the event..."
-                rows={3}
-                disabled={isSubmitting}
-              />
-              {errors.description && <div className="error-message">{errors.description}</div>}
+              <label className="form-label">Registration Form Includes</label>
+              <div className="description-items">
+                {description.map((item, idx) => (
+                  <div key={idx} className="description-item-row">
+                    <input
+                      className="form-control description-item-input"
+                      type="text"
+                      placeholder="e.g., All Education Sessions"
+                      aria-label="Description item"
+                      value={item}
+                      onChange={(e) => {
+                        const v = [...description];
+                        v[idx] = e.target.value;
+                        setDescription(v);
+                      }}
+                      disabled={isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      aria-label="Remove description item"
+                      onClick={() => {
+                        const v = [...description];
+                        v.splice(idx, 1);
+                        setDescription(v);
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setDescription([...description, ''])}
+                  disabled={isSubmitting}
+                >
+                  Add Item
+                </button>
+              </div>
             </div>
 
             <div className="form-group">
