@@ -14,7 +14,9 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
   const [date, setDate] = useState(event?.date || "");
   const [location, setLocation] = useState(event?.location || "");
   const [description, setDescription] = useState<string[]>(
-    Array.isArray(event?.description) ? event.description : (event?.description ? [event.description] : [])
+    event?.description 
+      ? (Array.isArray(event.description) ? event.description : [event.description])
+      : []
   );
   const [activities, setActivities] = useState<string[]>(event?.activities || []);
   const [newActivity, setNewActivity] = useState('');
