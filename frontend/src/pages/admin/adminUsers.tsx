@@ -27,7 +27,8 @@ interface UsersApiResponse {
 
 export const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -68,6 +69,7 @@ export const AdminUsers: React.FC = () => {
       setError(err?.response?.data?.error || 'Failed to load users');
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   }, [currentPage, debouncedSearchQuery, usersPerPage]);
 
@@ -114,23 +116,6 @@ export const AdminUsers: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="admin-users-container">
-        <div className="loading">Loading users...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="admin-users-container">
-        <div className="error-message">{error}</div>
-        <button className="btn btn-primary" onClick={loadUsers}>Retry</button>
-      </div>
-    );
-  }
-
   return (
     <div className="admin-users-container">
       <div className="admin-users-header">
@@ -142,15 +127,36 @@ export const AdminUsers: React.FC = () => {
             className="search-input"
             value={searchQuery}
             onChange={handleSearchChange}
+            disabled={initialLoading}
           />
-          <button className="btn btn-secondary" onClick={loadUsers}>
+          <button 
+            className="btn btn-secondary" 
+            onClick={loadUsers}
+            disabled={loading || initialLoading}
+          >
             Refresh
           </button>
         </div>
       </div>
 
+      {error && (
+        <div className="error-message">
+          {error}
+          <button className="btn btn-primary btn-sm error-retry-btn" onClick={loadUsers}>
+            Retry
+          </button>
+        </div>
+      )}
+
       <div className="admin-users-table-container">
-        {users.length > 0 ? (
+        {initialLoading ? (
+          <div className="loading">Loading users...</div>
+        ) : loading ? (
+          <div className="table-loading">
+            <div className="loading-spinner"></div>
+            <span>Searching...</span>
+          </div>
+        ) : users.length > 0 ? (
           <table className="admin-users-table">
             <thead>
               <tr>
