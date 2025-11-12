@@ -69,6 +69,10 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     setIsSubmitting(true);
     try {
       const year = new Date(date).getFullYear();
+      // Ensure description is always an array
+      const descriptionArray: string[] = Array.isArray(description) 
+        ? description.filter(d => d.trim().length > 0)
+        : [];
       onSave({
         ...event,
         id: event?.id || Date.now(),
@@ -76,7 +80,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
         date,
         year,
         location: location.trim(),
-        description: description.filter(d => d.trim().length > 0),
+        description: descriptionArray,
         activities,
         registrationPricing,
         spousePricing,
