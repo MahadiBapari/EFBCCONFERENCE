@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import '../../styles/AdminUsers.css';
 import { apiClient } from '../../services/apiClient';
 
@@ -30,6 +30,7 @@ export const AdminUsers: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
@@ -38,18 +39,20 @@ export const AdminUsers: React.FC = () => {
     totalPages: 0
   });
   const usersPerPage = 5; // For testing, will be 30 later
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Build query parameters
+      // Build query parameters - search queries the entire database
       const params = new URLSearchParams();
       params.append('page', currentPage.toString());
       params.append('limit', usersPerPage.toString());
-      if (searchQuery.trim()) {
-        params.append('search', searchQuery.trim());
+      // When search query is provided, backend searches entire database before pagination
+      if (debouncedSearchQuery.trim()) {
+        params.append('search', debouncedSearchQuery.trim());
       }
       
       const response = await apiClient.get<User[]>(`/users?${params.toString()}`) as UsersApiResponse;
@@ -66,11 +69,29 @@ export const AdminUsers: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchQuery, usersPerPage]);
+  }, [currentPage, debouncedSearchQuery, usersPerPage]);
 
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  // Debounce search query to avoid too many API calls
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setCurrentPage(1); // Reset to first page when search changes
+    }, 300); // 300ms debounce delay
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery]);
 
   // Split name into first and last name
   const splitName = (name: string): { firstName: string; lastName: string } => {
@@ -84,7 +105,6 @@ export const AdminUsers: React.FC = () => {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
   };
 
   const handlePageChange = (newPage: number) => {
@@ -168,7 +188,7 @@ export const AdminUsers: React.FC = () => {
           </table>
         ) : (
           <div className="no-users">
-            <p>No users found{searchQuery ? ` matching "${searchQuery}"` : ''}.</p>
+            <p>No users found{debouncedSearchQuery ? ` matching "${debouncedSearchQuery}"` : ''}.</p>
           </div>
         )}
       </div>
@@ -186,9 +206,6 @@ export const AdminUsers: React.FC = () => {
             <span>
               Page {pagination.page} of {pagination.totalPages}
             </span>
-            <span className="pagination-total">
-              (Total: {pagination.total} users)
-            </span>
           </div>
           <button
             className="btn btn-secondary"
@@ -203,7 +220,7 @@ export const AdminUsers: React.FC = () => {
       <div className="admin-users-footer">
         <p>
           Showing {users.length} of {pagination.total} users
-          {searchQuery && ` matching "${searchQuery}"`}
+          {debouncedSearchQuery && ` matching "${debouncedSearchQuery}"`}
         </p>
       </div>
     </div>
