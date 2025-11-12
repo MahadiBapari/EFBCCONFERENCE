@@ -26,22 +26,29 @@ export class UserController {
       let total;
 
       if (search) {
-        const searchCondition = `name LIKE '%${search}%' OR email LIKE '%${search}%'`;
+        // Use parameterized queries for search to prevent SQL injection
+        const searchPattern = `%${search}%`;
+        const searchCondition = `(name LIKE ? OR email LIKE ?)`;
         let whereClause = searchCondition;
+        const params: any[] = [searchPattern, searchPattern];
         
         if (Object.keys(conditions).length > 0) {
           const conditionClause = Object.keys(conditions).map(key => `${key} = ?`).join(' AND ');
           whereClause = `${conditionClause} AND ${searchCondition}`;
+          params.unshift(...Object.values(conditions));
         }
 
+        // Inline LIMIT and OFFSET as numbers (already sanitized) to avoid parameter binding issues
+        const limitNum = Number(limit);
+        const offsetNum = Number(offset);
         users = await this.db.query(
-          `SELECT * FROM users WHERE ${whereClause} LIMIT ? OFFSET ?`,
-          [...Object.values(conditions), Number(limit), offset]
+          `SELECT * FROM users WHERE ${whereClause} LIMIT ${limitNum} OFFSET ${offsetNum}`,
+          params
         );
         
         total = await this.db.query(
           `SELECT COUNT(*) as count FROM users WHERE ${whereClause}`,
-          Object.values(conditions)
+          params
         );
       } else {
         users = await this.db.findAll('users', conditions, Number(limit), offset);
