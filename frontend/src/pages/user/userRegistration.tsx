@@ -476,7 +476,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 <ul className="includes-list">
                   {event.description.map((item, idx) => (
                     <li key={idx} className="includes-item">
-                      <span className="checkmark">✓</span>
+                      
                       {item}
                     </li>
                   ))}

@@ -117,6 +117,15 @@ router.post('/reset-password', async (req: Request, res: Response) => {
   try {
     const { token, newPassword } = req.body || {};
     if (!token || !newPassword) return res.status(400).json({ success: false, error: 'Token and newPassword are required' });
+    
+    // Validate password strength (same as registration)
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
+    }
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      return res.status(400).json({ success: false, error: 'Password must contain uppercase, lowercase, and number' });
+    }
+    
     const db = getDb();
     // Validate token and expiry in DB time to avoid timezone issues
     const rows = await db.query('SELECT id FROM users WHERE password_reset_token=? AND password_reset_expires_at > NOW() LIMIT 1', [token]);
