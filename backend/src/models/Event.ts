@@ -4,7 +4,8 @@ export class Event {
   public id?: number;
   public year: number;
   public name: string;
-  public date: string;
+  public date: string; // End date
+  public startDate?: string; // Start date
   public activities?: string[];
   public location?: string;
   public description?: string[];
@@ -20,6 +21,7 @@ export class Event {
     this.year = data.year || (data.date ? new Date(data.date).getFullYear() : new Date().getFullYear());
     this.name = data.name || '';
     this.date = data.date || new Date().toISOString().split('T')[0];
+    this.startDate = (data as any).startDate || (data as any).start_date || undefined;
     this.activities = data.activities || [];
     this.location = data.location || '';
     this.description = Array.isArray(data.description) ? data.description : (data.description ? [data.description] : []);
@@ -39,6 +41,8 @@ export class Event {
       year: this.year,
       name: this.name,
       date: this.date,
+      startDate: this.startDate,
+      endDate: this.date, // Alias for backward compatibility
       activities: this.activities,
       location: this.location,
       description: this.description,
@@ -56,6 +60,7 @@ export class Event {
     return {
       name: this.name,
       date: this.date,
+      start_date: this.startDate || null,
       activities: this.activities ? JSON.stringify(this.activities) : null,
       location: this.location,
       description: this.description && this.description.length > 0 ? JSON.stringify(this.description) : null,
@@ -105,6 +110,7 @@ export class Event {
       id: row.id,
       name: row.name,
       date: row.date,
+      startDate: row.start_date || (row as any).startDate,
       activities: activities,
       location: row.location,
       description: (() => {

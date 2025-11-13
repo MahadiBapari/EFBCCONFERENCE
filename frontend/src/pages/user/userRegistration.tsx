@@ -437,7 +437,13 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     <div className="container">
       <div className="page-header">
         <h1>{registration ? 'Edit' : 'Register'}</h1>
-        <p className="modal-subtitle">{event.name} - {new Date(event.date).toLocaleDateString()}</p>
+        <p className="modal-subtitle">
+          {event.name} - {
+            event.startDate 
+              ? `${new Date(event.startDate).toLocaleDateString()} - ${new Date(event.date || event.endDate || '').toLocaleDateString()}`
+              : new Date(event.date || event.endDate || '').toLocaleDateString()
+          }
+        </p>
       </div>
 
       <div className="card" style={{ padding: '1rem' }}>

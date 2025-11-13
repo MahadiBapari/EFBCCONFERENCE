@@ -69,3 +69,8 @@
   margin-bottom: 1rem;
   color: var(--text-primary);
 }
+
+.loading-container {
+  text-align: center;
+  padding: 2rem;
+}

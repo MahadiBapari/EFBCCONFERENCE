@@ -11,7 +11,9 @@ export interface Event {
   id: number;
   year: number;
   name: string;
-  date: string;
+  date: string; // End date (kept for backward compatibility)
+  startDate?: string; // Start date
+  endDate?: string; // Alias for date
   activities?: string[];
   location?: string;
   description?: string[];

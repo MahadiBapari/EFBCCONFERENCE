@@ -10,7 +10,8 @@ interface AdminEventFormProps {
 
 export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel, onSave }) => {
   const [name, setName] = useState('');
-  const [date, setDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState<string[]>([]);
   const [activities, setActivities] = useState<string[]>([]);
@@ -26,16 +27,18 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     { label: 'Dinner Ticket', price: undefined },
     { label: 'On-Site Dinner Ticket', price: undefined },
   ]);
-  const [errors, setErrors] = useState<{ name?: string; date?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; startDate?: string; endDate?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // hydrate from incoming event once on mount
   useEffect(() => {
     if (!event) return;
     setName(event.name || '');
-    // Ensure date string is in YYYY-MM-DD for input[type=date]
-    const normalizedDate = (event.date || '').toString();
-    setDate(normalizedDate.includes('T') ? normalizedDate.slice(0, 10) : normalizedDate);
+    // Ensure date strings are in YYYY-MM-DD for input[type=date]
+    const normalizedEndDate = (event.date || event.endDate || '').toString();
+    setEndDate(normalizedEndDate.includes('T') ? normalizedEndDate.slice(0, 10) : normalizedEndDate);
+    const normalizedStartDate = (event.startDate || '').toString();
+    setStartDate(normalizedStartDate.includes('T') ? normalizedStartDate.slice(0, 10) : normalizedStartDate);
     setLocation(event.location || '');
     setDescription(Array.isArray(event.description) ? event.description : (event.description ? [event.description] : []));
     setActivities(event.activities || []);
@@ -45,7 +48,8 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   }, []);
 
   useEffect(() => { if (errors.name && name.trim()) setErrors(prev => ({ ...prev, name: undefined })); }, [name, errors.name]);
-  useEffect(() => { if (errors.date && date) setErrors(prev => ({ ...prev, date: undefined })); }, [date, errors.date]);
+  useEffect(() => { if (errors.startDate && startDate) setErrors(prev => ({ ...prev, startDate: undefined })); }, [startDate, errors.startDate]);
+  useEffect(() => { if (errors.endDate && endDate) setErrors(prev => ({ ...prev, endDate: undefined })); }, [endDate, errors.endDate]);
 
   const addActivity = () => {
     const a = newActivity.trim();
@@ -56,9 +60,13 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   const removeActivity = (a: string) => setActivities(prev => prev.filter(x => x !== a));
 
   const validate = () => {
-    const e: { name?: string; date?: string } = {};
+    const e: { name?: string; startDate?: string; endDate?: string } = {};
     if (!name.trim()) e.name = 'Event name is required';
-    if (!date) e.date = 'Event date is required';
+    if (!startDate) e.startDate = 'Start date is required';
+    if (!endDate) e.endDate = 'End date is required';
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      e.endDate = 'End date must be after start date';
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -68,7 +76,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     if (!validate()) return;
     setIsSubmitting(true);
     try {
-      const year = new Date(date).getFullYear();
+      const year = new Date(endDate || startDate).getFullYear();
       // Ensure description is always an array
       const descriptionArray: string[] = Array.isArray(description) 
         ? description.filter(d => d.trim().length > 0)
@@ -77,7 +85,9 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
         ...event,
         id: event?.id || Date.now(),
         name: name.trim(),
-        date,
+        date: endDate, // End date
+        startDate: startDate,
+        endDate: endDate,
         year,
         location: location.trim(),
         description: descriptionArray,
@@ -110,9 +120,15 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
             </div>
 
             <div className="form-group">
-              <label htmlFor="date" className="form-label">Event Date <span className="required-asterisk">*</span></label>
-              <input id="date" type="date" className={`form-control ${errors.date ? 'error' : ''}`} value={date} onChange={(e)=>setDate(e.target.value)} required disabled={isSubmitting} />
-              {errors.date && <div className="error-message">{errors.date}</div>}
+              <label htmlFor="startDate" className="form-label">Start Date <span className="required-asterisk">*</span></label>
+              <input id="startDate" type="date" className={`form-control ${errors.startDate ? 'error' : ''}`} value={startDate} onChange={(e)=>setStartDate(e.target.value)} required disabled={isSubmitting} />
+              {errors.startDate && <div className="error-message">{errors.startDate}</div>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="endDate" className="form-label">End Date <span className="required-asterisk">*</span></label>
+              <input id="endDate" type="date" className={`form-control ${errors.endDate ? 'error' : ''}`} value={endDate} onChange={(e)=>setEndDate(e.target.value)} required disabled={isSubmitting} min={startDate} />
+              {errors.endDate && <div className="error-message">{errors.endDate}</div>}
             </div>
 
             <div className="form-group">

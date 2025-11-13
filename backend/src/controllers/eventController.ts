@@ -110,6 +110,16 @@ export class EventController {
           (eventData as any).date = dt.toISOString().slice(0, 10);
         }
       }
+      // Normalize optional startDate
+      if ((eventData as any).startDate) {
+        const sd = new Date((eventData as any).startDate as any);
+        if (!isNaN(sd.getTime())) {
+          (eventData as any).startDate = sd.toISOString().slice(0, 10);
+        } else {
+          const raw = String((eventData as any).startDate);
+          (eventData as any).startDate = raw.slice(0, 10);
+        }
+      }
       // Normalize optional breakfast_end_date
       if ((eventData as any).breakfastEndDate) {
         const bed = new Date((eventData as any).breakfastEndDate as any);
@@ -154,6 +164,16 @@ export class EventController {
         const dt = new Date((updateData as any).date as any);
         if (!isNaN(dt.getTime())) {
           (updateData as any).date = dt.toISOString().slice(0, 10);
+        }
+      }
+      // Normalize optional startDate
+      if ((updateData as any).startDate) {
+        const sd = new Date((updateData as any).startDate as any);
+        if (!isNaN(sd.getTime())) {
+          (updateData as any).startDate = sd.toISOString().slice(0, 10);
+        } else {
+          const raw = String((updateData as any).startDate);
+          (updateData as any).startDate = raw.slice(0, 10);
         }
       }
       // Normalize optional breakfast_end_date

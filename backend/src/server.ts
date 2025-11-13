@@ -88,6 +88,7 @@ const createTables = async () => {
         id INT PRIMARY KEY AUTO_INCREMENT,
         name VARCHAR(255) NOT NULL,
         date DATE NOT NULL,
+        start_date DATE NULL,
         activities JSON,
         location VARCHAR(500),
         description TEXT,
@@ -144,6 +145,7 @@ const createTables = async () => {
     // Add cancellation requests feature
     await migrateCancellationFeature();
     await migrateEventDescriptionToArray();
+    await migrateEventStartDate();
 
     // Groups table
     await databaseService.query(`
@@ -391,6 +393,27 @@ const migrateEventDescriptionToArray = async (): Promise<void> => {
     }
   } catch (error: any) {
     console.error('Error migrating event description:', error?.message || error);
+  }
+};
+
+// Migration helper to add start_date column to events table
+const migrateEventStartDate = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    const cols = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+      [dbName, 'events', 'start_date']
+    );
+    
+    if (!Array.isArray(cols) || cols.length === 0) {
+      await databaseService.query('ALTER TABLE `events` ADD COLUMN `start_date` DATE NULL AFTER `date`');
+      console.log('🛠️ Added events.start_date column');
+    }
+  } catch (error: any) {
+    console.error('Error migrating event start_date:', error?.message || error);
   }
 };
 

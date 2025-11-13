@@ -68,16 +68,6 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="container">
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <h2>Loading events...</h2>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="container">
       <div className="page-header">
@@ -86,17 +76,25 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
           Create New Event
         </button>
       </div>
-      {events.length > 0 ? (
+      {loading ? (
+        <div className="loading-container">
+          <h2>Loading events...</h2>
+        </div>
+      ) : events.length > 0 ? (
         <div className="event-grid">
-          {[...events].sort((a,b) => b.year - a.year).map(event => (
+          {[...events].sort((a,b) => b.year - a.year).map(event => {
+            const startDateStr = event.startDate ? new Date(event.startDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : null;
+            const endDateStr = new Date(event.date || event.endDate || '').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+            const dateDisplay = startDateStr ? `${startDateStr} - ${endDateStr}` : endDateStr;
+            return (
             <div className="card event-card-new" key={event.id}>
               <div className="card event-card-header">
                 <div className="event-card-header-text">
                   <h2>{event.name}</h2>
-                  <p>{new Date(event.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  <p>{dateDisplay}</p>
                 </div>
-                <span className={`event-status ${isEventExpired(event.date) ? 'status-expired' : 'status-active'}`}>
-                  {isEventExpired(event.date) ? 'Expired' : 'Active'}
+                <span className={`event-status ${isEventExpired(event.date || event.endDate || '') ? 'status-expired' : 'status-active'}`}>
+                  {isEventExpired(event.date || event.endDate || '') ? 'Expired' : 'Active'}
                 </span>
               </div>
               <div className="event-card-footer">
@@ -105,7 +103,8 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
                 <button className="btn btn-danger btn-sm" onClick={() => handleDeleteEvent(event.id)}>Delete</button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="no-content">

@@ -11,7 +11,8 @@ interface EventFormModalProps {
 
 export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, onSave }) => {
   const [name, setName] = useState(event?.name || "");
-  const [date, setDate] = useState(event?.date || "");
+  const [startDate, setStartDate] = useState(event?.startDate || "");
+  const [endDate, setEndDate] = useState(event?.date || event?.endDate || "");
   const [location, setLocation] = useState(event?.location || "");
   const [description, setDescription] = useState<string[]>(
     event?.description 
@@ -37,7 +38,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
   ]);
   const [breakfastPrice, setBreakfastPrice] = useState<number | undefined>(event?.breakfastPrice);
   const [breakfastEndDate, setBreakfastEndDate] = useState<string | undefined>(event?.breakfastEndDate);
-  const [errors, setErrors] = useState<{name?: string; date?: string; location?: string}>({});
+  const [errors, setErrors] = useState<{name?: string; startDate?: string; endDate?: string; location?: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Clear errors when inputs change
@@ -48,10 +49,15 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
   }, [name, errors.name]);
 
   useEffect(() => {
-    if (errors.date && date) {
-      setErrors(prev => ({ ...prev, date: undefined }));
+    if (errors.startDate && startDate) {
+      setErrors(prev => ({ ...prev, startDate: undefined }));
     }
-  }, [date, errors.date]);
+  }, [startDate, errors.startDate]);
+  useEffect(() => {
+    if (errors.endDate && endDate) {
+      setErrors(prev => ({ ...prev, endDate: undefined }));
+    }
+  }, [endDate, errors.endDate]);
 
   const addActivity = () => {
     if (newActivity.trim() && !activities.includes(newActivity.trim())) {
@@ -65,7 +71,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
   };
 
   const validateForm = () => {
-    const newErrors: {name?: string; date?: string} = {};
+    const newErrors: {name?: string; startDate?: string; endDate?: string; location?: string} = {};
     
     if (!name.trim()) {
       newErrors.name = "Event name is required";
@@ -73,14 +79,23 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
       newErrors.name = "Event name must be at least 3 characters";
     }
     
-    if (!date) {
-      newErrors.date = "Event date is required";
+    if (!startDate) {
+      newErrors.startDate = "Start date is required";
     } else {
-      const eventDate = new Date(date);
-      if (isNaN(eventDate.getTime())) {
-        newErrors.date = "Please enter a valid date";
-      } else if (eventDate < new Date()) {
-        newErrors.date = "Event date cannot be in the past";
+      const eventStartDate = new Date(startDate);
+      if (isNaN(eventStartDate.getTime())) {
+        newErrors.startDate = "Please enter a valid start date";
+      }
+    }
+    
+    if (!endDate) {
+      newErrors.endDate = "End date is required";
+    } else {
+      const eventEndDate = new Date(endDate);
+      if (isNaN(eventEndDate.getTime())) {
+        newErrors.endDate = "Please enter a valid end date";
+      } else if (startDate && new Date(startDate) > eventEndDate) {
+        newErrors.endDate = "End date must be after start date";
       }
     }
     
@@ -101,7 +116,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
       // Simulate a small delay for better UX
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      const eventDate = new Date(date);
+      const eventDate = new Date(endDate || startDate);
       const year = eventDate.getFullYear();
       
       // Ensure description is always an array
@@ -112,7 +127,9 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
         ...event, 
         id: event?.id || Date.now(),
         name: name.trim(), 
-        date, 
+        date: endDate, // End date
+        startDate: startDate,
+        endDate: endDate,
         year,
         location: location.trim(),
         description: descriptionArray,
@@ -204,24 +221,46 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
             </div>
 
             <div className="form-group">
-              <label htmlFor="date" className="form-label">
-                Event Date
+              <label htmlFor="startDate" className="form-label">
+                Start Date
                 <span className="required-asterisk">*</span>
               </label>
               <input 
-                id="date" 
+                id="startDate" 
                 type="date" 
-                className={`form-control ${errors.date ? 'error' : ''}`}
-                value={date} 
-                onChange={(e) => setDate(e.target.value)} 
+                className={`form-control ${errors.startDate ? 'error' : ''}`}
+                value={startDate} 
+                onChange={(e) => setStartDate(e.target.value)} 
                 required 
                 disabled={isSubmitting}
-                min={new Date().toISOString().split('T')[0]}
               />
-              {errors.date && <div className="error-message">{errors.date}</div>}
-              {date && !errors.date && (
+              {errors.startDate && <div className="error-message">{errors.startDate}</div>}
+              {startDate && !errors.startDate && (
                 <div className="date-preview">
-                  {formatDateForDisplay(date)}
+                  {formatDateForDisplay(startDate)}
+                </div>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="endDate" className="form-label">
+                End Date
+                <span className="required-asterisk">*</span>
+              </label>
+              <input 
+                id="endDate" 
+                type="date" 
+                className={`form-control ${errors.endDate ? 'error' : ''}`}
+                value={endDate} 
+                onChange={(e) => setEndDate(e.target.value)} 
+                required 
+                disabled={isSubmitting}
+                min={startDate}
+              />
+              {errors.endDate && <div className="error-message">{errors.endDate}</div>}
+              {endDate && !errors.endDate && (
+                <div className="date-preview">
+                  {formatDateForDisplay(endDate)}
                 </div>
               )}
             </div>

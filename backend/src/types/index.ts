@@ -15,10 +15,11 @@ export interface Event {
   id: number;
   year: number;
   name: string;
-  date: string;
+  date: string; // End date (kept for backward compatibility)
+  startDate?: string; // Start date
   activities?: string[];
   location?: string;
-  description?: string;
+  description?: string | string[];
   createdAt?: string;
   updatedAt?: string;
   spousePricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
@@ -117,10 +118,11 @@ export interface ApiResponse<T = any> {
 export interface CreateEventRequest {
   year: number;
   name: string;
-  date: string;
+  date: string; // End date
+  startDate?: string; // Start date
   activities?: string[];
   location?: string;
-  description?: string;
+  description?: string | string[];
   spousePricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
   registrationPricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
   breakfastPrice?: number;
