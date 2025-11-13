@@ -67,12 +67,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     massageTimeSlot: registration?.massageTimeSlot || '8:00 AM- 10:00 AM',
 
     // Conference Meals
-    wednesdayReception: registration?.wednesdayReception || 'I will attend',
-    thursdayBreakfast: registration?.thursdayBreakfast || 'I will attend',
-    thursdayLuncheon: registration?.thursdayLuncheon || 'I will attend',
-    thursdayDinner: registration?.thursdayDinner || 'I will attend',
-    fridayBreakfast: registration?.fridayBreakfast || 'I will attend',
-    tuesdayEarlyReception: (registration as any)?.tuesdayEarlyReception || 'I will attend',
+    wednesdayReception: (registration?.wednesdayReception || '') as any,
+    thursdayBreakfast: (registration?.thursdayBreakfast || '') as any,
+    thursdayLuncheon: (registration?.thursdayLuncheon || '') as any,
+    thursdayDinner: (registration?.thursdayDinner || '') as any,
+    fridayBreakfast: (registration?.fridayBreakfast || '') as any,
+    tuesdayEarlyReception: (registration as any)?.tuesdayEarlyReception || '',
     dietaryRestrictions: registration?.dietaryRestrictions || '',
     specialRequests: (registration as any)?.specialRequests || '',
 
@@ -203,6 +203,21 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       if (!formData.spouseFirstName?.trim()) newErrors.spouseFirstName = 'Spouse first name is required';
       if (!formData.spouseLastName?.trim()) newErrors.spouseLastName = 'Spouse last name is required';
     }
+    // Validate conference meals (mandatory - must select an option, not "Choose")
+    const mealFields = [
+      { field: 'tuesdayEarlyReception', label: 'Tuesday Early Arrivals Reception' },
+      { field: 'wednesdayReception', label: 'Wednesday Welcome Reception' },
+      { field: 'thursdayBreakfast', label: 'Thursday Breakfast' },
+      { field: 'thursdayLuncheon', label: 'Thursday Luncheon' },
+      { field: 'thursdayDinner', label: 'Thursday Dinner' },
+      { field: 'fridayBreakfast', label: 'Friday Breakfast' }
+    ];
+    mealFields.forEach(({ field, label }) => {
+      const value = (formData as any)[field];
+      if (!value || !value.trim() || value === '') {
+        (newErrors as any)[field] = `${label} is required. Please select an option.`;
+      }
+    });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -244,7 +259,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         golfHandicap: golfHandicapValue,
         massageTimeSlot: massageTimeSlotValue,
         address: composedAddress,
-        tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || 'I will attend',
+        tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
       } as Registration;
@@ -730,51 +745,63 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             <h3 className="section-title">Conference Meals</h3>
             <div className="form-group">
               <label htmlFor="tuesdayEarly" className="form-label">Tuesday Early Arrivals Reception <span className="required-asterisk">*</span></label>
-              <select id="tuesdayEarly" className="form-control" value={(formData as any).tuesdayEarlyReception || ''} onChange={e=>handleInputChange('tuesdayEarlyReception', e.target.value)} required>
+              <select id="tuesdayEarly" className={`form-control ${(errors as any).tuesdayEarlyReception ? 'error' : ''}`} value={(formData as any).tuesdayEarlyReception || ''} onChange={e=>handleInputChange('tuesdayEarlyReception', e.target.value)} required>
+                <option value="">Choose</option>
                 {MEAL_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
+              {(errors as any).tuesdayEarlyReception && <div className="error-message">{(errors as any).tuesdayEarlyReception}</div>}
             </div>
             <div className="form-group">
               <label htmlFor="wednesdayReception" className="form-label">Wednesday Welcome Reception <span className="required-asterisk">*</span></label>
-              <select id="wednesdayReception" className="form-control" value={formData.wednesdayReception || ''} onChange={e => handleInputChange('wednesdayReception', e.target.value)} required>
+              <select id="wednesdayReception" className={`form-control ${errors.wednesdayReception ? 'error' : ''}`} value={formData.wednesdayReception || ''} onChange={e => handleInputChange('wednesdayReception', e.target.value)} required>
+                <option value="">Choose</option>
                 {MEAL_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
+              {errors.wednesdayReception && <div className="error-message">{errors.wednesdayReception}</div>}
             </div>
             <div className="form-group">
               <label htmlFor="thursdayBreakfast" className="form-label">Thursday Breakfast <span className="required-asterisk">*</span></label>
-              <select id="thursdayBreakfast" className="form-control" value={formData.thursdayBreakfast || ''} onChange={e => handleInputChange('thursdayBreakfast', e.target.value)} required>
+              <select id="thursdayBreakfast" className={`form-control ${errors.thursdayBreakfast ? 'error' : ''}`} value={formData.thursdayBreakfast || ''} onChange={e => handleInputChange('thursdayBreakfast', e.target.value)} required>
+                <option value="">Choose</option>
                 {MEAL_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
+              {errors.thursdayBreakfast && <div className="error-message">{errors.thursdayBreakfast}</div>}
             </div>
             <div className="form-group">
               <label htmlFor="thursdayLuncheon" className="form-label">Thursday Luncheon <span className="required-asterisk">*</span></label>
-              <select id="thursdayLuncheon" className="form-control" value={formData.thursdayLuncheon || ''} onChange={e => handleInputChange('thursdayLuncheon', e.target.value)} required>
+              <select id="thursdayLuncheon" className={`form-control ${errors.thursdayLuncheon ? 'error' : ''}`} value={formData.thursdayLuncheon || ''} onChange={e => handleInputChange('thursdayLuncheon', e.target.value)} required>
+                <option value="">Choose</option>
                 {MEAL_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
+              {errors.thursdayLuncheon && <div className="error-message">{errors.thursdayLuncheon}</div>}
             </div>
             <div className="form-group">
               <label htmlFor="thursdayDinner" className="form-label">Thursday Dinner <span className="required-asterisk">*</span></label>
-              <select id="thursdayDinner" className="form-control" value={formData.thursdayDinner || ''} onChange={e => handleInputChange('thursdayDinner', e.target.value)} required>
+              <select id="thursdayDinner" className={`form-control ${errors.thursdayDinner ? 'error' : ''}`} value={formData.thursdayDinner || ''} onChange={e => handleInputChange('thursdayDinner', e.target.value)} required>
+                <option value="">Choose</option>
                 {MEAL_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
+              {errors.thursdayDinner && <div className="error-message">{errors.thursdayDinner}</div>}
             </div>
             <div className="form-group">
               <label htmlFor="fridayBreakfast" className="form-label">Friday Breakfast <span className="required-asterisk">*</span></label>
-              <select id="fridayBreakfast" className="form-control" value={formData.fridayBreakfast || ''} onChange={e => handleInputChange('fridayBreakfast', e.target.value)} required>
+              <select id="fridayBreakfast" className={`form-control ${errors.fridayBreakfast ? 'error' : ''}`} value={formData.fridayBreakfast || ''} onChange={e => handleInputChange('fridayBreakfast', e.target.value)} required>
+                <option value="">Choose</option>
                 {MEAL_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
+              {errors.fridayBreakfast && <div className="error-message">{errors.fridayBreakfast}</div>}
             </div>
             <div className="form-group">
               <label htmlFor="dietaryRestrictions" className="form-label">Dietary Restrictions</label>
