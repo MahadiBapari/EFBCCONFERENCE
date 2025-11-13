@@ -113,9 +113,7 @@ const renderEmailTemplate = (params: {
   const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
   const heading = params.heading || brand;
   const preheader = params.preheader || '';
-  const footerHtml = params.footerHtml || `
-    <p style="margin:0;color:#64748b;font-size:12px;">You received this email because you have an account with ${brand}.</p>
-  `;
+  const footerHtml = params.footerHtml || '';
   const buttonHtml = params.cta
     ? `
       <a href="${params.cta.url}"
@@ -182,7 +180,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
     heading: 'Verify your email',
     preheader: 'Confirm your email to finish setting up your account',
     contentHtml: `
-      <p style="margin:0 0 12px 0;">Welcome to EFBC Conference! Please confirm your email address to activate your account.</p>
+      <p style="margin:0 0 12px 0;">Welcome to the EFBC Conference! Please confirm your email address to activate your account.</p>
       <p style="margin:0;opacity:.8;">This link expires in 24 hours.</p>
     `,
     cta: { label: 'Verify Email', url: link },

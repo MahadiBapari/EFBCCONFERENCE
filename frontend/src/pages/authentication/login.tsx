@@ -36,8 +36,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onShowRegistratio
       const msg = err?.response?.data?.error || '';
       if (status === 403 || /not verified/i.test(msg)) {
         setError('Email not verified');
-      } else if (status === 401 || /invalid credentials/i.test(msg)) {
-        setError('Wrong email or password');
+      } else if (status === 401) {
+        // Display the specific error message from backend
+        if (/no user with this email exists/i.test(msg)) {
+          setError('No user with this email exists');
+        } else if (/invalid password/i.test(msg)) {
+          setError('Invalid password');
+        } else {
+          setError(msg || 'Wrong email or password');
+        }
       } else {
         setError(msg || 'Login failed');
       }
@@ -50,7 +57,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onShowRegistratio
     <div className="login-container">
       <div className="login-card">
         <h1>EFBC Conference Portal</h1>
-        <p>Sign in to continue.</p>
+        <p>Sign in</p>
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="email">Email</label>

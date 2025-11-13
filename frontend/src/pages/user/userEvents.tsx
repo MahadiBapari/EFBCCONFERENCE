@@ -62,11 +62,26 @@ export const UserEvents: React.FC<UserEventsProps> = ({
                   <span className="event-year">{event.year}</span>
                 </div>
                 <div className="event-date">
-                  {new Date(event.date).toLocaleDateString(undefined, { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
+                  {event.startDate ? (
+                    <>
+                      Start: {new Date(event.startDate).toLocaleDateString(undefined, { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}<br />
+                      End: {new Date(event.date || event.endDate || '').toLocaleDateString(undefined, { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </>
+                  ) : (
+                    new Date(event.date || event.endDate || '').toLocaleDateString(undefined, { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })
+                  )}
                 </div>
                 
                 {userReg ? (

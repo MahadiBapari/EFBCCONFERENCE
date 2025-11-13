@@ -78,13 +78,22 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             )}
           </div>
           <ul className="event-details">
-            <li>Date: {new Date(activeEvent.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</li>
+            <li>
+              {activeEvent.startDate ? (
+                <>
+                  Start Date: {new Date(activeEvent.startDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}<br />
+                  End Date: {new Date(activeEvent.date || activeEvent.endDate || '').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                </>
+              ) : (
+                <>Date: {new Date(activeEvent.date || activeEvent.endDate || '').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</>
+              )}
+            </li>
           </ul>
           {userRegistration ? (
             <div>
               <h3>Your Registration:</h3>
               <p><strong>Name:</strong> {userRegistration.name}</p>
-              <p><strong>Category:</strong> {userRegistration.category}</p>
+              <p><strong>Activity:</strong> {userRegistration.category}</p>
               {(userRegistration as any).status === 'cancelled' ? (
                 <div>
                   <span className="event-status status-expired">Cancelled</span>

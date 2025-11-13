@@ -17,11 +17,13 @@ router.post('/login', async (req: Request, res: Response) => {
     const { email, password } = req.body || {};
     if (!email || !password) return res.status(400).json({ success: false, error: 'Email and password are required' });
     const db = getDb();
+    // First check if user exists (without password check)
     const rows = await db.query('SELECT id, name, email, role, password, email_verified_at FROM users WHERE email=? AND isActive=true LIMIT 1', [email]);
     const u = rows[0];
-    if (!u) return res.status(401).json({ success: false, error: 'Invalid credentials' });
+    if (!u) return res.status(401).json({ success: false, error: 'No user with this email exists' });
+    // User exists, now check password
     const ok = await bcrypt.compare(password, u.password);
-    if (!ok) return res.status(401).json({ success: false, error: 'Invalid credentials' });
+    if (!ok) return res.status(401).json({ success: false, error: 'Invalid password' });
     // Require email verification before issuing token
     if (!u.email_verified_at) {
       return res.status(403).json({ success: false, error: 'Email not verified' });
