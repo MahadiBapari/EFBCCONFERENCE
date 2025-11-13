@@ -191,6 +191,7 @@ useEffect(() => {
         golfClubPreference: r.golfClubPreference ?? 'Own Clubs',
         massageTimeSlot: r.massageTimeSlot ?? '8:00 AM- 10:00 AM',
         // Meals
+        tuesdayEarlyReception: r.tuesdayEarlyReception ?? r.tuesday_early_reception ?? '',
         wednesdayReception: r.wednesdayReception ?? 'I will attend',
         thursdayBreakfast: r.thursdayBreakfast ?? 'I will attend',
         thursdayLuncheon: r.thursdayLuncheon ?? 'I will attend',

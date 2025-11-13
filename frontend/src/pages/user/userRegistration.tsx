@@ -746,7 +746,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             <div className="form-group">
               <label htmlFor="tuesdayEarly" className="form-label">Tuesday Early Arrivals Reception <span className="required-asterisk">*</span></label>
               <select id="tuesdayEarly" className={`form-control ${(errors as any).tuesdayEarlyReception ? 'error' : ''}`} value={(formData as any).tuesdayEarlyReception || ''} onChange={e=>handleInputChange('tuesdayEarlyReception', e.target.value)} required>
-                <option value="">Choose</option>
+                <option value="" disabled>Choose</option>
                 {MEAL_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
@@ -756,7 +756,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             <div className="form-group">
               <label htmlFor="wednesdayReception" className="form-label">Wednesday Welcome Reception <span className="required-asterisk">*</span></label>
               <select id="wednesdayReception" className={`form-control ${errors.wednesdayReception ? 'error' : ''}`} value={formData.wednesdayReception || ''} onChange={e => handleInputChange('wednesdayReception', e.target.value)} required>
-                <option value="">Choose</option>
+                <option value="" disabled>Choose</option>
                 {MEAL_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
@@ -766,7 +766,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             <div className="form-group">
               <label htmlFor="thursdayBreakfast" className="form-label">Thursday Breakfast <span className="required-asterisk">*</span></label>
               <select id="thursdayBreakfast" className={`form-control ${errors.thursdayBreakfast ? 'error' : ''}`} value={formData.thursdayBreakfast || ''} onChange={e => handleInputChange('thursdayBreakfast', e.target.value)} required>
-                <option value="">Choose</option>
+                <option value="" disabled>Choose</option>
                 {MEAL_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
@@ -776,7 +776,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             <div className="form-group">
               <label htmlFor="thursdayLuncheon" className="form-label">Thursday Luncheon <span className="required-asterisk">*</span></label>
               <select id="thursdayLuncheon" className={`form-control ${errors.thursdayLuncheon ? 'error' : ''}`} value={formData.thursdayLuncheon || ''} onChange={e => handleInputChange('thursdayLuncheon', e.target.value)} required>
-                <option value="">Choose</option>
+                <option value="" disabled>Choose</option>
                 {MEAL_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
@@ -786,7 +786,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             <div className="form-group">
               <label htmlFor="thursdayDinner" className="form-label">Thursday Dinner <span className="required-asterisk">*</span></label>
               <select id="thursdayDinner" className={`form-control ${errors.thursdayDinner ? 'error' : ''}`} value={formData.thursdayDinner || ''} onChange={e => handleInputChange('thursdayDinner', e.target.value)} required>
-                <option value="">Choose</option>
+                <option value="" disabled>Choose</option>
                 {MEAL_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
@@ -796,7 +796,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             <div className="form-group">
               <label htmlFor="fridayBreakfast" className="form-label">Friday Breakfast <span className="required-asterisk">*</span></label>
               <select id="fridayBreakfast" className={`form-control ${errors.fridayBreakfast ? 'error' : ''}`} value={formData.fridayBreakfast || ''} onChange={e => handleInputChange('fridayBreakfast', e.target.value)} required>
-                <option value="">Choose</option>
+                <option value="" disabled>Choose</option>
                 {MEAL_OPTIONS.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}

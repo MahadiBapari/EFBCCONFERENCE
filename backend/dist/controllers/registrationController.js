@@ -125,11 +125,14 @@ class RegistrationController {
             const eventRow = await this.db.findById('events', registration.eventId);
             const evName = eventRow?.name;
             const evDate = eventRow?.date;
+            const totalPriceNum = typeof registration.totalPrice === 'string'
+                ? parseFloat(registration.totalPrice)
+                : (typeof registration.totalPrice === 'number' ? registration.totalPrice : 0);
             const payload = {
                 name: toName,
                 eventName: evName,
                 eventDate: evDate,
-                totalPrice: registration.totalPrice,
+                totalPrice: totalPriceNum,
                 registration: registration.toJSON ? registration.toJSON() : registration
             };
             (0, emailService_1.sendRegistrationConfirmationEmail)({ to: registration.email, ...payload }).catch((e) => console.warn('⚠️ Failed to send registration confirmation:', e));

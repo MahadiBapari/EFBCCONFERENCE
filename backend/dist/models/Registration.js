@@ -58,7 +58,8 @@ class Registration {
         this.spouseLastName = data.spouseLastName;
         const sdt = data.spouseDinnerTicket;
         this.spouseDinnerTicket = sdt === true || sdt === 'Yes' || sdt === 'yes' || sdt === 1;
-        this.totalPrice = data.totalPrice || 0;
+        const tp = data.totalPrice;
+        this.totalPrice = typeof tp === 'string' ? parseFloat(tp) || 0 : (typeof tp === 'number' ? tp : 0);
         this.paymentMethod = data.paymentMethod || 'Card';
         this.name = data.name || `${this.firstName} ${this.lastName}`;
         this.category = data.category || 'Networking';
