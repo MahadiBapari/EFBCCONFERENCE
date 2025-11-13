@@ -50,11 +50,25 @@ class DatabaseService {
         return result;
     }
     async update(table, id, data) {
-        const columns = Object.keys(data);
-        const values = Object.values(data);
-        const setClause = columns.map(col => `${col} = ?`).join(', ');
+        const filteredData = {};
+        for (const [key, value] of Object.entries(data)) {
+            if (value !== undefined) {
+                filteredData[key] = value;
+            }
+        }
+        if (Object.keys(filteredData).length === 0) {
+            console.warn(`[DB UPDATE] No fields to update for ${table} id ${id}`);
+            return { affectedRows: 0 };
+        }
+        const columns = Object.keys(filteredData);
+        const values = Object.values(filteredData);
+        const setClause = columns.map(col => `\`${col}\` = ?`).join(', ');
         const sql = `UPDATE \`${table}\` SET ${setClause} WHERE id = ?`;
+        console.log(`[DB UPDATE] Executing: ${sql.substring(0, 200)}...`);
+        console.log(`[DB UPDATE] Values count: ${values.length + 1}, ID: ${id}`);
         const result = await this.query(sql, [...values, id]);
+        const affectedRows = Array.isArray(result) ? result[0]?.affectedRows : result?.affectedRows || 0;
+        console.log(`[DB UPDATE] Affected rows: ${affectedRows}`);
         return result;
     }
     async delete(table, id) {

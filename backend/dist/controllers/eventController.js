@@ -81,6 +81,32 @@ class EventController {
     async createEvent(req, res) {
         try {
             const eventData = req.body;
+            if (eventData.date) {
+                const dt = new Date(eventData.date);
+                if (!isNaN(dt.getTime())) {
+                    eventData.date = dt.toISOString().slice(0, 10);
+                }
+            }
+            if (eventData.startDate) {
+                const sd = new Date(eventData.startDate);
+                if (!isNaN(sd.getTime())) {
+                    eventData.startDate = sd.toISOString().slice(0, 10);
+                }
+                else {
+                    const raw = String(eventData.startDate);
+                    eventData.startDate = raw.slice(0, 10);
+                }
+            }
+            if (eventData.breakfastEndDate) {
+                const bed = new Date(eventData.breakfastEndDate);
+                if (!isNaN(bed.getTime())) {
+                    eventData.breakfastEndDate = bed.toISOString().slice(0, 10);
+                }
+                else {
+                    const raw = String(eventData.breakfastEndDate);
+                    eventData.breakfastEndDate = raw.slice(0, 10);
+                }
+            }
             const event = new Event_1.Event(eventData);
             const result = await this.db.insert('events', event.toDatabase());
             event.id = result.insertId;
@@ -105,6 +131,32 @@ class EventController {
         try {
             const { id } = req.params;
             const updateData = req.body;
+            if (updateData.date) {
+                const dt = new Date(updateData.date);
+                if (!isNaN(dt.getTime())) {
+                    updateData.date = dt.toISOString().slice(0, 10);
+                }
+            }
+            if (updateData.startDate) {
+                const sd = new Date(updateData.startDate);
+                if (!isNaN(sd.getTime())) {
+                    updateData.startDate = sd.toISOString().slice(0, 10);
+                }
+                else {
+                    const raw = String(updateData.startDate);
+                    updateData.startDate = raw.slice(0, 10);
+                }
+            }
+            if (updateData.breakfastEndDate) {
+                const bed = new Date(updateData.breakfastEndDate);
+                if (!isNaN(bed.getTime())) {
+                    updateData.breakfastEndDate = bed.toISOString().slice(0, 10);
+                }
+                else {
+                    const raw = String(updateData.breakfastEndDate);
+                    updateData.breakfastEndDate = raw.slice(0, 10);
+                }
+            }
             const existingEventData = await this.db.findById('events', Number(id));
             if (!existingEventData) {
                 const response = {

@@ -5,6 +5,7 @@ export declare function sendRegistrationConfirmationEmail(params: {
     eventName?: string;
     eventDate?: string;
     totalPrice?: number;
+    registration?: any;
 }): Promise<void>;
 export declare function sendPasswordResetEmail(to: string, token: string): Promise<void>;
 //# sourceMappingURL=emailService.d.ts.map

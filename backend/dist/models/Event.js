@@ -7,9 +7,10 @@ class Event {
         this.year = data.year || (data.date ? new Date(data.date).getFullYear() : new Date().getFullYear());
         this.name = data.name || '';
         this.date = data.date || new Date().toISOString().split('T')[0];
+        this.startDate = data.startDate || data.start_date || undefined;
         this.activities = data.activities || [];
         this.location = data.location || '';
-        this.description = data.description || '';
+        this.description = Array.isArray(data.description) ? data.description : (data.description ? [data.description] : []);
         const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
         this.createdAt = data.createdAt || now;
         this.updatedAt = data.updatedAt || now;
@@ -24,6 +25,8 @@ class Event {
             year: this.year,
             name: this.name,
             date: this.date,
+            startDate: this.startDate,
+            endDate: this.date,
             activities: this.activities,
             location: this.location,
             description: this.description,
@@ -39,9 +42,10 @@ class Event {
         return {
             name: this.name,
             date: this.date,
+            start_date: this.startDate || null,
             activities: this.activities ? JSON.stringify(this.activities) : null,
             location: this.location,
-            description: this.description,
+            description: this.description && this.description.length > 0 ? JSON.stringify(this.description) : null,
             created_at: this.createdAt,
             updated_at: this.updatedAt,
             spouse_pricing: this.spousePricing ? JSON.stringify(this.spousePricing) : null,
@@ -98,9 +102,23 @@ class Event {
             id: row.id,
             name: row.name,
             date: row.date,
+            startDate: row.start_date || row.startDate,
             activities: activities,
             location: row.location,
-            description: row.description,
+            description: (() => {
+                if (!row.description)
+                    return [];
+                if (typeof row.description === 'string') {
+                    try {
+                        const parsed = JSON.parse(row.description);
+                        return Array.isArray(parsed) ? parsed : [parsed];
+                    }
+                    catch {
+                        return [row.description];
+                    }
+                }
+                return Array.isArray(row.description) ? row.description : [row.description];
+            })(),
             createdAt: row.created_at || row.createdAt,
             updatedAt: row.updated_at || row.updatedAt,
             spousePricing,

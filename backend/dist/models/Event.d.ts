@@ -4,9 +4,10 @@ export declare class Event {
     year: number;
     name: string;
     date: string;
+    startDate?: string;
     activities?: string[];
     location?: string;
-    description?: string;
+    description?: string[];
     createdAt?: string;
     updatedAt?: string;
     spousePricing?: Array<{

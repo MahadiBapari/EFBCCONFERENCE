@@ -2,6 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Registration = void 0;
 class Registration {
+    formatDateForDB(dateValue) {
+        if (!dateValue) {
+            return new Date().toISOString().slice(0, 19).replace('T', ' ');
+        }
+        const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+        if (isNaN(date.getTime())) {
+            return new Date().toISOString().slice(0, 19).replace('T', ' ');
+        }
+        return date.toISOString().slice(0, 19).replace('T', ' ');
+    }
     constructor(data) {
         this.id = data.id;
         this.userId = data.userId ?? 1;
@@ -24,26 +34,44 @@ class Registration {
         this.wednesdayActivity = data.wednesdayActivity || 'None';
         this.wednesdayReception = data.wednesdayReception || 'I will attend';
         this.thursdayBreakfast = data.thursdayBreakfast || 'I will attend';
-        this.thursdayLunch = data.thursdayLunch || 'I will attend';
-        this.thursdayReception = data.thursdayReception || 'I will attend';
+        this.thursdayLunch = data.thursdayLunch || data.thursdayLuncheon || 'I will attend';
+        this.thursdayReception = data.thursdayReception || data.thursdayDinner || 'I will attend';
         this.fridayBreakfast = data.fridayBreakfast || 'I will attend';
         this.fridayDinner = data.fridayDinner || 'I will attend';
         this.dietaryRestrictions = data.dietaryRestrictions;
-        this.clubRentals = data.clubRentals ?? false;
+        this.specialRequests = data.specialRequests;
+        const cr = data.clubRentals;
+        if (typeof cr === 'boolean') {
+            this.clubRentals = cr ? undefined : 'I will bring my own';
+        }
+        else if (typeof cr === 'string') {
+            this.clubRentals = cr || undefined;
+        }
+        else {
+            this.clubRentals = undefined;
+        }
         this.spouseBreakfast = data.spouseBreakfast ?? false;
+        this.tuesdayEarlyReception = data.tuesdayEarlyReception ?? 'I will attend';
         this.golfHandicap = data.golfHandicap;
+        this.massageTimeSlot = data.massageTimeSlot;
         this.spouseFirstName = data.spouseFirstName;
         this.spouseLastName = data.spouseLastName;
-        this.spouseDinnerTicket = data.spouseDinnerTicket || 'No';
+        const sdt = data.spouseDinnerTicket;
+        this.spouseDinnerTicket = sdt === true || sdt === 'Yes' || sdt === 'yes' || sdt === 1;
         this.totalPrice = data.totalPrice || 0;
         this.paymentMethod = data.paymentMethod || 'Card';
         this.name = data.name || `${this.firstName} ${this.lastName}`;
         this.category = data.category || 'Networking';
         this.createdAt = data.createdAt || new Date().toISOString();
         this.updatedAt = data.updatedAt || new Date().toISOString();
+        this.status = data.status;
+        this.cancellationReason = data.cancellationReason;
+        this.cancellationAt = data.cancellationAt;
+        this.paid = data.paid;
+        this.squarePaymentId = data.squarePaymentId;
     }
     toJSON() {
-        return {
+        const base = {
             id: this.id,
             userId: this.userId,
             eventId: this.eventId,
@@ -66,12 +94,16 @@ class Registration {
             wednesdayReception: this.wednesdayReception,
             thursdayBreakfast: this.thursdayBreakfast,
             thursdayLunch: this.thursdayLunch,
+            thursdayLuncheon: this.thursdayLunch,
             thursdayReception: this.thursdayReception,
+            thursdayDinner: this.thursdayReception,
             fridayBreakfast: this.fridayBreakfast,
             fridayDinner: this.fridayDinner,
             dietaryRestrictions: this.dietaryRestrictions,
+            specialRequests: this.specialRequests,
             clubRentals: this.clubRentals,
             golfHandicap: this.golfHandicap,
+            massageTimeSlot: this.massageTimeSlot,
             spouseFirstName: this.spouseFirstName,
             spouseLastName: this.spouseLastName,
             spouseDinnerTicket: this.spouseDinnerTicket,
@@ -82,9 +114,22 @@ class Registration {
             createdAt: this.createdAt,
             updatedAt: this.updatedAt
         };
+        if (this.status)
+            base.status = this.status;
+        if (this.cancellationReason)
+            base.cancellationReason = this.cancellationReason;
+        if (this.cancellationAt)
+            base.cancellationAt = this.cancellationAt;
+        if (this.tuesdayEarlyReception)
+            base.tuesdayEarlyReception = this.tuesdayEarlyReception;
+        if (typeof this.paid === 'boolean')
+            base.paid = this.paid;
+        if (this.squarePaymentId)
+            base.squarePaymentId = this.squarePaymentId;
+        return base;
     }
     toDatabase() {
-        return {
+        const payload = {
             user_id: this.userId,
             event_id: this.eventId,
             first_name: this.firstName,
@@ -109,15 +154,25 @@ class Registration {
             thursday_dinner: this.thursdayReception,
             friday_breakfast: this.fridayBreakfast,
             dietary_restrictions: this.dietaryRestrictions,
-            club_rentals: this.clubRentals ?? false,
+            special_requests: this.specialRequests,
+            club_rentals: this.clubRentals || null,
             golf_handicap: this.golfHandicap,
-            spouse_dinner_ticket: this.spouseDinnerTicket === 'Yes',
+            massage_time_slot: this.massageTimeSlot || null,
+            spouse_dinner_ticket: !!this.spouseDinnerTicket,
             spouse_breakfast: !!this.spouseBreakfast,
+            tuesday_early_reception: this.tuesdayEarlyReception,
             spouse_first_name: this.spouseFirstName,
             spouse_last_name: this.spouseLastName,
             total_price: this.totalPrice,
             payment_method: this.paymentMethod,
+            paid: this.paid ?? false,
+            square_payment_id: this.squarePaymentId || null,
+            updated_at: this.formatDateForDB(this.updatedAt || new Date().toISOString()),
         };
+        if (!this.id) {
+            payload.created_at = this.formatDateForDB(this.createdAt || new Date().toISOString());
+        }
+        return payload;
     }
     static fromDatabase(row) {
         return new Registration({
@@ -147,9 +202,11 @@ class Registration {
             fridayBreakfast: row.friday_breakfast,
             fridayDinner: row.friday_dinner,
             dietaryRestrictions: row.dietary_restrictions,
-            clubRentals: !!row.club_rentals,
+            specialRequests: row.special_requests,
+            clubRentals: row.club_rentals || undefined,
             golfHandicap: row.golf_handicap,
-            spouseDinnerTicket: row.spouse_dinner_ticket ? 'Yes' : 'No',
+            massageTimeSlot: row.massage_time_slot,
+            spouseDinnerTicket: !!row.spouse_dinner_ticket,
             spouseBreakfast: !!row.spouse_breakfast,
             spouseFirstName: row.spouse_first_name,
             spouseLastName: row.spouse_last_name,
@@ -157,6 +214,12 @@ class Registration {
             paymentMethod: row.payment_method,
             createdAt: row.created_at,
             updatedAt: row.updated_at,
+            status: row.status,
+            cancellationReason: row.cancellation_reason,
+            cancellationAt: row.cancellation_at,
+            tuesdayEarlyReception: row.tuesday_early_reception,
+            paid: !!row.paid,
+            squarePaymentId: row.square_payment_id,
             name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
             category: row.wednesday_activity || 'Networking',
         });

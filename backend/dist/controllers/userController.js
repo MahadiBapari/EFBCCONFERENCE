@@ -23,14 +23,19 @@ class UserController {
             let users;
             let total;
             if (search) {
-                const searchCondition = `name LIKE '%${search}%' OR email LIKE '%${search}%'`;
+                const searchPattern = `%${search}%`;
+                const searchCondition = `(name LIKE ? OR email LIKE ?)`;
                 let whereClause = searchCondition;
+                const params = [searchPattern, searchPattern];
                 if (Object.keys(conditions).length > 0) {
                     const conditionClause = Object.keys(conditions).map(key => `${key} = ?`).join(' AND ');
                     whereClause = `${conditionClause} AND ${searchCondition}`;
+                    params.unshift(...Object.values(conditions));
                 }
-                users = await this.db.query(`SELECT * FROM users WHERE ${whereClause} LIMIT ? OFFSET ?`, [...Object.values(conditions), Number(limit), offset]);
-                total = await this.db.query(`SELECT COUNT(*) as count FROM users WHERE ${whereClause}`, Object.values(conditions));
+                const limitNum = Number(limit);
+                const offsetNum = Number(offset);
+                users = await this.db.query(`SELECT * FROM users WHERE ${whereClause} LIMIT ${limitNum} OFFSET ${offsetNum}`, params);
+                total = await this.db.query(`SELECT COUNT(*) as count FROM users WHERE ${whereClause}`, params);
             }
             else {
                 users = await this.db.findAll('users', conditions, Number(limit), offset);
@@ -278,11 +283,14 @@ class UserController {
             const result = await this.db.insert('users', user.toDatabase());
             user.id = result.insertId;
             const token = crypto_1.default.randomBytes(32).toString('hex');
-            const expires = new Date(Date.now() + 24 * 60 * 60 * 1000)
-                .toISOString().slice(0, 19).replace('T', ' ');
-            await this.db.query('UPDATE users SET email_verification_token=?, email_verification_expires_at=? WHERE id=?', [token, expires, user.id]);
-            (0, emailService_1.sendVerificationEmail)(user.email, token).catch((e) => {
-                console.warn('⚠️ Failed to send verification email:', e);
+            await this.db.query('UPDATE users SET email_verification_token=?, email_verification_expires_at=DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE id=?', [token, user.id]);
+            setImmediate(async () => {
+                try {
+                    await (0, emailService_1.sendVerificationEmail)(email, token);
+                }
+                catch (e) {
+                    console.error('SMTP sendVerificationEmail (register) failed:', e?.message || e);
+                }
             });
             const response = {
                 success: true,

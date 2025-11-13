@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const crypto_1 = __importDefault(require("crypto"));
 const emailService_1 = require("../services/emailService");
 const router = (0, express_1.Router)();
@@ -21,12 +21,13 @@ router.post('/login', async (req, res) => {
         const rows = await db.query('SELECT id, name, email, role, password, email_verified_at FROM users WHERE email=? AND isActive=true LIMIT 1', [email]);
         const u = rows[0];
         if (!u)
-            return res.status(401).json({ success: false, error: 'Invalid credentials' });
-        const ok = await bcrypt_1.default.compare(password, u.password);
+            return res.status(401).json({ success: false, error: 'No user with this email exists' });
+        const ok = await bcryptjs_1.default.compare(password, u.password);
         if (!ok)
-            return res.status(401).json({ success: false, error: 'Invalid credentials' });
-        if (!u.email_verified_at)
+            return res.status(401).json({ success: false, error: 'Invalid password' });
+        if (!u.email_verified_at) {
             return res.status(403).json({ success: false, error: 'Email not verified' });
+        }
         const user = { id: u.id, name: u.name, email: u.email, role: u.role };
         return res.json({ success: true, data: { user, token: sign(user) } });
     }
@@ -77,10 +78,10 @@ router.put('/password', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Missing fields' });
         const db = getDb();
         const rows = await db.query('SELECT password FROM users WHERE id=?', [p.sub]);
-        const ok = await bcrypt_1.default.compare(currentPassword, rows[0]?.password || '');
+        const ok = await bcryptjs_1.default.compare(currentPassword, rows[0]?.password || '');
         if (!ok)
             return res.status(401).json({ success: false, error: 'Invalid current password' });
-        const hash = await bcrypt_1.default.hash(newPassword, 10);
+        const hash = await bcryptjs_1.default.hash(newPassword, 10);
         await db.query('UPDATE users SET password=? WHERE id=?', [hash, p.sub]);
         return res.json({ success: true, message: 'Password updated' });
     }
@@ -99,7 +100,14 @@ router.post('/forgot-password', async (req, res) => {
         if (users.length) {
             const token = crypto_1.default.randomBytes(32).toString('hex');
             await db.query('UPDATE users SET password_reset_token=?, password_reset_expires_at=DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE id=?', [token, users[0].id]);
-            await (0, emailService_1.sendPasswordResetEmail)(email, token);
+            setImmediate(async () => {
+                try {
+                    await (0, emailService_1.sendPasswordResetEmail)(email, token);
+                }
+                catch (e) {
+                    console.error('SMTP sendPasswordResetEmail failed:', e?.message || e);
+                }
+            });
         }
         return res.json({ success: true, message: 'If an account exists for that email, a reset link has been sent.' });
     }
@@ -112,12 +120,18 @@ router.post('/reset-password', async (req, res) => {
         const { token, newPassword } = req.body || {};
         if (!token || !newPassword)
             return res.status(400).json({ success: false, error: 'Token and newPassword are required' });
+        if (newPassword.length < 8) {
+            return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
+        }
+        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+            return res.status(400).json({ success: false, error: 'Password must contain uppercase, lowercase, and number' });
+        }
         const db = getDb();
         const rows = await db.query('SELECT id FROM users WHERE password_reset_token=? AND password_reset_expires_at > NOW() LIMIT 1', [token]);
         const u = rows[0];
         if (!u)
             return res.status(400).json({ success: false, error: 'Invalid or expired token' });
-        const hash = await bcrypt_1.default.hash(newPassword, 10);
+        const hash = await bcryptjs_1.default.hash(newPassword, 10);
         await db.query('UPDATE users SET password=?, password_reset_token=NULL, password_reset_expires_at=NULL WHERE id=?', [hash, u.id]);
         return res.json({ success: true, message: 'Password updated' });
     }
@@ -163,7 +177,14 @@ router.post('/resend-verification', async (req, res) => {
         const token = crypto_1.default.randomBytes(32).toString('hex');
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
         await db.query('UPDATE users SET email_verification_token=?, email_verification_expires_at=? WHERE id=?', [token, expires, u.id]);
-        await (0, emailService_1.sendVerificationEmail)(email, token);
+        setImmediate(async () => {
+            try {
+                await (0, emailService_1.sendVerificationEmail)(email, token);
+            }
+            catch (e) {
+                console.error('SMTP sendVerificationEmail failed:', e?.message || e);
+            }
+        });
         return res.json({ success: true, message: 'Verification email sent' });
     }
     catch (e) {

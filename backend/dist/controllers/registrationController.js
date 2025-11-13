@@ -120,11 +120,25 @@ class RegistrationController {
             }
             const result = await this.db.insert('registrations', registration.toDatabase());
             registration.id = result.insertId;
-            (0, emailService_1.sendRegistrationConfirmationEmail)({
-                to: registration.email,
-                name: registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim(),
+            const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || 'info@efbcconference.org';
+            const toName = registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim();
+            const eventRow = await this.db.findById('events', registration.eventId);
+            const evName = eventRow?.name;
+            const evDate = eventRow?.date;
+            const payload = {
+                name: toName,
+                eventName: evName,
+                eventDate: evDate,
                 totalPrice: registration.totalPrice,
-            }).catch((e) => console.warn('⚠️ Failed to send registration confirmation:', e));
+                registration: registration.toJSON ? registration.toJSON() : registration
+            };
+            (0, emailService_1.sendRegistrationConfirmationEmail)({ to: registration.email, ...payload }).catch((e) => console.warn('⚠️ Failed to send registration confirmation:', e));
+            if (registration.secondaryEmail) {
+                (0, emailService_1.sendRegistrationConfirmationEmail)({ to: registration.secondaryEmail, ...payload }).catch((e) => console.warn('⚠️ Failed to send secondary confirmation:', e));
+            }
+            if (adminCopy) {
+                (0, emailService_1.sendRegistrationConfirmationEmail)({ to: adminCopy, ...payload }).catch((e) => console.warn('⚠️ Failed to send admin confirmation:', e));
+            }
             const response = {
                 success: true,
                 data: registration.toJSON(),
@@ -144,9 +158,18 @@ class RegistrationController {
     async updateRegistration(req, res) {
         try {
             const { id } = req.params;
-            const updateData = req.body;
-            const existingRegistration = await this.db.findById('registrations', Number(id));
-            if (!existingRegistration) {
+            const updateData = req.body || {};
+            console.log(`[UPDATE] Received update request for registration ${id}`);
+            console.log(`[UPDATE] Update data keys:`, Object.keys(updateData));
+            console.log(`[UPDATE] Sample fields:`, {
+                firstName: updateData.firstName,
+                email: updateData.email,
+                clubRentals: updateData.clubRentals,
+                wednesdayActivity: updateData.wednesdayActivity
+            });
+            const existingRow = await this.db.findById('registrations', Number(id));
+            if (!existingRow) {
+                console.log(`[UPDATE] Registration ${id} not found in database`);
                 const response = {
                     success: false,
                     error: 'Registration not found'
@@ -154,12 +177,103 @@ class RegistrationController {
                 res.status(404).json(response);
                 return;
             }
-            const registration = new Registration_1.Registration({ ...existingRegistration, ...updateData });
-            registration.updatedAt = new Date().toISOString();
-            await this.db.update('registrations', Number(id), registration.toDatabase());
+            console.log(`[UPDATE] Found existing registration ${id}`);
+            const fieldMapping = {
+                userId: 'user_id',
+                eventId: 'event_id',
+                firstName: 'first_name',
+                lastName: 'last_name',
+                badgeName: 'badge_name',
+                email: 'email',
+                secondaryEmail: 'secondary_email',
+                organization: 'organization',
+                jobTitle: 'job_title',
+                address: 'address',
+                mobile: 'mobile',
+                officePhone: 'office_phone',
+                isFirstTimeAttending: 'is_first_time_attending',
+                companyType: 'company_type',
+                companyTypeOther: 'company_type_other',
+                emergencyContactName: 'emergency_contact_name',
+                emergencyContactPhone: 'emergency_contact_phone',
+                wednesdayActivity: 'wednesday_activity',
+                wednesdayReception: 'wednesday_reception',
+                thursdayBreakfast: 'thursday_breakfast',
+                thursdayLuncheon: 'thursday_luncheon',
+                thursdayDinner: 'thursday_dinner',
+                fridayBreakfast: 'friday_breakfast',
+                dietaryRestrictions: 'dietary_restrictions',
+                specialRequests: 'special_requests',
+                clubRentals: 'club_rentals',
+                golfHandicap: 'golf_handicap',
+                massageTimeSlot: 'massage_time_slot',
+                spouseDinnerTicket: 'spouse_dinner_ticket',
+                spouseBreakfast: 'spouse_breakfast',
+                tuesdayEarlyReception: 'tuesday_early_reception',
+                spouseFirstName: 'spouse_first_name',
+                spouseLastName: 'spouse_last_name',
+                totalPrice: 'total_price',
+                paymentMethod: 'payment_method',
+                paid: 'paid',
+                squarePaymentId: 'square_payment_id',
+            };
+            const dbPayload = {
+                updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+            };
+            const updateDataObj = updateData || {};
+            const updatedActivity = updateDataObj.wednesdayActivity || existingRow.wednesday_activity || '';
+            const isGolf = updatedActivity.toLowerCase().includes('golf');
+            const isMassage = updatedActivity.toLowerCase().includes('massage');
+            for (const [camelKey, dbKey] of Object.entries(fieldMapping)) {
+                if (camelKey in updateDataObj && camelKey !== 'id') {
+                    let value = updateDataObj[camelKey];
+                    if ((camelKey === 'clubRentals' || camelKey === 'golfHandicap') && !isGolf) {
+                        value = null;
+                    }
+                    if (camelKey === 'massageTimeSlot' && !isMassage) {
+                        value = null;
+                    }
+                    if (camelKey === 'spouseDinnerTicket') {
+                        value = value === true || value === 'Yes' || value === 'yes' || value === 1 ? 1 : 0;
+                    }
+                    else if (camelKey === 'isFirstTimeAttending' || camelKey === 'spouseBreakfast' || camelKey === 'paid') {
+                        value = value === true || value === 1 ? 1 : 0;
+                    }
+                    else if (value === null || value === undefined) {
+                        value = null;
+                    }
+                    dbPayload[dbKey] = value;
+                }
+            }
+            if (updateDataObj.wednesdayActivity !== undefined) {
+                if (!isGolf) {
+                    dbPayload.club_rentals = null;
+                    dbPayload.golf_handicap = null;
+                }
+                if (!isMassage) {
+                    dbPayload.massage_time_slot = null;
+                }
+            }
+            console.log(`[UPDATE] Database payload keys:`, Object.keys(dbPayload));
+            console.log(`[UPDATE] Sample DB fields:`, {
+                first_name: dbPayload.first_name,
+                email: dbPayload.email,
+                club_rentals: dbPayload.club_rentals,
+                wednesday_activity: dbPayload.wednesday_activity
+            });
+            const updateResult = await this.db.update('registrations', Number(id), dbPayload);
+            console.log(`[UPDATE] Database update result:`, updateResult);
+            const verifyRow = await this.db.findById('registrations', Number(id));
+            console.log(`[UPDATE] Verification - Updated record:`, {
+                first_name: verifyRow?.first_name,
+                email: verifyRow?.email,
+                club_rentals: verifyRow?.club_rentals,
+                wednesday_activity: verifyRow?.wednesday_activity
+            });
+            const updatedRegistration = Registration_1.Registration.fromDatabase(verifyRow);
             const response = {
                 success: true,
-                data: registration.toJSON(),
+                data: updatedRegistration.toJSON(),
                 message: 'Registration updated successfully'
             };
             res.status(200).json(response);

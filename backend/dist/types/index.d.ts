@@ -13,9 +13,10 @@ export interface Event {
     year: number;
     name: string;
     date: string;
+    startDate?: string;
     activities?: string[];
     location?: string;
-    description?: string;
+    description?: string | string[];
     createdAt?: string;
     updatedAt?: string;
     spousePricing?: Array<{
@@ -37,6 +38,10 @@ export interface Registration {
     id: number;
     userId: number;
     eventId: number;
+    status?: 'active' | 'cancelled';
+    cancellationReason?: string;
+    cancellationAt?: string;
+    tuesdayEarlyReception?: 'I will attend' | 'I will NOT attend';
     firstName: string;
     lastName: string;
     badgeName: string;
@@ -54,7 +59,8 @@ export interface Registration {
     emergencyContactPhone?: string;
     wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
     golfHandicap?: string;
-    clubRentals?: boolean;
+    clubRentals?: string;
+    massageTimeSlot?: string;
     spouseBreakfast?: boolean;
     wednesdayReception: 'I will attend' | 'I will NOT attend';
     thursdayBreakfast: 'I will attend' | 'I will NOT attend';
@@ -63,11 +69,14 @@ export interface Registration {
     fridayBreakfast: 'I will attend' | 'I will NOT attend';
     fridayDinner: 'I will attend' | 'I will NOT attend';
     dietaryRestrictions?: string;
+    specialRequests?: string;
     spouseFirstName?: string;
     spouseLastName?: string;
-    spouseDinnerTicket: 'Yes' | 'No';
+    spouseDinnerTicket: boolean;
     totalPrice: number;
     paymentMethod: 'Card' | 'Check';
+    paid?: boolean;
+    squarePaymentId?: string;
     name: string;
     category: string;
     createdAt?: string;
@@ -98,9 +107,10 @@ export interface CreateEventRequest {
     year: number;
     name: string;
     date: string;
+    startDate?: string;
     activities?: string[];
     location?: string;
-    description?: string;
+    description?: string | string[];
     spousePricing?: Array<{
         label: string;
         price: number;
@@ -138,17 +148,19 @@ export interface CreateRegistrationRequest {
     emergencyContactPhone?: string;
     wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
     golfHandicap?: string;
-    clubRentals?: boolean;
+    clubRentals?: string;
     wednesdayReception: 'I will attend' | 'I will NOT attend';
+    tuesdayEarlyReception?: 'I will attend' | 'I will NOT attend';
     thursdayBreakfast: 'I will attend' | 'I will NOT attend';
     thursdayLunch: 'I will attend' | 'I will NOT attend';
     thursdayReception: 'I will attend' | 'I will NOT attend';
     fridayBreakfast: 'I will attend' | 'I will NOT attend';
     fridayDinner: 'I will attend' | 'I will NOT attend';
     dietaryRestrictions?: string;
+    specialRequests?: string;
     spouseFirstName?: string;
     spouseLastName?: string;
-    spouseDinnerTicket: 'Yes' | 'No';
+    spouseDinnerTicket: boolean;
     totalPrice: number;
     paymentMethod: 'Card' | 'Check';
     name: string;

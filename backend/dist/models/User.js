@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 class User {
     constructor(data) {
         this.id = data.id;
@@ -29,11 +29,11 @@ class User {
     async hashPassword() {
         if (this.password) {
             const saltRounds = 10;
-            this.password = await bcrypt_1.default.hash(this.password, saltRounds);
+            this.password = await bcryptjs_1.default.hash(this.password, saltRounds);
         }
     }
     async verifyPassword(plainPassword) {
-        return await bcrypt_1.default.compare(plainPassword, this.password);
+        return await bcryptjs_1.default.compare(plainPassword, this.password);
     }
     get createdAt() {
         return this.created_at;

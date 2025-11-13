@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const database_1 = __importDefault(require("./config/database"));
 const databaseService_1 = require("./services/databaseService");
 const eventRoutes_1 = __importDefault(require("./routes/eventRoutes"));
@@ -14,7 +14,11 @@ const registrationRoutes_1 = __importDefault(require("./routes/registrationRoute
 const groupRoutes_1 = __importDefault(require("./routes/groupRoutes"));
 const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
-dotenv_1.default.config();
+const cancellationRoutes_1 = __importDefault(require("./routes/cancellationRoutes"));
+const paymentsRoutes_1 = __importDefault(require("./routes/paymentsRoutes"));
+if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
+    dotenv_1.default.config();
+}
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -27,17 +31,19 @@ app.use('/api/auth', authRoutes_1.default);
 app.use('/api/events', eventRoutes_1.default);
 app.use('/api/registrations', registrationRoutes_1.default);
 app.use('/api/groups', groupRoutes_1.default);
+app.use('/api', cancellationRoutes_1.default);
+app.use('/api/payments', paymentsRoutes_1.default);
 let databaseService;
 const initializeDatabase = async () => {
     try {
         const connection = await (0, database_1.default)();
         databaseService = new databaseService_1.DatabaseService(connection);
         globalThis.databaseService = databaseService;
-        console.log('🚀 Database service initialized');
+        console.log('Database service initialized');
         await createTables();
     }
     catch (error) {
-        console.error('❌ Failed to initialize database:', error);
+        console.error('Failed to initialize database:', error);
         process.exit(1);
     }
 };
@@ -61,6 +67,7 @@ const createTables = async () => {
         id INT PRIMARY KEY AUTO_INCREMENT,
         name VARCHAR(255) NOT NULL,
         date DATE NOT NULL,
+        start_date DATE NULL,
         activities JSON,
         location VARCHAR(500),
         description TEXT,
@@ -107,6 +114,9 @@ const createTables = async () => {
     `);
         await migrateRegistrationsTable();
         await migrateEventsAndRegistrationsEnhancements();
+        await migrateCancellationFeature();
+        await migrateEventDescriptionToArray();
+        await migrateEventStartDate();
         await databaseService.query(`
       CREATE TABLE IF NOT EXISTS \`groups\` (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -118,10 +128,10 @@ const createTables = async () => {
         FOREIGN KEY (eventId) REFERENCES events(id) ON DELETE CASCADE
       )
     `);
-        console.log('✅ Database tables created/verified');
+        console.log('Database tables created/verified');
     }
     catch (error) {
-        console.error('❌ Error creating tables:', error);
+        console.error('Error creating tables:', error);
         throw error;
     }
 };
@@ -150,7 +160,7 @@ const migrateUsersEmailVerification = async () => {
         }
     }
     catch (e) {
-        console.warn('⚠️ Skipping users email verification migration:', e);
+        console.warn('Skipping users email verification migration:', e);
     }
 };
 const migrateRegistrationsTable = async () => {
@@ -226,12 +236,6 @@ const migrateRegistrationsTable = async () => {
                 }
             }
         });
-        drop('golfHandicap');
-        drop('golfClubPreference');
-        drop('massageTimeSlot');
-        drop('golf_handicap');
-        drop('golf_club_preference');
-        drop('massage_time_slot');
         if (alter.length > 0) {
             const sql = `ALTER TABLE \`registrations\` ${alter.join(', ')}`;
             await databaseService.query(sql);
@@ -239,7 +243,7 @@ const migrateRegistrationsTable = async () => {
         }
     }
     catch (e) {
-        console.warn('⚠️ Skipping registrations schema migration:', e);
+        console.warn('Skipping registrations schema migration:', e);
     }
 };
 const migrateEventsAndRegistrationsEnhancements = async () => {
@@ -248,7 +252,7 @@ const migrateEventsAndRegistrationsEnhancements = async () => {
         const dbName = dbNameRows[0]?.db;
         if (!dbName)
             return;
-        const getCols = async (table) => await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, table]);
+        const getCols = async (table) => await databaseService.query('SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, table]);
         const eventCols = await getCols('events');
         if (!eventCols.some((c) => c.COLUMN_NAME === 'spouse_pricing')) {
             await databaseService.query('ALTER TABLE `events` ADD COLUMN `spouse_pricing` JSON NULL AFTER `activities`');
@@ -268,19 +272,126 @@ const migrateEventsAndRegistrationsEnhancements = async () => {
         }
         const regCols = await getCols('registrations');
         const alter = [];
-        if (!regCols.some((c) => c.COLUMN_NAME === 'club_rentals'))
-            alter.push('ADD COLUMN `club_rentals` BOOLEAN');
+        if (!regCols.some((c) => c.COLUMN_NAME === 'club_rentals')) {
+            alter.push('ADD COLUMN `club_rentals` VARCHAR(50) NULL');
+        }
+        else {
+            const clubRentalsCol = regCols.find((c) => c.COLUMN_NAME === 'club_rentals');
+            const dataType = (clubRentalsCol?.DATA_TYPE || '').toLowerCase();
+            const columnType = (clubRentalsCol?.COLUMN_TYPE || '').toLowerCase();
+            if (clubRentalsCol && (dataType === 'tinyint' || dataType === 'int' || dataType === 'smallint' || columnType.includes('int') || columnType.includes('bool'))) {
+                alter.push('MODIFY COLUMN `club_rentals` VARCHAR(50) NULL');
+                console.log(`🛠️ Migrating club_rentals from ${dataType} to VARCHAR`);
+            }
+        }
         if (!regCols.some((c) => c.COLUMN_NAME === 'golf_handicap'))
             alter.push('ADD COLUMN `golf_handicap` VARCHAR(10)');
+        if (!regCols.some((c) => c.COLUMN_NAME === 'massage_time_slot'))
+            alter.push('ADD COLUMN `massage_time_slot` VARCHAR(50) NULL');
         if (!regCols.some((c) => c.COLUMN_NAME === 'spouse_breakfast'))
             alter.push('ADD COLUMN `spouse_breakfast` BOOLEAN');
+        if (!regCols.some((c) => c.COLUMN_NAME === 'tuesday_early_reception'))
+            alter.push("ADD COLUMN `tuesday_early_reception` VARCHAR(50)");
+        if (!regCols.some((c) => c.COLUMN_NAME === 'paid'))
+            alter.push('ADD COLUMN `paid` BOOLEAN DEFAULT FALSE');
+        if (!regCols.some((c) => c.COLUMN_NAME === 'square_payment_id'))
+            alter.push('ADD COLUMN `square_payment_id` VARCHAR(64)');
+        if (!regCols.some((c) => c.COLUMN_NAME === 'special_requests'))
+            alter.push('ADD COLUMN `special_requests` TEXT NULL');
         if (alter.length > 0) {
             await databaseService.query(`ALTER TABLE \`registrations\` ${alter.join(', ')}`);
             console.log('🛠️ Added registrations.club_rentals/golf_handicap');
         }
     }
     catch (e) {
-        console.warn('⚠️ Enhancement migration skipped:', e);
+        console.warn('Enhancement migration skipped:', e);
+    }
+};
+const migrateEventDescriptionToArray = async () => {
+    try {
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (!dbName)
+            return;
+        const cols = await databaseService.query('SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?', [dbName, 'events', 'description']);
+        if (Array.isArray(cols) && cols.length > 0) {
+            const col = cols[0];
+            const dataType = col.DATA_TYPE?.toUpperCase();
+            const columnType = col.COLUMN_TYPE?.toUpperCase() || '';
+            if (dataType === 'TEXT' || dataType === 'VARCHAR' || columnType.includes('TEXT')) {
+                const events = await databaseService.query('SELECT id, description FROM events WHERE description IS NOT NULL');
+                for (const event of events) {
+                    if (event.description && typeof event.description === 'string') {
+                        try {
+                            JSON.parse(event.description);
+                        }
+                        catch {
+                            await databaseService.query('UPDATE events SET description = ? WHERE id = ?', [JSON.stringify([event.description]), event.id]);
+                        }
+                    }
+                }
+                await databaseService.query('ALTER TABLE `events` MODIFY COLUMN `description` JSON NULL');
+                console.log('🛠️ Migrated events.description to JSON array');
+            }
+        }
+    }
+    catch (error) {
+        console.error('Error migrating event description:', error?.message || error);
+    }
+};
+const migrateEventStartDate = async () => {
+    try {
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (!dbName)
+            return;
+        const cols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?', [dbName, 'events', 'start_date']);
+        if (!Array.isArray(cols) || cols.length === 0) {
+            await databaseService.query('ALTER TABLE `events` ADD COLUMN `start_date` DATE NULL AFTER `date`');
+            console.log('🛠️ Added events.start_date column');
+        }
+    }
+    catch (error) {
+        console.error('Error migrating event start_date:', error?.message || error);
+    }
+};
+const migrateCancellationFeature = async () => {
+    try {
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (!dbName)
+            return;
+        const getCols = async (table) => await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, table]);
+        const regCols = await getCols('registrations');
+        const regAlter = [];
+        if (!regCols.some((c) => c.COLUMN_NAME === 'status'))
+            regAlter.push("ADD COLUMN `status` ENUM('active','cancelled') DEFAULT 'active'");
+        if (!regCols.some((c) => c.COLUMN_NAME === 'cancellation_reason'))
+            regAlter.push('ADD COLUMN `cancellation_reason` TEXT NULL');
+        if (!regCols.some((c) => c.COLUMN_NAME === 'cancellation_at'))
+            regAlter.push('ADD COLUMN `cancellation_at` TIMESTAMP NULL');
+        if (regAlter.length > 0) {
+            await databaseService.query(`ALTER TABLE \`registrations\` ${regAlter.join(', ')}`);
+            console.log('🛠️ Added registrations cancellation fields');
+        }
+        await databaseService.query(`
+      CREATE TABLE IF NOT EXISTS cancellation_requests (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        registration_id INT NOT NULL,
+        user_id INT NOT NULL,
+        event_id INT NOT NULL,
+        reason TEXT,
+        status ENUM('pending','approved','rejected') DEFAULT 'pending',
+        admin_id INT NULL,
+        admin_note TEXT NULL,
+        processed_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (registration_id) REFERENCES registrations(id) ON DELETE CASCADE
+      )`);
+    }
+    catch (e) {
+        console.warn('⚠️ Cancellation feature migration skipped:', e);
     }
 };
 app.get('/api/health', (req, res) => {
@@ -300,14 +411,14 @@ app.get('/api/demo/setup', async (req, res) => {
             });
             return;
         }
-        const adminPasswordHash = await bcrypt_1.default.hash('admin123', 10);
+        const adminPasswordHash = await bcryptjs_1.default.hash('admin123', 10);
         const adminSql = `
       INSERT INTO users (name, email, password, role, isActive) 
       VALUES (?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE password = VALUES(password), name = VALUES(name), role = VALUES(role), isActive = VALUES(isActive)
     `;
         await databaseService.query(adminSql, ['Admin User', 'hasan5481@gmail.com', adminPasswordHash, 'admin', true]);
-        const userPasswordHash = await bcrypt_1.default.hash('user123', 10);
+        const userPasswordHash = await bcryptjs_1.default.hash('user123', 10);
         const userSql = `
       INSERT INTO users (name, email, password, role, isActive) 
       VALUES (?, ?, ?, ?, ?)
@@ -365,10 +476,10 @@ const startServer = async () => {
         await initializeDatabase();
         const PORT = parseInt(process.env.PORT || '5000');
         app.listen(PORT, () => {
-            console.log(`🚀 Server is running on port ${PORT}`);
-            console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-            console.log(`🎯 Demo setup: http://localhost:${PORT}/api/demo/setup`);
-            console.log(`📝 API Documentation:`);
+            console.log(`   Server is running on port ${PORT}`);
+            console.log(`   Health check: http://localhost:${PORT}/api/health`);
+            console.log(`   Demo setup: http://localhost:${PORT}/api/demo/setup`);
+            console.log(`   API Documentation:`);
             console.log(`   Events: http://localhost:${PORT}/api/events`);
             console.log(`   Registrations: http://localhost:${PORT}/api/registrations`);
             console.log(`   Groups: http://localhost:${PORT}/api/groups`);
@@ -376,7 +487,7 @@ const startServer = async () => {
         });
     }
     catch (error) {
-        console.error('❌ Failed to start server:', error);
+        console.error('Failed to start server:', error);
         process.exit(1);
     }
 };

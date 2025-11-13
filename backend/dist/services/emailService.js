@@ -8,10 +8,12 @@ exports.sendRegistrationConfirmationEmail = sendRegistrationConfirmationEmail;
 exports.sendPasswordResetEmail = sendPasswordResetEmail;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
+if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
+    dotenv_1.default.config();
+}
 const ensureTransporter = () => {
     const host = process.env.SMTP_HOST;
-    const port = parseInt(process.env.SMTP_PORT || '587');
+    const port = parseInt(process.env.SMTP_PORT || '587', 10);
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
     if (!host || !user || !pass) {
@@ -22,21 +24,91 @@ const ensureTransporter = () => {
             missing.push('SMTP_USER');
         if (!pass)
             missing.push('SMTP_PASS');
-        console.warn('⚠️ SMTP not fully configured. Missing:', missing.join(', ') || 'none', '- emails will be logged to console.');
+        console.warn('SMTP not fully configured. Missing:', missing.join(', ') || 'none', '- emails will be logged to console.');
         return null;
     }
-    const secure = port === 465;
-    return nodemailer_1.default.createTransport({ host, port, secure, auth: { user, pass } });
+    const secure = (process.env.SMTP_SECURE || '').length
+        ? /^(1|true|yes)$/i.test(process.env.SMTP_SECURE)
+        : port === 465;
+    const familyEnv = process.env.SMTP_FAMILY;
+    const family = familyEnv ? Number(familyEnv) : 4;
+    const transport = nodemailer_1.default.createTransport({
+        host,
+        port,
+        secure,
+        auth: { user, pass },
+        requireTLS: !secure,
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 20000,
+        ...(family ? { family } : {}),
+        tls: secure ? { minVersion: 'TLSv1.2', servername: host } : { minVersion: 'TLSv1.2', servername: host },
+        logger: /^(1|true|yes)$/i.test(process.env.SMTP_DEBUG || ''),
+        debug: /^(1|true|yes)$/i.test(process.env.SMTP_DEBUG || ''),
+    });
+    return transport;
 };
 const transporter = ensureTransporter();
 let smtpVerifiedLogged = false;
+const sendUsingTransporter = async (payload) => {
+    if (!transporter)
+        throw new Error('No SMTP transporter');
+    if (!smtpVerifiedLogged) {
+        try {
+            await transporter.verify();
+            console.log('SMTP OK - transporter verified');
+        }
+        catch (e) {
+            const msg = e?.message || String(e);
+            console.error('❌ SMTP FAIL -', msg);
+        }
+        finally {
+            smtpVerifiedLogged = true;
+        }
+    }
+    const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
+    await transporter.sendMail({ from, ...payload });
+};
+const sendUsingResend = async (payload) => {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey)
+        throw new Error('RESEND_API_KEY not set');
+    const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
+    const fetchAny = globalThis.fetch;
+    const res = await fetchAny('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ from, to: payload.to, subject: payload.subject, html: payload.html, text: payload.text })
+    });
+    if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`Resend API failed (${res.status}): ${body}`);
+    }
+};
+const sendMail = async (payload) => {
+    try {
+        if (transporter) {
+            await sendUsingTransporter(payload);
+            return;
+        }
+    }
+    catch (e) {
+        console.error('SMTP send failed, falling back to HTTP API:', e?.message || e);
+    }
+    if (process.env.RESEND_API_KEY) {
+        await sendUsingResend(payload);
+        return;
+    }
+    console.warn('⚠️ No email transport available (SMTP or RESEND_API_KEY). Email not sent.');
+};
 const renderEmailTemplate = (params) => {
     const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
     const heading = params.heading || brand;
     const preheader = params.preheader || '';
-    const footerHtml = params.footerHtml || `
-    <p style="margin:0;color:#64748b;font-size:12px;">You received this email because you have an account with ${brand}.</p>
-  `;
+    const footerHtml = params.footerHtml || '';
     const buttonHtml = params.cta
         ? `
       <a href="${params.cta.url}"
@@ -101,35 +173,40 @@ async function sendVerificationEmail(to, token) {
         heading: 'Verify your email',
         preheader: 'Confirm your email to finish setting up your account',
         contentHtml: `
-      <p style="margin:0 0 12px 0;">Welcome to EFBC Conference! Please confirm your email address to activate your account.</p>
+      <p style="margin:0 0 12px 0;">Welcome to the EFBC Conference! Please confirm your email address to activate your account.</p>
       <p style="margin:0;opacity:.8;">This link expires in 24 hours.</p>
     `,
         cta: { label: 'Verify Email', url: link },
     });
     const text = `Verify your email: ${link}`;
-    if (!transporter) {
-        console.log('📧 [DEV] Would send verification email to:', to, 'link:', link);
-        return;
-    }
-    if (!smtpVerifiedLogged) {
-        try {
-            await transporter.verify();
-            console.log('✅ SMTP OK - transporter verified');
-        }
-        catch (e) {
-            console.error('❌ SMTP FAIL -', e?.message || e);
-        }
-        finally {
-            smtpVerifiedLogged = true;
-        }
-    }
-    await transporter.sendMail({ from, to, subject, text, html });
+    await sendMail({ to, subject, text, html });
 }
 async function sendRegistrationConfirmationEmail(params) {
-    const { to, name, eventName, eventDate, totalPrice } = params;
+    const { to, name, eventName, eventDate, totalPrice, registration } = params;
     const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
     const subject = 'Your EFBC Conference Registration is Confirmed';
     const priceText = typeof totalPrice === 'number' ? `Total: $${totalPrice.toFixed(2)}` : '';
+    const detailsHtml = registration
+        ? `
+      <table role="presentation" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:14px;">
+        ${registration.badgeName ? `<tr><td style="color:#6b7280;">Badge Name</td><td><strong>${registration.badgeName}</strong></td></tr>` : ''}
+        ${registration.email ? `<tr><td style="color:#6b7280;">Email</td><td>${registration.email}</td></tr>` : ''}
+        ${registration.secondaryEmail ? `<tr><td style="color:#6b7280;">Secondary Email</td><td>${registration.secondaryEmail}</td></tr>` : ''}
+        ${registration.organization ? `<tr><td style="color:#6b7280;">Organization</td><td>${registration.organization}</td></tr>` : ''}
+        ${registration.jobTitle ? `<tr><td style="color:#6b7280;">Job Title</td><td>${registration.jobTitle}</td></tr>` : ''}
+        ${registration.address ? `<tr><td style="color:#6b7280;">Address</td><td>${String(registration.address).replace(/\n/g, '<br/>')}</td></tr>` : ''}
+        ${registration.mobile ? `<tr><td style="color:#6b7280;">Mobile</td><td>${registration.mobile}</td></tr>` : ''}
+        ${registration.wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${registration.wednesdayActivity}</td></tr>` : ''}
+        ${registration.tuesdayEarlyReception ? `<tr><td style="color:#6b7280;">Tuesday Early Arrivals Reception</td><td>${registration.tuesdayEarlyReception}</td></tr>` : ''}
+        ${registration.wednesdayReception ? `<tr><td style="color:#6b7280;">Wednesday Reception</td><td>${registration.wednesdayReception}</td></tr>` : ''}
+        ${registration.thursdayBreakfast ? `<tr><td style="color:#6b7280;">Thursday Breakfast</td><td>${registration.thursdayBreakfast}</td></tr>` : ''}
+        ${registration.thursdayLuncheon ? `<tr><td style="color:#6b7280;">Thursday Luncheon</td><td>${registration.thursdayLuncheon}</td></tr>` : ''}
+        ${registration.thursdayDinner ? `<tr><td style="color:#6b7280;">Thursday Dinner</td><td>${registration.thursdayDinner}</td></tr>` : ''}
+        ${registration.fridayBreakfast ? `<tr><td style="color:#6b7280;">Friday Breakfast</td><td>${registration.fridayBreakfast}</td></tr>` : ''}
+        ${priceText ? `<tr><td style="color:#6b7280;">Total</td><td><strong>$${Number(totalPrice).toFixed(2)}</strong></td></tr>` : ''}
+      </table>
+    `
+        : '';
     const html = renderEmailTemplate({
         subject,
         heading: 'Registration Confirmed',
@@ -140,27 +217,12 @@ async function sendRegistrationConfirmationEmail(params) {
       ${eventName ? `<p style=\"margin:0;\"><strong>Event:</strong> ${eventName}</p>` : ''}
       ${eventDate ? `<p style=\"margin:4px 0 0 0;\"><strong>Date:</strong> ${eventDate}</p>` : ''}
       ${priceText ? `<p style=\"margin:8px 0 0 0;\"><strong>${priceText}</strong></p>` : ''}
+      ${detailsHtml}
       <p style="margin:12px 0 0 0;">We look forward to seeing you!</p>
     `,
     });
     const text = `Thank you for registering for EFBC Conference. ${eventName ? `Event: ${eventName}.` : ''} ${eventDate ? `Date: ${eventDate}.` : ''} ${priceText}`.trim();
-    if (!transporter) {
-        console.log('📧 [DEV] Would send registration confirmation to:', to, { name, eventName, eventDate, totalPrice });
-        return;
-    }
-    if (!smtpVerifiedLogged) {
-        try {
-            await transporter.verify();
-            console.log('✅ SMTP OK - transporter verified');
-        }
-        catch (e) {
-            console.error('❌ SMTP FAIL -', e?.message || e);
-        }
-        finally {
-            smtpVerifiedLogged = true;
-        }
-    }
-    await transporter.sendMail({ from, to, subject, text, html });
+    await sendMail({ to, subject, text, html });
 }
 async function sendPasswordResetEmail(to, token) {
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -178,22 +240,6 @@ async function sendPasswordResetEmail(to, token) {
         cta: { label: 'Reset Password', url: link },
     });
     const text = `Reset your password: ${link}`;
-    if (!transporter) {
-        console.log('📧 [DEV] Would send password reset email to:', to, 'link:', link);
-        return;
-    }
-    if (!smtpVerifiedLogged) {
-        try {
-            await transporter.verify();
-            console.log('✅ SMTP OK - transporter verified');
-        }
-        catch (e) {
-            console.error('❌ SMTP FAIL -', e?.message || e);
-        }
-        finally {
-            smtpVerifiedLogged = true;
-        }
-    }
-    await transporter.sendMail({ from, to, subject, text, html });
+    await sendMail({ to, subject, text, html });
 }
 //# sourceMappingURL=emailService.js.map

@@ -48,6 +48,18 @@ export class Registration {
   public paid?: boolean;
   public squarePaymentId?: string;
 
+  // Helper method to format dates for MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
+  private formatDateForDB(dateValue: string | Date | undefined): string {
+    if (!dateValue) {
+      return new Date().toISOString().slice(0, 19).replace('T', ' ');
+    }
+    const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+    if (isNaN(date.getTime())) {
+      return new Date().toISOString().slice(0, 19).replace('T', ' ');
+    }
+    return date.toISOString().slice(0, 19).replace('T', ' ');
+  }
+
   constructor(data: Partial<IRegistration>) {
     this.id = data.id;
     this.userId = data.userId ?? 1;
@@ -205,12 +217,12 @@ export class Registration {
       payment_method: this.paymentMethod,
       paid: this.paid ?? false,
       square_payment_id: this.squarePaymentId || null,
-      updated_at: this.updatedAt || new Date().toISOString().slice(0, 19).replace('T', ' '),
+      updated_at: this.formatDateForDB(this.updatedAt || new Date().toISOString()),
     };
     
     // Add created_at only for new registrations (when id is not set)
     if (!this.id) {
-      payload.created_at = this.createdAt || new Date().toISOString().slice(0, 19).replace('T', ' ');
+      payload.created_at = this.formatDateForDB(this.createdAt || new Date().toISOString());
     }
     
     return payload;
