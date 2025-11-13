@@ -15,7 +15,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onShowRegistratio
   const [showPassword, setShowPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotOpen, setForgotOpen] = useState(false);
-  const [forgotMsg, setForgotMsg] = useState('');
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState('');
   const [resendMsg, setResendMsg] = useState('');
   const [resending, setResending] = useState(false);
 
@@ -88,7 +89,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onShowRegistratio
             </div>
           </div>
           <div style={{ textAlign: 'right', marginTop: '-0.5rem', marginBottom: '1.75rem' }}>
-            <button type="button" className="link-button" onClick={()=>{ setForgotOpen(true); setForgotEmail(email); setForgotMsg(''); }}>Forgot password?</button>
+            <button type="button" className="link-button" onClick={()=>{ setForgotOpen(true); setForgotEmail(email); }}>Forgot password?</button>
           </div>
           {error && (
             <div className="error-message" style={{ marginBottom: '0.5rem' }}>
@@ -139,17 +140,36 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onShowRegistratio
             <h3>Reset Password</h3>
             <p>Enter your account email and we’ll send a reset link.</p>
             <input type="email" className="form-control" value={forgotEmail} onChange={e=>setForgotEmail(e.target.value)} placeholder="you@example.com" />
-            {forgotMsg && <div className="info-message" style={{ marginTop: '8px' }}>{forgotMsg}</div>}
             <div style={{ display:'flex', gap:'0.5rem', marginTop:'12px' }}>
               <button className="btn btn-primary" onClick={async()=>{
                 try {
                   const em = (forgotEmail||'').trim();
-                  if(!em) { setForgotMsg('Email is required'); return; }
+                  if(!em) { 
+                    setPopupMessage('Email is required');
+                    setShowPopup(true);
+                    return; 
+                  }
                   await authApi.forgotPassword(em);
-                  setForgotMsg('If an account exists, a reset link has been sent.');
-                } catch(e:any){ setForgotMsg(e?.response?.data?.error || 'Request failed'); }
+                  setPopupMessage('If an account exists, a reset link has been sent.');
+                  setShowPopup(true);
+                  setForgotOpen(false);
+                } catch(e:any){ 
+                  setPopupMessage(e?.response?.data?.error || 'Request failed');
+                  setShowPopup(true);
+                }
               }}>Send Reset Link</button>
               <button className="btn btn-secondary" onClick={()=>setForgotOpen(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showPopup && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={() => setShowPopup(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>Reset Password</h3>
+            <p>{popupMessage}</p>
+            <div style={{ display:'flex', justifyContent:'flex-end', marginTop:'16px' }}>
+              <button className="btn btn-primary" onClick={() => setShowPopup(false)}>OK</button>
             </div>
           </div>
         </div>
