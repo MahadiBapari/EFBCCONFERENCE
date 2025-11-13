@@ -207,6 +207,13 @@ export class Registration {
       square_payment_id: this.squarePaymentId || null,
       updated_at: this.updatedAt || new Date().toISOString().slice(0, 19).replace('T', ' '),
     };
+    
+    // Add created_at only for new registrations (when id is not set)
+    if (!this.id) {
+      payload.created_at = this.createdAt || new Date().toISOString().slice(0, 19).replace('T', ' ');
+    }
+    
+    return payload;
   }
 
   // Create from database row
