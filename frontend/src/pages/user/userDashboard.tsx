@@ -81,11 +81,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             <li>
               {activeEvent.startDate ? (
                 <>
-                  Start Date: {new Date(activeEvent.startDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}<br />
-                  End Date: {new Date(activeEvent.date || activeEvent.endDate || '').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                  <strong>Start Date:</strong> {new Date(activeEvent.startDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}<br />
+                  <strong>End Date:</strong> {new Date(activeEvent.date || activeEvent.endDate || '').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                 </>
               ) : (
-                <>Date: {new Date(activeEvent.date || activeEvent.endDate || '').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</>
+                <>
+                  <strong>Date:</strong> {new Date(activeEvent.date || activeEvent.endDate || '').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                </>
               )}
             </li>
           </ul>

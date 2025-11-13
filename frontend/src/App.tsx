@@ -108,9 +108,11 @@ const App: React.FC = () => {
       };
       const normalized: Event[] = apiEvents.map((e: any) => ({
         id: e.id,
-        year: new Date(e.date).getFullYear(),
+        year: new Date(e.date || e.startDate || e.endDate).getFullYear(),
         name: e.name,
         date: e.date,
+        startDate: e.startDate || undefined,
+        endDate: e.endDate || e.date || undefined,
         eventId: e.id,
         activities: Array.isArray(e.activities)
           ? e.activities
