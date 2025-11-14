@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Event } from '../../types';
 import { isEventExpired } from '../../types';
+import { formatDateShort } from '../../utils/dateUtils';
 // Event form moved to a dedicated page; we navigate via onOpenEventForm
 import { apiClient } from '../../services/apiClient';
 import '../../styles/AdminEvents.css';
@@ -83,8 +84,8 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
       ) : events.length > 0 ? (
         <div className="event-grid">
           {[...events].sort((a,b) => b.year - a.year).map(event => {
-            const startDateStr = event.startDate ? new Date(event.startDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : null;
-            const endDateStr = new Date(event.date || event.endDate || '').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+            const startDateStr = event.startDate ? formatDateShort(event.startDate) : null;
+            const endDateStr = formatDateShort(event.date || event.endDate || '');
             const dateDisplay = startDateStr ? `${startDateStr} - ${endDateStr}` : endDateStr;
             return (
             <div className="card event-card-new" key={event.id}>

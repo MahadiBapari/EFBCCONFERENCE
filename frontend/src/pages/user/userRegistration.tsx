@@ -8,6 +8,7 @@ import {
   GOLF_CLUB_PREFERENCES,
   isEventExpired,
 } from '../../types';
+import { formatDateShort } from '../../utils/dateUtils';
 import '../../styles/RegistrationModal.css';
 
 interface UserRegistrationProps {
@@ -455,8 +456,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         <p className="modal-subtitle">
           {event.name} - {
             event.startDate 
-              ? `${new Date(event.startDate).toLocaleDateString()} - ${new Date(event.date || event.endDate || '').toLocaleDateString()}`
-              : new Date(event.date || event.endDate || '').toLocaleDateString()
+              ? `${formatDateShort(event.startDate)} - ${formatDateShort(event.date || event.endDate || '')}`
+              : formatDateShort(event.date || event.endDate || '')
           }
         </p>
       </div>
@@ -471,7 +472,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 {(event.registrationPricing || []).map((t, i) => (
                   <div className="pricing-item" key={i}>
                     <span className="pricing-label">{t.label || `Tier ${i + 1}`}:</span>
-                    <span className="pricing-amount">${t.price}{(t.startDate || t.endDate) ? ` ${t.startDate ? 'between ' + new Date(t.startDate).toLocaleDateString() : ''}${t.startDate && t.endDate ? ' to ' : ''}${t.endDate ? new Date(t.endDate).toLocaleDateString() : ''}` : ''}</span>
+                    <span className="pricing-amount">${t.price}{(t.startDate || t.endDate) ? ` ${t.startDate ? 'between ' + formatDateShort(t.startDate) : ''}${t.startDate && t.endDate ? ' to ' : ''}${t.endDate ? formatDateShort(t.endDate) : ''}` : ''}</span>
                   </div>
                 ))}
               </div>
@@ -480,7 +481,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 {(event.spousePricing || []).map((t, i) => (
                   <div className="pricing-item" key={i}>
                     <span className="pricing-label">{t.label || `Spouse dinner ticket ${i + 1}`}:</span>
-                    <span className="pricing-amount">${t.price}{(t.startDate || t.endDate) ? ` ${t.startDate ? 'between ' + new Date(t.startDate).toLocaleDateString() : ''}${t.startDate && t.endDate ? ' to ' : ''}${t.endDate ? new Date(t.endDate).toLocaleDateString() : ''}` : ''}</span>
+                    <span className="pricing-amount">${t.price}{(t.startDate || t.endDate) ? ` ${t.startDate ? 'between ' + formatDateShort(t.startDate) : ''}${t.startDate && t.endDate ? ' to ' : ''}${t.endDate ? formatDateShort(t.endDate) : ''}` : ''}</span>
                   </div>
                 ))}
               </div>

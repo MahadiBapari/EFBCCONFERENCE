@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Event, Registration, User } from '../../types';
 import { isEventExpired } from '../../types';
+import { formatDateShort } from '../../utils/dateUtils';
 // Removed modal in favor of dedicated page
 import '../../styles/UserEvents.css';
 
@@ -64,23 +65,11 @@ export const UserEvents: React.FC<UserEventsProps> = ({
                 <div className="event-date">
                   {event.startDate ? (
                     <>
-                      Start: {new Date(event.startDate).toLocaleDateString(undefined, { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}<br />
-                      End: {new Date(event.date || event.endDate || '').toLocaleDateString(undefined, { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
+                      Start: {formatDateShort(event.startDate)}<br />
+                      End: {formatDateShort(event.date || event.endDate || '')}
                     </>
                   ) : (
-                    new Date(event.date || event.endDate || '').toLocaleDateString(undefined, { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })
+                    formatDateShort(event.date || event.endDate || '')
                   )}
                 </div>
                 

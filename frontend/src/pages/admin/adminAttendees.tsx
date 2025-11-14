@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Registration, Event, Group } from '../../types';
+import { formatDateShort } from '../../utils/dateUtils';
 import '../../styles/AdminAttendees.css';
 import { RegistrationPreview } from '../../components/RegistrationPreview';
 
@@ -165,7 +166,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
             <option value="" disabled>All Events</option>
             {events.map(event => (
               <option key={event.id} value={event.id}>
-                {event.name} - {new Date(event.date).toLocaleDateString()}
+                {event.name} - {formatDateShort(event.date)}
                 {selectedEventId === event.id ? ' (Current)' : ''}
               </option>
             ))}

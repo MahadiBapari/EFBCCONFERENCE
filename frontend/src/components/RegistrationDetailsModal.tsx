@@ -1,6 +1,7 @@
 import React from 'react';
 import { Event, Registration } from '../types';
 import { Modal } from './Modal';
+import { formatDateShort } from '../utils/dateUtils';
 
 interface RegistrationDetailsModalProps {
   event: Event | undefined;
@@ -42,7 +43,7 @@ export const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> =
             <h2>Registration Details</h2>
             {event && (
               <p className="modal-subtitle">
-                {event.name} - {new Date(event.date).toLocaleDateString()}
+                {event.name} - {formatDateShort(event.date)}
               </p>
             )}
           </div>

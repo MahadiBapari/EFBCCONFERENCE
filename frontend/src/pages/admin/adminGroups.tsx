@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Registration, Group, Event } from '../../types';
+import { formatDateShort } from '../../utils/dateUtils';
 import '../../styles/AdminGroups.css';
 
 interface AdminGroupsProps {
@@ -204,7 +205,7 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
             <option value="" disabled>All Events</option>
             {events.map(event => (
               <option key={event.id} value={event.id}>
-                {event.name} - {new Date(event.date).toLocaleDateString()}
+                {event.name} - {formatDateShort(event.date)}
                 {selectedEventId === event.id ? ' (Current)' : ''}
               </option>
             ))}

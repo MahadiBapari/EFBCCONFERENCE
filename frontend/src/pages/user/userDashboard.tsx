@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Event, Registration, User } from '../../types';
 import { isEventExpired } from '../../types';
 import { RegistrationPreview } from '../../components/RegistrationPreview';
+import { formatDateShort } from '../../utils/dateUtils';
 // Removed modal in favor of dedicated page
 import '../../styles/UserDashboard.css';
 
@@ -81,12 +82,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             <li>
               {activeEvent.startDate ? (
                 <>
-                  <strong>Start Date:</strong> {new Date(activeEvent.startDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}<br />
-                  <strong>End Date:</strong> {new Date(activeEvent.date || activeEvent.endDate || '').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                  <strong>Start Date:</strong> {formatDateShort(activeEvent.startDate)}<br />
+                  <strong>End Date:</strong> {formatDateShort(activeEvent.date || activeEvent.endDate || '')}
                 </>
               ) : (
                 <>
-                  <strong>Date:</strong> {new Date(activeEvent.date || activeEvent.endDate || '').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                  <strong>Date:</strong> {formatDateShort(activeEvent.date || activeEvent.endDate || '')}
                 </>
               )}
             </li>
