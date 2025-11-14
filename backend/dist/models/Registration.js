@@ -58,8 +58,7 @@ class Registration {
         this.spouseLastName = data.spouseLastName;
         const sdt = data.spouseDinnerTicket;
         this.spouseDinnerTicket = sdt === true || sdt === 'Yes' || sdt === 'yes' || sdt === 1;
-        const tp = data.totalPrice;
-        this.totalPrice = typeof tp === 'string' ? parseFloat(tp) || 0 : (typeof tp === 'number' ? tp : 0);
+        this.totalPrice = data.totalPrice || 0;
         this.paymentMethod = data.paymentMethod || 'Card';
         this.name = data.name || `${this.firstName} ${this.lastName}`;
         this.category = data.category || 'Networking';
@@ -129,45 +128,48 @@ class Registration {
             base.squarePaymentId = this.squarePaymentId;
         return base;
     }
+    nullIfUndefined(value) {
+        return value === undefined ? null : value;
+    }
     toDatabase() {
         const payload = {
             user_id: this.userId,
             event_id: this.eventId,
-            first_name: this.firstName,
-            last_name: this.lastName,
-            badge_name: this.badgeName,
-            email: this.email,
-            secondary_email: this.secondaryEmail,
-            organization: this.organization,
-            job_title: this.jobTitle,
-            address: this.address,
-            mobile: this.mobile,
-            office_phone: this.officePhone,
-            is_first_time_attending: this.isFirstTimeAttending,
-            company_type: this.companyType,
-            company_type_other: this.companyTypeOther,
-            emergency_contact_name: this.emergencyContactName,
-            emergency_contact_phone: this.emergencyContactPhone,
-            wednesday_activity: this.wednesdayActivity,
-            wednesday_reception: this.wednesdayReception,
-            thursday_breakfast: this.thursdayBreakfast,
-            thursday_luncheon: this.thursdayLunch,
-            thursday_dinner: this.thursdayReception,
-            friday_breakfast: this.fridayBreakfast,
-            dietary_restrictions: this.dietaryRestrictions,
-            special_requests: this.specialRequests,
-            club_rentals: this.clubRentals || null,
-            golf_handicap: this.golfHandicap,
-            massage_time_slot: this.massageTimeSlot || null,
+            first_name: this.firstName || null,
+            last_name: this.lastName || null,
+            badge_name: this.badgeName || null,
+            email: this.email || null,
+            secondary_email: this.nullIfUndefined(this.secondaryEmail),
+            organization: this.organization || null,
+            job_title: this.jobTitle || null,
+            address: this.address || null,
+            mobile: this.mobile || null,
+            office_phone: this.nullIfUndefined(this.officePhone),
+            is_first_time_attending: this.isFirstTimeAttending ?? false,
+            company_type: this.companyType || null,
+            company_type_other: this.nullIfUndefined(this.companyTypeOther),
+            emergency_contact_name: this.nullIfUndefined(this.emergencyContactName),
+            emergency_contact_phone: this.nullIfUndefined(this.emergencyContactPhone),
+            wednesday_activity: this.wednesdayActivity || null,
+            wednesday_reception: this.wednesdayReception || null,
+            thursday_breakfast: this.thursdayBreakfast || null,
+            thursday_luncheon: this.thursdayLunch || null,
+            thursday_dinner: this.thursdayReception || null,
+            friday_breakfast: this.fridayBreakfast || null,
+            dietary_restrictions: this.dietaryRestrictions || null,
+            special_requests: this.nullIfUndefined(this.specialRequests),
+            club_rentals: this.nullIfUndefined(this.clubRentals),
+            golf_handicap: this.nullIfUndefined(this.golfHandicap),
+            massage_time_slot: this.nullIfUndefined(this.massageTimeSlot),
             spouse_dinner_ticket: !!this.spouseDinnerTicket,
             spouse_breakfast: !!this.spouseBreakfast,
-            tuesday_early_reception: this.tuesdayEarlyReception,
-            spouse_first_name: this.spouseFirstName,
-            spouse_last_name: this.spouseLastName,
-            total_price: this.totalPrice,
-            payment_method: this.paymentMethod,
+            tuesday_early_reception: this.nullIfUndefined(this.tuesdayEarlyReception),
+            spouse_first_name: this.nullIfUndefined(this.spouseFirstName),
+            spouse_last_name: this.nullIfUndefined(this.spouseLastName),
+            total_price: this.totalPrice || 0,
+            payment_method: this.paymentMethod || null,
             paid: this.paid ?? false,
-            square_payment_id: this.squarePaymentId || null,
+            square_payment_id: this.nullIfUndefined(this.squarePaymentId),
             updated_at: this.formatDateForDB(this.updatedAt || new Date().toISOString()),
         };
         if (!this.id) {

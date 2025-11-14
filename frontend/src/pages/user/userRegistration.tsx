@@ -479,7 +479,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 <h4 className="pricing-title">Spouse/Guest Tickets</h4>
                 {(event.spousePricing || []).map((t, i) => (
                   <div className="pricing-item" key={i}>
-                    <span className="pricing-label">Spouse dinner ticket:</span>
+                    <span className="pricing-label">{t.label || `Spouse dinner ticket ${i + 1}`}:</span>
                     <span className="pricing-amount">${t.price}{(t.startDate || t.endDate) ? ` ${t.startDate ? 'between ' + new Date(t.startDate).toLocaleDateString() : ''}${t.startDate && t.endDate ? ' to ' : ''}${t.endDate ? new Date(t.endDate).toLocaleDateString() : ''}` : ''}</span>
                   </div>
                 ))}

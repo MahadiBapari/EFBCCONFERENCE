@@ -49,6 +49,7 @@ export declare class Registration {
     private formatDateForDB;
     constructor(data: Partial<IRegistration>);
     toJSON(): IRegistration;
+    private nullIfUndefined;
     toDatabase(): any;
     static fromDatabase(row: any): Registration;
 }
