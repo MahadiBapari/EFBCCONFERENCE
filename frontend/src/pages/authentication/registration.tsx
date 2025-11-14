@@ -272,12 +272,23 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
           </div>
 
           {submitMessage && (
-            <div className="success-message" style={{ marginBottom: '12px' }}>
-              {submitMessage}
-              <div style={{ marginTop: 8 }}>
+            <div className="success-alert">
+              <div className="success-alert-content">
+                <div className="success-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                </div>
+                <div className="success-alert-text">
+                  <p className="success-alert-title">Registration Successful!</p>
+                  <p className="success-alert-message">{submitMessage}</p>
+                </div>
+              </div>
+              <div className="success-alert-actions">
                 <button
                   type="button"
-                  className="link-button"
+                  className="btn-resend"
                   onClick={async()=>{
                     setResendMsg('');
                     setResending(true);
@@ -285,26 +296,66 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
                       const em = (formData.email||'').trim();
                       if(!em){ setResendMsg('Enter your email above first.'); return; }
                       await authApi.resendVerification(em);
-                      setResendMsg('Verification email resent.');
+                      setResendMsg('Verification email resent successfully!');
                     } catch(e:any){ setResendMsg(e?.response?.data?.error || 'Failed to resend verification'); }
                     finally { setResending(false); }
                   }}
                   disabled={resending}
                 >
-                  {resending ? 'Sending…' : 'Resend verification email'}
+                  {resending ? (
+                    <>
+                      <svg className="btn-resend-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path>
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="btn-resend-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                      </svg>
+                      Resend Verification Email
+                    </>
+                  )}
                 </button>
-                {resendMsg && <div className="info-message" style={{ marginTop: 6 }}>{resendMsg}</div>}
+                {resendMsg && (
+                  <div className={`resend-feedback ${resendMsg.includes('successfully') ? 'resend-success' : 'resend-error'}`}>
+                    {resendMsg.includes('successfully') ? (
+                      <svg className="resend-feedback-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    ) : (
+                      <svg className="resend-feedback-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                      </svg>
+                    )}
+                    {resendMsg}
+                  </div>
+                )}
               </div>
             </div>
           )}
           {submitError && (
-            <div className="error-message" style={{ marginBottom: '12px' }}>
-              
-              {submitError}
-              <div style={{ marginTop: 8 }}>
+            <div className="error-alert">
+              <div className="error-alert-content">
+                <div className="error-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                </div>
+                <div className="error-alert-text">
+                  <p>{submitError}</p>
+                </div>
+              </div>
+              <div className="error-alert-actions">
                 <button
                   type="button"
-                  className="link-button"
+                  className="btn-resend btn-resend-error"
                   onClick={async()=>{
                     setResendMsg('');
                     setResending(true);
@@ -318,9 +369,39 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
                   }}
                   disabled={resending}
                 >
-                  {resending ? 'Sending…' : 'Resend verification email'}
+                  {resending ? (
+                    <>
+                      <svg className="btn-resend-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path>
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="btn-resend-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                      </svg>
+                      Resend Verification Email
+                    </>
+                  )}
                 </button>
-                {resendMsg && <div className="info-message" style={{ marginTop: 6 }}>{resendMsg}</div>}
+                {resendMsg && (
+                  <div className={`resend-feedback ${resendMsg.includes('sent') || resendMsg.includes('successfully') ? 'resend-success' : 'resend-error'}`}>
+                    {resendMsg.includes('sent') || resendMsg.includes('successfully') ? (
+                      <svg className="resend-feedback-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    ) : (
+                      <svg className="resend-feedback-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                      </svg>
+                    )}
+                    {resendMsg}
+                  </div>
+                )}
               </div>
             </div>
           )}
