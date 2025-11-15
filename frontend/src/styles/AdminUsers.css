@@ -215,6 +215,12 @@
   text-align: center;
 }
 
+.admin-users-row-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 /* Create User Modal */
 .admin-users-modal-backdrop {
   position: fixed;

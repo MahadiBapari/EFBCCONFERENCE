@@ -59,6 +59,27 @@ export const AdminUsers: React.FC = () => {
     role: 'user',
   });
 
+  // State for editing an existing user
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSuccess, setEditSuccess] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: 'admin' | 'user';
+    isActive: boolean;
+    password: string;
+  }>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    role: 'user',
+    isActive: true,
+    password: '',
+  });
+
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
@@ -179,6 +200,95 @@ export const AdminUsers: React.FC = () => {
     }
   };
 
+  const openEditModal = (user: User) => {
+    const { firstName, lastName } = splitName(user.name);
+    setEditingUser(user);
+    setEditError(null);
+    setEditSuccess(null);
+    setEditForm({
+      firstName,
+      lastName,
+      email: user.email,
+      role: (user.role as 'admin' | 'user') || 'user',
+      isActive: user.isActive !== false,
+      password: '',
+    });
+  };
+
+  const handleEditChange = (field: keyof typeof editForm, value: any) => {
+    setEditForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
+    if (!editForm.firstName.trim() || !editForm.lastName.trim() || !editForm.email.trim()) {
+      setEditError('First name, last name, and email are required.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editForm.email.trim())) {
+      setEditError('Please enter a valid email address.');
+      return;
+    }
+
+    if (editForm.password) {
+      const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+      if (!pwRegex.test(editForm.password)) {
+        setEditError('Password must be at least 8 characters and include uppercase, lowercase, and a number.');
+        return;
+      }
+    }
+
+    setEditing(true);
+    setEditError(null);
+    setEditSuccess(null);
+    try {
+      const name = `${editForm.firstName.trim()} ${editForm.lastName.trim()}`.trim();
+      const payload: any = {
+        name,
+        email: editForm.email.trim(),
+        role: editForm.role,
+        isActive: editForm.isActive,
+      };
+      if (editForm.password) {
+        payload.password = editForm.password;
+      }
+
+      const res = await apiClient.put(`/users/${editingUser.id}`, payload);
+      if (!res.success) {
+        setEditError(res.error || 'Failed to update user.');
+      } else {
+        setEditSuccess('User updated successfully.');
+        await loadUsers();
+        setTimeout(() => {
+          setEditingUser(null);
+          setEditSuccess(null);
+        }, 1200);
+      }
+    } catch (err: any) {
+      setEditError(err?.response?.data?.error || 'Failed to update user.');
+    } finally {
+      setEditing(false);
+    }
+  };
+
+  const handleDeleteUser = async (user: User) => {
+    const confirmed = window.confirm(`Are you sure you want to delete user "${user.name}" (${user.email})?`);
+    if (!confirmed) return;
+    try {
+      const res = await apiClient.delete(`/users/${user.id}`);
+      if (!res.success) {
+        setError(res.error || 'Failed to delete user');
+      } else {
+        await loadUsers();
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to delete user');
+    }
+  };
+
   return (
     <div className="admin-users-container">
       <div className="admin-users-header">
@@ -237,6 +347,7 @@ export const AdminUsers: React.FC = () => {
                 <th>Email</th>
                 <th>Role</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -257,6 +368,24 @@ export const AdminUsers: React.FC = () => {
                       <span className={`status-badge status-${user.isActive !== false ? 'active' : 'inactive'}`}>
                         {user.isActive !== false ? 'Active' : 'Inactive'}
                       </span>
+                    </td>
+                    <td>
+                      <div className="admin-users-row-actions">
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => openEditModal(user)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          onClick={() => handleDeleteUser(user)}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -375,6 +504,108 @@ export const AdminUsers: React.FC = () => {
                   disabled={creating}
                 >
                   {creating ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingUser && (
+        <div className="admin-users-modal-backdrop">
+          <div className="admin-users-modal">
+            <h2>Edit User</h2>
+            <p className="admin-users-modal-subtitle">
+              Update the user&apos;s details. Leave the password field blank to keep the current password.
+            </p>
+            {editError && <div className="error-message">{editError}</div>}
+            {editSuccess && <div className="success-message">{editSuccess}</div>}
+            <form onSubmit={handleEditUser} className="admin-users-modal-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="editFirstName">First Name</label>
+                  <input
+                    id="editFirstName"
+                    type="text"
+                    value={editForm.firstName}
+                    onChange={(e) => handleEditChange('firstName', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="editLastName">Last Name</label>
+                  <input
+                    id="editLastName"
+                    type="text"
+                    value={editForm.lastName}
+                    onChange={(e) => handleEditChange('lastName', e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label htmlFor="editEmail">Email</label>
+                <input
+                  id="editEmail"
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => handleEditChange('email', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="editRole">Role</label>
+                  <select
+                    id="editRole"
+                    value={editForm.role}
+                    onChange={(e) => handleEditChange('role', e.target.value === 'admin' ? 'admin' : 'user')}
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="editStatus">Status</label>
+                  <select
+                    id="editStatus"
+                    value={editForm.isActive ? 'active' : 'inactive'}
+                    onChange={(e) => handleEditChange('isActive', e.target.value === 'active')}
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-group">
+                <label htmlFor="editPassword">New Password (optional)</label>
+                <input
+                  id="editPassword"
+                  type="password"
+                  value={editForm.password}
+                  onChange={(e) => handleEditChange('password', e.target.value)}
+                  placeholder="Leave blank to keep current password"
+                />
+              </div>
+              <div className="admin-users-modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    if (!editing) {
+                      setEditingUser(null);
+                    }
+                  }}
+                  disabled={editing}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={editing}
+                >
+                  {editing ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
