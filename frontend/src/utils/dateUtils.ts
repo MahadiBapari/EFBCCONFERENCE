@@ -26,28 +26,49 @@ export const formatDateEastern = (
   return new Intl.DateTimeFormat('en-US', easternOptions).format(date);
 };
 
+// Internal helper to safely parse dates, treating plain YYYY-MM-DD as a
+// calendar date in the local timezone (avoids off-by-one issues when the
+// string is interpreted as UTC).
+const parseDateSafe = (value: string | Date): Date => {
+  if (value instanceof Date) {
+    return new Date(value.getTime());
+  }
+  const str = String(value);
+  // Match YYYY-MM-DD exactly
+  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) {
+    const year = Number(m[1]);
+    const month = Number(m[2]) - 1; // 0-based
+    const day = Number(m[3]);
+    return new Date(year, month, day);
+  }
+  // Fallback to native parsing for full ISO strings, etc.
+  return new Date(str);
+};
+
 /**
  * Format date for display (short format: Month Day, Year)
+ * Uses parseDateSafe to ensure tier and event date ranges do not shift by a day.
  */
 export const formatDateShort = (dateString: string | Date): string => {
-  return formatDateEastern(dateString, {
+  const date = parseDateSafe(dateString);
+  return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    timeZone: 'America/New_York'
-  });
+  }).format(date);
 };
 
 /**
  * Format date for display (numeric format: MM/DD/YYYY)
  */
 export const formatDateNumeric = (dateString: string | Date): string => {
-  return formatDateEastern(dateString, {
+  const date = parseDateSafe(dateString);
+  return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-    timeZone: 'America/New_York'
-  });
+  }).format(date);
 };
 
 /**
