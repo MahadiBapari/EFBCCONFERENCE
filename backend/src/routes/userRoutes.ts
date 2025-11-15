@@ -52,8 +52,14 @@ router.get('/:id', async (req: any, res: any) => {
   await req.userController.getUserById(req, res);
 });
 
+// Create user (generic)
 router.post('/', async (req: any, res: any) => {
   await req.userController.createUser(req, res);
+});
+
+// Admin creates user on behalf of someone (no verification required)
+router.post('/admin-create', async (req: any, res: any) => {
+  await req.userController.createUserByAdmin(req, res);
 });
 
 router.put('/:id', async (req: any, res: any) => {

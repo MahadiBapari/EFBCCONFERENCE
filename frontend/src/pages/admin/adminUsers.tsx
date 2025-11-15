@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import '../../styles/AdminUsers.css';
-import { apiClient } from '../../services/apiClient';
+import { apiClient, usersApi } from '../../services/apiClient';
 
 interface User {
   id: number;
@@ -41,6 +41,23 @@ export const AdminUsers: React.FC = () => {
   });
   const usersPerPage = 5; // For testing, will be 30 later
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // State for creating a user by admin
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createSuccess, setCreateSuccess] = useState<string | null>(null);
+  const [newUser, setNewUser] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: 'admin' | 'user';
+  }>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    role: 'user',
+  });
 
   const loadUsers = useCallback(async () => {
     try {
@@ -116,6 +133,52 @@ export const AdminUsers: React.FC = () => {
     }
   };
 
+  const handleOpenCreate = () => {
+    setCreateError(null);
+    setCreateSuccess(null);
+    setNewUser({ firstName: '', lastName: '', email: '', role: 'user' });
+    setShowCreateModal(true);
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUser.firstName.trim() || !newUser.lastName.trim() || !newUser.email.trim()) {
+      setCreateError('First name, last name, and email are required.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newUser.email.trim())) {
+      setCreateError('Please enter a valid email address.');
+      return;
+    }
+    setCreating(true);
+    setCreateError(null);
+    setCreateSuccess(null);
+    try {
+      const res = await usersApi.createByAdmin({
+        firstName: newUser.firstName.trim(),
+        lastName: newUser.lastName.trim(),
+        email: newUser.email.trim(),
+        role: newUser.role,
+      });
+      if (!res.success) {
+        setCreateError(res.error || 'Failed to create user.');
+      } else {
+        setCreateSuccess('User created successfully. A temporary password has been emailed.');
+        await loadUsers();
+        // Keep modal open but clear password-related info; or close after short delay
+        setTimeout(() => {
+          setShowCreateModal(false);
+          setCreateSuccess(null);
+        }, 1500);
+      }
+    } catch (err: any) {
+      setCreateError(err?.response?.data?.error || 'Failed to create user.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div className="admin-users-container">
       <div className="admin-users-header">
@@ -135,6 +198,14 @@ export const AdminUsers: React.FC = () => {
             disabled={loading || initialLoading}
           >
             Refresh
+          </button>
+          <button
+            className="btn btn-primary"
+            type="button"
+            onClick={handleOpenCreate}
+            disabled={initialLoading}
+          >
+            Add User
           </button>
         </div>
       </div>
@@ -229,6 +300,87 @@ export const AdminUsers: React.FC = () => {
           {debouncedSearchQuery && ` matching "${debouncedSearchQuery}"`}
         </p>
       </div>
+
+      {showCreateModal && (
+        <div className="admin-users-modal-backdrop">
+          <div className="admin-users-modal">
+            <h2>Create User</h2>
+            <p className="admin-users-modal-subtitle">
+              A temporary password will be generated and emailed to the user. Accounts created here are active and do not require email verification.
+            </p>
+            {createError && <div className="error-message">{createError}</div>}
+            {createSuccess && <div className="success-message">{createSuccess}</div>}
+            <form onSubmit={handleCreateUser} className="admin-users-modal-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="newFirstName">First Name</label>
+                  <input
+                    id="newFirstName"
+                    type="text"
+                    value={newUser.firstName}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, firstName: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="newLastName">Last Name</label>
+                  <input
+                    id="newLastName"
+                    type="text"
+                    value={newUser.lastName}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, lastName: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label htmlFor="newEmail">Email</label>
+                <input
+                  id="newEmail"
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="newRole">Role</label>
+                <select
+                  id="newRole"
+                  value={newUser.role}
+                  onChange={(e) =>
+                    setNewUser(prev => ({ ...prev, role: (e.target.value === 'admin' ? 'admin' : 'user') }))
+                  }
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="admin-users-modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    if (!creating) {
+                      setShowCreateModal(false);
+                    }
+                  }}
+                  disabled={creating}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={creating}
+                >
+                  {creating ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

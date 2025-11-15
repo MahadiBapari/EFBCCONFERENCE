@@ -3,7 +3,8 @@ import { User } from '../models/User';
 import { ApiResponse, CreateUserRequest, UpdateUserRequest, LoginRequest, RegisterRequest, AuthResponse } from '../types';
 import { DatabaseService } from '../services/databaseService';
 import crypto from 'crypto';
-import { sendVerificationEmail } from '../services/emailService';
+import { sendVerificationEmail, sendAdminCreatedUserEmail } from '../services/emailService';
+import { generateStrongTempPassword } from './adminPasswordUtils';
 
 export class UserController {
   private db: DatabaseService;
@@ -159,6 +160,99 @@ export class UserController {
       const response: ApiResponse = {
         success: false,
         error: 'Failed to create user'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  // Admin creates a user on behalf of someone (no email verification required)
+  async createUserByAdmin(req: Request, res: Response): Promise<void> {
+    try {
+      const { firstName, lastName, email, role }: { firstName?: string; lastName?: string; email?: string; role?: string } = req.body;
+
+      const name = `${(firstName || '').trim()} ${(lastName || '').trim()}`.trim();
+      if (!name || !email) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'First name, last name, and email are required',
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Only allow 'admin' or 'user'; default to 'user'
+      const normalizedRole = (role === 'admin' ? 'admin' : 'user') as 'admin' | 'user';
+
+      // Check if email already exists
+      const existingUser = await this.db.query('SELECT id FROM users WHERE email = ?', [email]);
+      if (existingUser.length > 0) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Email already exists',
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Generate a strong temporary password that satisfies password policy
+      const tempPassword = generateStrongTempPassword();
+
+      const user = new User({
+        name,
+        email,
+        password: tempPassword,
+        role: normalizedRole,
+        isActive: true,
+      });
+
+      const validation = user.validate();
+      if (!validation.isValid) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Validation failed',
+          message: validation.errors.join(', '),
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      await user.hashPassword();
+
+      const result = await this.db.insert('users', user.toDatabase());
+      user.id = result.insertId;
+
+      // Mark email as verified and clear any verification tokens
+      await this.db.query(
+        'UPDATE users SET email_verified_at = NOW(), email_verification_token = NULL, email_verification_expires_at = NULL WHERE id = ?',
+        [user.id],
+      );
+
+      // Fire-and-forget email with temporary password
+      setImmediate(async () => {
+        try {
+          await sendAdminCreatedUserEmail({
+            to: email,
+            name,
+            tempPassword,
+            role: normalizedRole,
+          });
+        } catch (e: any) {
+          console.error('Failed to send admin-created user email:', e?.message || e);
+        }
+      });
+
+      const response: ApiResponse = {
+        success: true,
+        data: user.toJSON(),
+        message: 'User created successfully and a temporary password has been emailed.',
+      };
+
+      res.status(201).json(response);
+    } catch (error) {
+      console.error('Error creating user by admin:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to create user',
       };
       res.status(500).json(response);
     }

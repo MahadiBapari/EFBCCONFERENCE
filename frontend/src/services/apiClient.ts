@@ -109,6 +109,13 @@ export const registrationsApi = {
   }
 };
 
+// Users helpers (admin actions)
+export const usersApi = {
+  async createByAdmin(payload: { firstName: string; lastName: string; email: string; role: 'admin' | 'user' }): Promise<any> {
+    return apiClient.post('/users/admin-create', payload);
+  },
+};
+
 // Cancellation helpers
 export const cancelApi = {
   async request(registrationId: number, reason: string): Promise<any> {
