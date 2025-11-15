@@ -7,6 +7,7 @@ exports.UserController = void 0;
 const User_1 = require("../models/User");
 const crypto_1 = __importDefault(require("crypto"));
 const emailService_1 = require("../services/emailService");
+const adminPasswordUtils_1 = require("./adminPasswordUtils");
 class UserController {
     constructor(db) {
         this.db = db;
@@ -131,6 +132,79 @@ class UserController {
             res.status(500).json(response);
         }
     }
+    async createUserByAdmin(req, res) {
+        try {
+            const { firstName, lastName, email, role } = req.body;
+            const name = `${(firstName || '').trim()} ${(lastName || '').trim()}`.trim();
+            if (!name || !email) {
+                const response = {
+                    success: false,
+                    error: 'First name, last name, and email are required',
+                };
+                res.status(400).json(response);
+                return;
+            }
+            const normalizedRole = (role === 'admin' ? 'admin' : 'user');
+            const existingUser = await this.db.query('SELECT id FROM users WHERE email = ?', [email]);
+            if (existingUser.length > 0) {
+                const response = {
+                    success: false,
+                    error: 'Email already exists',
+                };
+                res.status(400).json(response);
+                return;
+            }
+            const tempPassword = (0, adminPasswordUtils_1.generateStrongTempPassword)();
+            const user = new User_1.User({
+                name,
+                email,
+                password: tempPassword,
+                role: normalizedRole,
+                isActive: true,
+            });
+            const validation = user.validate();
+            if (!validation.isValid) {
+                const response = {
+                    success: false,
+                    error: 'Validation failed',
+                    message: validation.errors.join(', '),
+                };
+                res.status(400).json(response);
+                return;
+            }
+            await user.hashPassword();
+            const result = await this.db.insert('users', user.toDatabase());
+            user.id = result.insertId;
+            await this.db.query('UPDATE users SET email_verified_at = NOW(), email_verification_token = NULL, email_verification_expires_at = NULL WHERE id = ?', [user.id]);
+            setImmediate(async () => {
+                try {
+                    await (0, emailService_1.sendAdminCreatedUserEmail)({
+                        to: email,
+                        name,
+                        tempPassword,
+                        role: normalizedRole,
+                    });
+                }
+                catch (e) {
+                    console.error('Failed to send admin-created user email:', e?.message || e);
+                }
+            });
+            const response = {
+                success: true,
+                data: user.toJSON(),
+                message: 'User created successfully and a temporary password has been emailed.',
+            };
+            res.status(201).json(response);
+        }
+        catch (error) {
+            console.error('Error creating user by admin:', error);
+            const response = {
+                success: false,
+                error: 'Failed to create user',
+            };
+            res.status(500).json(response);
+        }
+    }
     async updateUser(req, res) {
         try {
             const { id } = req.params;
@@ -145,7 +219,7 @@ class UserController {
                 return;
             }
             const user = new User_1.User({ ...existingUser, ...updateData });
-            user.updatedAt = new Date().toISOString();
+            user.updatedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
             if (updateData.password) {
                 await user.hashPassword();
             }

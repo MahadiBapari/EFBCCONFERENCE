@@ -39,6 +39,9 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
     await req.userController.createUser(req, res);
 });
+router.post('/admin-create', async (req, res) => {
+    await req.userController.createUserByAdmin(req, res);
+});
 router.put('/:id', async (req, res) => {
     await req.userController.updateUser(req, res);
 });

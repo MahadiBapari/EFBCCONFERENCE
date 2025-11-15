@@ -275,7 +275,8 @@ export class UserController {
       }
 
       const user = new User({ ...existingUser, ...updateData });
-      user.updatedAt = new Date().toISOString();
+      // Ensure updatedAt is stored in MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
+      user.updatedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
       
       // Hash password if it's being updated
       if (updateData.password) {

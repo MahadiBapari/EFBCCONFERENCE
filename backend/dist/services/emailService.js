@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendVerificationEmail = sendVerificationEmail;
 exports.sendRegistrationConfirmationEmail = sendRegistrationConfirmationEmail;
+exports.sendAdminCreatedUserEmail = sendAdminCreatedUserEmail;
 exports.sendPasswordResetEmail = sendPasswordResetEmail;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const dotenv_1 = __importDefault(require("dotenv"));
@@ -222,6 +223,48 @@ async function sendRegistrationConfirmationEmail(params) {
     `,
     });
     const text = `Thank you for registering for EFBC Conference. ${eventName ? `Event: ${eventName}.` : ''} ${eventDate ? `Date: ${eventDate}.` : ''} ${priceText}`.trim();
+    await sendMail({ to, subject, text, html });
+}
+async function sendAdminCreatedUserEmail(params) {
+    const { to, name, tempPassword, role } = params;
+    const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
+    const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
+    const subject = `${brand} account created for you`;
+    const loginUrl = (process.env.FRONTEND_URL || 'http://localhost:3000') + '/login';
+    const html = renderEmailTemplate({
+        subject,
+        heading: 'Your account has been created',
+        preheader: `An administrator has created a ${brand} account for you.`,
+        contentHtml: `
+      <p style="margin:0 0 12px 0;">Hi ${name || 'there'},</p>
+      <p style="margin:0 0 8px 0;">An administrator has created an account for you in the ${brand} portal.</p>
+      <p style="margin:0 0 8px 0;">You can sign in using the details below:</p>
+      <table role="presentation" cellpadding="6" cellspacing="0" style="margin:0 0 8px 0;font-size:14px;">
+        <tr>
+          <td style="color:#6b7280;">Login URL</td>
+          <td><a href="${loginUrl}" style="color:#2563eb;text-decoration:none;">${loginUrl}</a></td>
+        </tr>
+        <tr>
+          <td style="color:#6b7280;">Email</td>
+          <td><strong>${to}</strong></td>
+        </tr>
+        <tr>
+          <td style="color:#6b7280;">Temporary password</td>
+          <td><strong>${tempPassword}</strong></td>
+        </tr>
+        ${role ? `<tr><td style="color:#6b7280;">Role</td><td>${role}</td></tr>` : ''}
+      </table>
+      <p style="margin:8px 0 0 0;">For your security, please sign in and change this password as soon as possible from your profile settings.</p>
+    `,
+    });
+    const text = [
+        `Hi ${name || 'there'},`,
+        `An administrator has created an account for you in the ${brand} portal.`,
+        `Login URL: ${loginUrl}`,
+        `Email: ${to}`,
+        `Temporary password: ${tempPassword}`,
+        `Please sign in and change this password as soon as possible.`,
+    ].join('\n');
     await sendMail({ to, subject, text, html });
 }
 async function sendPasswordResetEmail(to, token) {

@@ -7,5 +7,11 @@ export declare function sendRegistrationConfirmationEmail(params: {
     totalPrice?: number;
     registration?: any;
 }): Promise<void>;
+export declare function sendAdminCreatedUserEmail(params: {
+    to: string;
+    name: string;
+    tempPassword: string;
+    role?: string;
+}): Promise<void>;
 export declare function sendPasswordResetEmail(to: string, token: string): Promise<void>;
 //# sourceMappingURL=emailService.d.ts.map
