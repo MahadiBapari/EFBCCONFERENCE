@@ -34,8 +34,8 @@ const parseDateSafe = (value: string | Date): Date => {
     return new Date(value.getTime());
   }
   const str = String(value);
-  // Match YYYY-MM-DD exactly
-  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  // Match YYYY-MM-DD at the start of the string (ignores any time/zone part)
+  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m) {
     const year = Number(m[1]);
     const month = Number(m[2]) - 1; // 0-based
