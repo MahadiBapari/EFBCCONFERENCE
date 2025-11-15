@@ -202,6 +202,9 @@ export async function sendRegistrationConfirmationEmail(params: {
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
   const subject = 'Your EFBC Conference Registration is Confirmed';
   const priceText = typeof totalPrice === 'number' ? `Total: $${totalPrice.toFixed(2)}` : '';
+  const paymentMethod = registration?.paymentMethod || registration?.payment_method || '';
+  const squarePaymentId = registration?.squarePaymentId || registration?.square_payment_id || '';
+
   const detailsHtml = registration
     ? `
       <table role="presentation" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:14px;">
@@ -220,6 +223,8 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${registration.thursdayDinner ? `<tr><td style="color:#6b7280;">Thursday Dinner</td><td>${registration.thursdayDinner}</td></tr>`:''}
         ${registration.fridayBreakfast ? `<tr><td style="color:#6b7280;">Friday Breakfast</td><td>${registration.fridayBreakfast}</td></tr>`:''}
         ${priceText ? `<tr><td style="color:#6b7280;">Total</td><td><strong>$${Number(totalPrice).toFixed(2)}</strong></td></tr>`:''}
+        ${paymentMethod ? `<tr><td style="color:#6b7280;">Payment Method</td><td>${paymentMethod}</td></tr>` : ''}
+        ${paymentMethod === 'Card' && squarePaymentId ? `<tr><td style="color:#6b7280;">Square Payment ID</td><td><code>${squarePaymentId}</code></td></tr>` : ''}
       </table>
     `
     : '';
@@ -237,7 +242,16 @@ export async function sendRegistrationConfirmationEmail(params: {
       <p style="margin:12px 0 0 0;">We look forward to seeing you!</p>
     `,
   });
-  const text = `Thank you for registering for EFBC Conference. ${eventName ? `Event: ${eventName}.` : ''} ${eventDate ? `Date: ${eventDate}.` : ''} ${priceText}`.trim();
+  const parts: string[] = [];
+  parts.push('Thank you for registering for EFBC Conference.');
+  if (eventName) parts.push(`Event: ${eventName}.`);
+  if (eventDate) parts.push(`Date: ${eventDate}.`);
+  if (priceText) parts.push(`${priceText}.`);
+  if (paymentMethod) parts.push(`Payment method: ${paymentMethod}.`);
+  if (paymentMethod === 'Card' && squarePaymentId) {
+    parts.push(`Square payment ID: ${squarePaymentId}.`);
+  }
+  const text = parts.join(' ').trim();
 
   await sendMail({ to, subject, text, html });
 }

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Event, Registration } from '../types';
 import { Modal } from './Modal';
 import { registrationsApi } from '../services/apiClient';
-import { formatDateShort } from '../utils/dateUtils';
 import jsPDF from 'jspdf';
 import '../styles/RegistrationPreview.css';
 
@@ -72,8 +71,6 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     doc.text(`Event: ${event.name}`, margin, yPos);
-    yPos += 6;
-    doc.text(`Date: ${formatDateShort(event.date)}`, margin, yPos);
     yPos += 10;
 
     // Personal Information
@@ -299,7 +296,7 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
             <h2>Registration Preview</h2>
             {event && (
               <p className="modal-subtitle">
-                {event.name} - {formatDateShort(event.date)}
+                {event.name}
               </p>
             )}
           </div>

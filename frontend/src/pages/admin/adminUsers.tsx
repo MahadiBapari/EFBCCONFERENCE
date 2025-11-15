@@ -39,7 +39,7 @@ export const AdminUsers: React.FC = () => {
     total: 0,
     totalPages: 0
   });
-  const usersPerPage = 5; // For testing, will be 30 later
+  const usersPerPage = 30; // For testing, will be 30 later
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // State for creating a user by admin
