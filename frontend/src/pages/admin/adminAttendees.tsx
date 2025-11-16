@@ -89,14 +89,19 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       const response = await apiClient.get<SimpleUser[]>(`/users?${params.toString()}`) as any;
       const apiUsers = (response as any).data || response;
       const list: SimpleUser[] = Array.isArray(apiUsers) ? apiUsers : [];
-      // Exclude admin roles from the selectable list
-      setUserList(list.filter(u => (u.role || 'user') !== 'admin'));
+      // Exclude admin roles and users already registered for the selected event
+      const filtered = list.filter(u => {
+        const role = u.role || 'user';
+        if (role === 'admin') return false;
+        return !isUserRegisteredForSelectedEvent(u.id);
+      });
+      setUserList(filtered);
     } catch (err: any) {
       setUserError(err?.response?.data?.error || 'Failed to load users');
     } finally {
       setUserLoading(false);
     }
-  }, [debouncedUserSearchQuery, showAddModal]);
+  }, [debouncedUserSearchQuery, showAddModal, isUserRegisteredForSelectedEvent]);
 
   useEffect(() => {
     if (!showAddModal) return;
