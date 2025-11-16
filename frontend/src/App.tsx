@@ -84,6 +84,8 @@ const App: React.FC = () => {
   const [registrationTargetEventId, setRegistrationTargetEventId] = useState<number | null>(null);
   const [adminEditingEvent, setAdminEditingEvent] = useState<Event | null>(null);
   const [adminEditingRegistrationId, setAdminEditingRegistrationId] = useState<number | null>(null);
+  const [adminNewRegistrationUser, setAdminNewRegistrationUser] = useState<{ id: number; name: string; email: string } | null>(null);
+  const [adminNewRegistrationEventId, setAdminNewRegistrationEventId] = useState<number | null>(null);
 
   useEffect(() => {
     document.body.className = `${theme}-theme`;
@@ -293,6 +295,12 @@ const handleLogout = () => {
   const beginAdminEditRegistration = (registrationId: number) => {
     setAdminEditingRegistrationId(registrationId);
     setView('editRegistration');
+  };
+
+  const beginAdminCreateRegistrationForUser = (userInfo: { id: number; name: string; email: string }, eventId: number) => {
+    setAdminNewRegistrationUser(userInfo);
+    setAdminNewRegistrationEventId(eventId);
+    setView('createRegistration');
   };
   const openAdminEventForm = (ev?: Event | null) => {
     setAdminEditingEvent(ev || null);
@@ -541,6 +549,7 @@ const handleLogout = () => {
             handleBulkAssignGroup={handleBulkAssignGroup}
             user={user}
             onEditRegistration={beginAdminEditRegistration}
+            onAddRegistration={beginAdminCreateRegistrationForUser}
           />;
         case 'groups':
           return <AdminGroups 
@@ -577,6 +586,30 @@ const handleLogout = () => {
               setView('attendees');
             }}
           />;
+        case 'createRegistration':
+          if (!adminNewRegistrationUser || !adminNewRegistrationEventId) {
+            setView('attendees');
+            return null;
+          }
+          return (
+            <UserRegistration
+              events={events}
+              registrations={registrations}
+              user={adminNewRegistrationUser}
+              targetEventId={adminNewRegistrationEventId}
+              onBack={() => {
+                setAdminNewRegistrationUser(null);
+                setAdminNewRegistrationEventId(null);
+                setView('attendees');
+              }}
+              onSave={(regData) => {
+                handleSaveRegistration(regData, adminNewRegistrationUser.id);
+                setAdminNewRegistrationUser(null);
+                setAdminNewRegistrationEventId(null);
+                setView('attendees');
+              }}
+            />
+          );
         default:
           return <AdminEvents 
             onViewEvent={setViewingEventId}

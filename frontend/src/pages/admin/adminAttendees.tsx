@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Registration, Event, Group } from '../../types';
 import { formatDateShort } from '../../utils/dateUtils';
 import '../../styles/AdminAttendees.css';
 import { RegistrationPreview } from '../../components/RegistrationPreview';
+import { apiClient } from '../../services/apiClient';
 
 interface AdminAttendeesProps {
   registrations: Registration[];
@@ -13,6 +14,7 @@ interface AdminAttendeesProps {
   handleBulkAssignGroup: (regIds: number[], targetGroupId: number) => void;
   user: { id: number; name: string; email: string };
   onEditRegistration: (registrationId: number) => void;
+  onAddRegistration: (user: { id: number; name: string; email: string }, eventId: number) => void;
 }
 
 export const AdminAttendees: React.FC<AdminAttendeesProps> = ({ 
@@ -21,9 +23,10 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   groups, 
   handleSaveRegistration, 
   handleDeleteRegistrations, 
-  handleBulkAssignGroup,
+  handleBulkAssignGroup, 
   user,
-  onEditRegistration
+  onEditRegistration,
+  onAddRegistration,
 }) => {
   const [filter, setFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,6 +34,23 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   // Removed unused local edit state to satisfy CI lint rules
   const [selectedRegIds, setSelectedRegIds] = useState<number[]>([]);
   const [previewRegId, setPreviewRegId] = useState<number | null>(null);
+
+  // State for Add Attendee (select user) modal
+  interface SimpleUser {
+    id: number;
+    name: string;
+    email: string;
+    role?: 'admin' | 'user' | 'guest';
+    isActive?: boolean;
+  }
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [debouncedUserSearchQuery, setDebouncedUserSearchQuery] = useState('');
+  const userSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [userList, setUserList] = useState<SimpleUser[]>([]);
+  const [userLoading, setUserLoading] = useState(false);
+  const [userError, setUserError] = useState<string | null>(null);
 
   // Automatically select the most recent event on component mount
   useEffect(() => {
@@ -41,6 +61,60 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       setSelectedEventId(mostRecentEvent.id);
     }
   }, [events, selectedEventId]);
+
+  const isUserRegisteredForSelectedEvent = useCallback(
+    (userId: number): boolean => {
+      if (selectedEventId === null) return false;
+      return registrations.some((r) => {
+        const st = (r as any).status;
+        const cancelled = st === 'cancelled' || !!(r as any).cancellationAt || !!(r as any).cancellationReason;
+        if (cancelled) return false;
+        return r.userId === userId && r.eventId === selectedEventId;
+      });
+    },
+    [registrations, selectedEventId]
+  );
+
+  const loadUsersForModal = useCallback(async () => {
+    if (!showAddModal) return;
+    try {
+      setUserLoading(true);
+      setUserError(null);
+      const params = new URLSearchParams();
+      params.append('page', '1');
+      params.append('limit', '50');
+      if (debouncedUserSearchQuery.trim()) {
+        params.append('search', debouncedUserSearchQuery.trim());
+      }
+      const response = await apiClient.get<SimpleUser[]>(`/users?${params.toString()}`) as any;
+      const apiUsers = (response as any).data || response;
+      setUserList(Array.isArray(apiUsers) ? apiUsers : []);
+    } catch (err: any) {
+      setUserError(err?.response?.data?.error || 'Failed to load users');
+    } finally {
+      setUserLoading(false);
+    }
+  }, [debouncedUserSearchQuery, showAddModal]);
+
+  useEffect(() => {
+    if (!showAddModal) return;
+    loadUsersForModal();
+  }, [loadUsersForModal, showAddModal]);
+
+  useEffect(() => {
+    if (!showAddModal) return;
+    if (userSearchTimeoutRef.current) {
+      clearTimeout(userSearchTimeoutRef.current);
+    }
+    userSearchTimeoutRef.current = setTimeout(() => {
+      setDebouncedUserSearchQuery(userSearchQuery);
+    }, 300);
+    return () => {
+      if (userSearchTimeoutRef.current) {
+        clearTimeout(userSearchTimeoutRef.current);
+      }
+    };
+  }, [userSearchQuery, showAddModal]);
 
   const filteredRegistrations = useMemo(() => {
     let results = registrations;
@@ -145,6 +219,27 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     window.print();
   };
 
+  const handleOpenAddAttendee = () => {
+    if (!selectedEventId) {
+      alert('Please select an event first.');
+      return;
+    }
+    setShowAddModal(true);
+    setUserSearchQuery('');
+    setDebouncedUserSearchQuery('');
+    setUserList([]);
+    setUserError(null);
+  };
+
+  const handleSelectUserForEvent = (userToUse: SimpleUser) => {
+    if (!selectedEventId) return;
+    onAddRegistration(
+      { id: userToUse.id, name: userToUse.name, email: userToUse.email },
+      selectedEventId
+    );
+    setShowAddModal(false);
+  };
+
   const isAllSelected = filteredRegistrations.length > 0 && selectedRegIds.length === filteredRegistrations.length;
 
   return (
@@ -173,6 +268,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
           </select>
         </div>
         <div className="page-actions">
+          <button className="btn btn-primary" onClick={handleOpenAddAttendee}>Add Attendee</button>
           <button className="btn btn-secondary" onClick={handleExportCSV}>Export CSV</button>
           <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button>
         </div>
@@ -288,6 +384,81 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
           />
         );
       })()}
+
+      {showAddModal && (
+        <div className="attendee-modal-backdrop">
+          <div className="attendee-modal">
+            <h2>Select User for Registration</h2>
+            <p className="attendee-modal-subtitle">
+              Choose a user from the list below to register them for this event.
+            </p>
+            <div className="attendee-modal-search">
+              <input
+                type="search"
+                className="form-control"
+                placeholder="Search by name or email..."
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
+              />
+            </div>
+            {userError && <div className="error-message">{userError}</div>}
+            <div className="attendee-modal-list">
+              {userLoading ? (
+                <div className="attendee-modal-loading">Loading users...</div>
+              ) : userList.length === 0 ? (
+                <div className="attendee-modal-empty">No users found.</div>
+              ) : (
+                <table className="attendee-user-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Registration</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {userList.map((u) => {
+                      const registered = isUserRegisteredForSelectedEvent(u.id);
+                      return (
+                        <tr key={u.id}>
+                          <td>{u.name}</td>
+                          <td>{u.email}</td>
+                          <td>{u.role || 'user'}</td>
+                          <td>
+                            <span className={`user-reg-status ${registered ? 'registered' : 'not-registered'}`}>
+                              {registered ? 'Already registered' : 'Not registered'}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              onClick={() => handleSelectUserForEvent(u)}
+                            >
+                              {registered ? 'Open Registration' : 'Register'}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="attendee-modal-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowAddModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

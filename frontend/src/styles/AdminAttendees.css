@@ -179,3 +179,112 @@
   display: flex;
   gap: 0.5rem;
 }
+
+/* Add Attendee modal */
+.attendee-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.attendee-modal {
+  background: var(--surface-color);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.35);
+  max-width: 700px;
+  width: 100%;
+  padding: 1.75rem 2rem;
+}
+
+.attendee-modal h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+.attendee-modal-subtitle {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.attendee-modal-search {
+  margin-bottom: 1rem;
+}
+
+.attendee-modal-list {
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+.attendee-modal-loading,
+.attendee-modal-empty {
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.attendee-user-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.attendee-user-table th,
+.attendee-user-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.attendee-user-table th {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+.user-reg-status {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.user-reg-status.registered {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.user-reg-status.not-registered {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.attendee-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .attendee-modal {
+    margin: 0 1rem;
+    padding: 1.5rem;
+  }
+
+  .attendee-user-table th,
+  .attendee-user-table td {
+    padding: 0.5rem 0.75rem;
+  }
+}
