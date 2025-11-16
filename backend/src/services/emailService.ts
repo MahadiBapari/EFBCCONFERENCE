@@ -139,6 +139,8 @@ const renderEmailTemplate = async (params: {
       </a>
     `
     : '';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const logoUrl = `${frontendUrl}/EFBClogo.png`;
   return `
   <!DOCTYPE html>
   <html lang="en">
@@ -154,6 +156,11 @@ const renderEmailTemplate = async (params: {
       <tr>
         <td align="center">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="padding:24px;text-align:center;background:#ffffff;">
+                <img src="${logoUrl}" alt="${brand}" style="max-width:300px;height:auto;display:block;margin:0 auto;" />
+              </td>
+            </tr>
             <tr>
               <td style="padding:20px 24px;border-bottom:1px solid #e5e7eb;background:#ffffff;">
                 <h1 style="margin:0;color:#111827;font-size:18px;">${brand}</h1>

@@ -86,9 +86,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {isMobileOpen && <div className="sidebar-overlay" onClick={onClose}></div>}
       <aside className={`sidebar ${isMobileOpen ? 'is-mobile-open' : ''}`}>
         <div>
-          <div className="logo desktop-logo">EFBC</div>
+          <div className="logo-container desktop-logo">
+            <img src="/EFBClogo.png" alt="EFBC Conference" className="sidebar-logo" />
+          </div>
           <div className="sidebar-header">
-            <div className="logo">EFBC</div>
+            <div className="logo-container">
+              <img src="/EFBClogo.png" alt="EFBC Conference" className="sidebar-logo" />
+            </div>
             <button className="icon-btn close-sidebar-btn" onClick={onClose} aria-label="Close menu">&times;</button>
           </div>
           <nav className="sidebar-nav">
