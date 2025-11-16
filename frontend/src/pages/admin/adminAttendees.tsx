@@ -248,10 +248,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     <div className="container">
       <div className="page-header">
         <h1>Attendees</h1>
-        
-      </div>
-      <div>
-      <div className="event-selector">
+        <div className="event-selector">
           <label htmlFor="eventSelect" className="filter-label">Select Event:</label>
           <select
             id="eventSelect"
@@ -272,6 +269,9 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
             ))}
           </select>
         </div>
+        
+      </div>
+      <div>    
         <div className="page-actions">
           <button className="btn btn-primary" onClick={handleOpenAddAttendee}>Add</button>
           <button className="btn btn-secondary" onClick={handleExportCSV}>Export CSV</button>
