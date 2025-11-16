@@ -247,38 +247,32 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   return (
     <div className="container">
       <div className="page-header">
-        <div className="page-header-main">
-          <h1>Attendees</h1>
-          <button className="btn btn-primary" onClick={handleOpenAddAttendee}>
-            Add Attendee
-          </button>
+        <h1>Attendees</h1>
+        <div className="event-selector">
+          <label htmlFor="eventSelect" className="filter-label">Select Event:</label>
+          <select
+            id="eventSelect"
+            className="form-control"
+            value={selectedEventId || ''}
+            onChange={(e) => {
+              const eventId = e.target.value ? parseInt(e.target.value) : null;
+              setSelectedEventId(eventId);
+              setSelectedRegIds([]);
+            }}
+          >
+            <option value="" disabled>All Events</option>
+            {events.map(event => (
+              <option key={event.id} value={event.id}>
+                {event.name} - {formatDateShort(event.date)}
+                {selectedEventId === event.id ? ' (Current)' : ''}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="page-header-secondary">
-          <div className="event-selector">
-            <label htmlFor="eventSelect" className="filter-label">Select Event:</label>
-            <select
-              id="eventSelect"
-              className="form-control"
-              value={selectedEventId || ''}
-              onChange={(e) => {
-                const eventId = e.target.value ? parseInt(e.target.value) : null;
-                setSelectedEventId(eventId);
-                setSelectedRegIds([]);
-              }}
-            >
-              <option value="" disabled>All Events</option>
-              {events.map(event => (
-                <option key={event.id} value={event.id}>
-                  {event.name} - {formatDateShort(event.date)}
-                  {selectedEventId === event.id ? ' (Current)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="page-actions">
-            <button className="btn btn-secondary" onClick={handleExportCSV}>Export CSV</button>
-            <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button>
-          </div>
+        <div className="page-actions">
+          <button className="btn btn-primary" onClick={handleOpenAddAttendee}>Add</button>
+          <button className="btn btn-secondary" onClick={handleExportCSV}>Export CSV</button>
+          <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button>
         </div>
       </div>
       <div className="category-tabs">
