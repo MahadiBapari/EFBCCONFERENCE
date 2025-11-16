@@ -273,7 +273,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       </div>
       <div>    
         <div className="page-actions">
-          <button className="btn btn-primary" onClick={handleOpenAddAttendee}>Add</button>
+          <button className="btn btn-primary" onClick={handleOpenAddAttendee}>Add Attendee</button>
           <button className="btn btn-secondary" onClick={handleExportCSV}>Export CSV</button>
           <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button>
         </div>
