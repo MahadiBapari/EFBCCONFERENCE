@@ -428,7 +428,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                           <td>{u.role || 'user'}</td>
                           <td>
                             <span className={`user-reg-status ${registered ? 'registered' : 'not-registered'}`}>
-                              {registered ? 'Already registered' : 'Not registered'}
+                              {registered ? 'Registered' : 'Not registered'}
                             </span>
                           </td>
                           <td>
@@ -437,7 +437,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                               className="btn btn-primary btn-sm"
                               onClick={() => handleSelectUserForEvent(u)}
                             >
-                              {registered ? 'Open Registration' : 'Register'}
+                              {registered ? 'Open' : 'Register'}
                             </button>
                           </td>
                         </tr>

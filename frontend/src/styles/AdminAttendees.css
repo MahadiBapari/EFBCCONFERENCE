@@ -195,7 +195,7 @@
   background: var(--surface-color);
   border-radius: 12px;
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.35);
-  max-width: 700px;
+  max-width: 900px;
   width: 100%;
   padding: 1.75rem 2rem;
 }
