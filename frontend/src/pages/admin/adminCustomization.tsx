@@ -130,7 +130,7 @@ export const AdminCustomization: React.FC = () => {
               required
             />
             <small className="form-text">
-              This footer will be automatically added to all email templates including verification, registration confirmation, password reset, and admin-created user emails.
+              This footer will be automatically added to all email templates.
             </small>
           </div>
         </div>
