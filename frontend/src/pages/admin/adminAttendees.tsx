@@ -88,7 +88,9 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       }
       const response = await apiClient.get<SimpleUser[]>(`/users?${params.toString()}`) as any;
       const apiUsers = (response as any).data || response;
-      setUserList(Array.isArray(apiUsers) ? apiUsers : []);
+      const list: SimpleUser[] = Array.isArray(apiUsers) ? apiUsers : [];
+      // Exclude admin roles from the selectable list
+      setUserList(list.filter(u => (u.role || 'user') !== 'admin'));
     } catch (err: any) {
       setUserError(err?.response?.data?.error || 'Failed to load users');
     } finally {
@@ -245,32 +247,38 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   return (
     <div className="container">
       <div className="page-header">
-        <h1>Attendees</h1>
-        <div className="event-selector">
-          <label htmlFor="eventSelect" className="filter-label">Select Event:</label>
-          <select
-            id="eventSelect"
-            className="form-control"
-            value={selectedEventId || ''}
-            onChange={(e) => {
-              const eventId = e.target.value ? parseInt(e.target.value) : null;
-              setSelectedEventId(eventId);
-              setSelectedRegIds([]);
-            }}
-          >
-            <option value="" disabled>All Events</option>
-            {events.map(event => (
-              <option key={event.id} value={event.id}>
-                {event.name} - {formatDateShort(event.date)}
-                {selectedEventId === event.id ? ' (Current)' : ''}
-              </option>
-            ))}
-          </select>
+        <div className="page-header-main">
+          <h1>Attendees</h1>
+          <button className="btn btn-primary" onClick={handleOpenAddAttendee}>
+            Add Attendee
+          </button>
         </div>
-        <div className="page-actions">
-          <button className="btn btn-primary" onClick={handleOpenAddAttendee}>Add Attendee</button>
-          <button className="btn btn-secondary" onClick={handleExportCSV}>Export CSV</button>
-          <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button>
+        <div className="page-header-secondary">
+          <div className="event-selector">
+            <label htmlFor="eventSelect" className="filter-label">Select Event:</label>
+            <select
+              id="eventSelect"
+              className="form-control"
+              value={selectedEventId || ''}
+              onChange={(e) => {
+                const eventId = e.target.value ? parseInt(e.target.value) : null;
+                setSelectedEventId(eventId);
+                setSelectedRegIds([]);
+              }}
+            >
+              <option value="" disabled>All Events</option>
+              {events.map(event => (
+                <option key={event.id} value={event.id}>
+                  {event.name} - {formatDateShort(event.date)}
+                  {selectedEventId === event.id ? ' (Current)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="page-actions">
+            <button className="btn btn-secondary" onClick={handleExportCSV}>Export CSV</button>
+            <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button>
+          </div>
         </div>
       </div>
       <div className="category-tabs">
