@@ -248,7 +248,10 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     <div className="container">
       <div className="page-header">
         <h1>Attendees</h1>
-        <div className="event-selector">
+        
+      </div>
+      <div>
+      <div className="event-selector">
           <label htmlFor="eventSelect" className="filter-label">Select Event:</label>
           <select
             id="eventSelect"
