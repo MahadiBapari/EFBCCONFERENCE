@@ -105,11 +105,26 @@ const sendMail = async (payload) => {
     }
     console.warn('⚠️ No email transport available (SMTP or RESEND_API_KEY). Email not sent.');
 };
-const renderEmailTemplate = (params) => {
+const getCustomFooter = async () => {
+    try {
+        const db = globalThis.databaseService;
+        if (!db)
+            return '';
+        const result = await db.query('SELECT footer_text FROM email_customizations WHERE id = 1 LIMIT 1');
+        if (Array.isArray(result) && result.length > 0 && result[0].footer_text) {
+            return result[0].footer_text;
+        }
+    }
+    catch (error) {
+    }
+    return '';
+};
+const renderEmailTemplate = async (params) => {
     const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
     const heading = params.heading || brand;
     const preheader = params.preheader || '';
-    const footerHtml = params.footerHtml || '';
+    const customFooter = params.footerHtml !== undefined ? params.footerHtml : await getCustomFooter();
+    const footerHtml = customFooter || '';
     const buttonHtml = params.cta
         ? `
       <a href="${params.cta.url}"
@@ -169,7 +184,7 @@ async function sendVerificationEmail(to, token) {
     const link = `${baseUrl}${verifyPath}`;
     const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
     const subject = 'Verify your email address';
-    const html = renderEmailTemplate({
+    const html = await renderEmailTemplate({
         subject,
         heading: 'Verify your email',
         preheader: 'Confirm your email to finish setting up your account',
@@ -178,6 +193,7 @@ async function sendVerificationEmail(to, token) {
       <p style="margin:0;opacity:.8;">This link expires in 24 hours.</p>
     `,
         cta: { label: 'Verify Email', url: link },
+        footerHtml: '',
     });
     const text = `Verify your email: ${link}`;
     await sendMail({ to, subject, text, html });
@@ -187,6 +203,8 @@ async function sendRegistrationConfirmationEmail(params) {
     const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
     const subject = 'Your EFBC Conference Registration is Confirmed';
     const priceText = typeof totalPrice === 'number' ? `Total: $${totalPrice.toFixed(2)}` : '';
+    const paymentMethod = registration?.paymentMethod || registration?.payment_method || '';
+    const squarePaymentId = registration?.squarePaymentId || registration?.square_payment_id || '';
     const detailsHtml = registration
         ? `
       <table role="presentation" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:14px;">
@@ -205,10 +223,12 @@ async function sendRegistrationConfirmationEmail(params) {
         ${registration.thursdayDinner ? `<tr><td style="color:#6b7280;">Thursday Dinner</td><td>${registration.thursdayDinner}</td></tr>` : ''}
         ${registration.fridayBreakfast ? `<tr><td style="color:#6b7280;">Friday Breakfast</td><td>${registration.fridayBreakfast}</td></tr>` : ''}
         ${priceText ? `<tr><td style="color:#6b7280;">Total</td><td><strong>$${Number(totalPrice).toFixed(2)}</strong></td></tr>` : ''}
+        ${paymentMethod ? `<tr><td style="color:#6b7280;">Payment Method</td><td>${paymentMethod}</td></tr>` : ''}
+        ${paymentMethod === 'Card' && squarePaymentId ? `<tr><td style="color:#6b7280;">Square Payment ID</td><td><code>${squarePaymentId}</code></td></tr>` : ''}
       </table>
     `
         : '';
-    const html = renderEmailTemplate({
+    const html = await renderEmailTemplate({
         subject,
         heading: 'Registration Confirmed',
         preheader: 'Your EFBC Conference registration is confirmed',
@@ -222,7 +242,20 @@ async function sendRegistrationConfirmationEmail(params) {
       <p style="margin:12px 0 0 0;">We look forward to seeing you!</p>
     `,
     });
-    const text = `Thank you for registering for EFBC Conference. ${eventName ? `Event: ${eventName}.` : ''} ${eventDate ? `Date: ${eventDate}.` : ''} ${priceText}`.trim();
+    const parts = [];
+    parts.push('Thank you for registering for EFBC Conference.');
+    if (eventName)
+        parts.push(`Event: ${eventName}.`);
+    if (eventDate)
+        parts.push(`Date: ${eventDate}.`);
+    if (priceText)
+        parts.push(`${priceText}.`);
+    if (paymentMethod)
+        parts.push(`Payment method: ${paymentMethod}.`);
+    if (paymentMethod === 'Card' && squarePaymentId) {
+        parts.push(`Square payment ID: ${squarePaymentId}.`);
+    }
+    const text = parts.join(' ').trim();
     await sendMail({ to, subject, text, html });
 }
 async function sendAdminCreatedUserEmail(params) {
@@ -231,7 +264,7 @@ async function sendAdminCreatedUserEmail(params) {
     const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
     const subject = `${brand} account created for you`;
     const loginUrl = (process.env.FRONTEND_URL || 'http://localhost:3000') + '/login';
-    const html = renderEmailTemplate({
+    const html = await renderEmailTemplate({
         subject,
         heading: 'Your account has been created',
         preheader: `An administrator has created a ${brand} account for you.`,
@@ -272,7 +305,7 @@ async function sendPasswordResetEmail(to, token) {
     const link = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
     const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
     const subject = 'Reset your EFBC Conference password';
-    const html = renderEmailTemplate({
+    const html = await renderEmailTemplate({
         subject,
         heading: 'Reset your password',
         preheader: 'Password reset instructions for your EFBC account',
@@ -281,6 +314,7 @@ async function sendPasswordResetEmail(to, token) {
       <p style="margin:0;opacity:.85;">This link expires in 1 hour.</p>
     `,
         cta: { label: 'Reset Password', url: link },
+        footerHtml: '',
     });
     const text = `Reset your password: ${link}`;
     await sendMail({ to, subject, text, html });

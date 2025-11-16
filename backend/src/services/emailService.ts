@@ -101,8 +101,23 @@ const sendMail = async (payload: MailPayload): Promise<void> => {
   console.warn('⚠️ No email transport available (SMTP or RESEND_API_KEY). Email not sent.');
 };
 
+// Get custom footer from database
+const getCustomFooter = async (): Promise<string> => {
+  try {
+    const db = (globalThis as any).databaseService;
+    if (!db) return '';
+    const result = await db.query('SELECT footer_text FROM email_customizations WHERE id = 1 LIMIT 1');
+    if (Array.isArray(result) && result.length > 0 && result[0].footer_text) {
+      return result[0].footer_text;
+    }
+  } catch (error) {
+    // Silently fail and return empty string
+  }
+  return '';
+};
+
 // Basic, responsive-ish HTML email wrapper
-const renderEmailTemplate = (params: {
+const renderEmailTemplate = async (params: {
   subject?: string;
   heading?: string;
   preheader?: string;
@@ -113,7 +128,9 @@ const renderEmailTemplate = (params: {
   const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
   const heading = params.heading || brand;
   const preheader = params.preheader || '';
-  const footerHtml = params.footerHtml || '';
+  // Use provided footerHtml or fetch from database
+  const customFooter = params.footerHtml !== undefined ? params.footerHtml : await getCustomFooter();
+  const footerHtml = customFooter || '';
   const buttonHtml = params.cta
     ? `
       <a href="${params.cta.url}"
@@ -175,7 +192,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
 
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
   const subject = 'Verify your email address';
-  const html = renderEmailTemplate({
+  const html = await renderEmailTemplate({
     subject,
     heading: 'Verify your email',
     preheader: 'Confirm your email to finish setting up your account',
@@ -184,6 +201,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
       <p style="margin:0;opacity:.8;">This link expires in 24 hours.</p>
     `,
     cta: { label: 'Verify Email', url: link },
+    footerHtml: '', // No custom footer for verification emails
   });
   const text = `Verify your email: ${link}`;
 
@@ -228,7 +246,7 @@ export async function sendRegistrationConfirmationEmail(params: {
       </table>
     `
     : '';
-  const html = renderEmailTemplate({
+  const html = await renderEmailTemplate({
     subject,
     heading: 'Registration Confirmed',
     preheader: 'Your EFBC Conference registration is confirmed',
@@ -269,7 +287,7 @@ export async function sendAdminCreatedUserEmail(params: {
   const subject = `${brand} account created for you`;
   const loginUrl = (process.env.FRONTEND_URL || 'http://localhost:3000') + '/login';
 
-  const html = renderEmailTemplate({
+  const html = await renderEmailTemplate({
     subject,
     heading: 'Your account has been created',
     preheader: `An administrator has created a ${brand} account for you.`,
@@ -313,7 +331,7 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
   const link = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
   const subject = 'Reset your EFBC Conference password';
-  const html = renderEmailTemplate({
+  const html = await renderEmailTemplate({
     subject,
     heading: 'Reset your password',
     preheader: 'Password reset instructions for your EFBC account',
@@ -322,6 +340,7 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
       <p style="margin:0;opacity:.85;">This link expires in 1 hour.</p>
     `,
     cta: { label: 'Reset Password', url: link },
+    footerHtml: '', 
   });
   const text = `Reset your password: ${link}`;
 

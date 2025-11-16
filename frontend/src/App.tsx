@@ -14,6 +14,7 @@ import { AdminEventForm } from './pages/admin/adminEventForm';
 import { AdminAttendees } from './pages/admin/adminAttendees';
 import { AdminGroups } from './pages/admin/adminGroups';
 import { AdminUsers } from './pages/admin/adminUsers';
+import { AdminCustomization } from './pages/admin/adminCustomization';
 import { EventDetailsPage } from './pages/admin/eventsDetails';
 import { Event, Registration, Group, User, RegisterForm } from './types';
 import apiClient, { authApi } from './services/apiClient';
@@ -564,6 +565,8 @@ const handleLogout = () => {
           return <AdminCancellations onChanged={loadRegistrationsFromApi} />;
         case 'allUsers':
           return <AdminUsers />;
+        case 'customization':
+          return <AdminCustomization />;
         case 'editRegistration':
           const editingReg = registrations.find(r => r.id === adminEditingRegistrationId);
           if (!editingReg) {

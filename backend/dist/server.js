@@ -16,6 +16,7 @@ const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const cancellationRoutes_1 = __importDefault(require("./routes/cancellationRoutes"));
 const paymentsRoutes_1 = __importDefault(require("./routes/paymentsRoutes"));
+const customizationRoutes_1 = __importDefault(require("./routes/customizationRoutes"));
 if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
     dotenv_1.default.config();
 }
@@ -33,6 +34,7 @@ app.use('/api/registrations', registrationRoutes_1.default);
 app.use('/api/groups', groupRoutes_1.default);
 app.use('/api', cancellationRoutes_1.default);
 app.use('/api/payments', paymentsRoutes_1.default);
+app.use('/api/customization', customizationRoutes_1.default);
 let databaseService;
 const initializeDatabase = async () => {
     try {
@@ -117,6 +119,7 @@ const createTables = async () => {
         await migrateCancellationFeature();
         await migrateEventDescriptionToArray();
         await migrateEventStartDate();
+        await migrateEmailCustomizations();
         await databaseService.query(`
       CREATE TABLE IF NOT EXISTS \`groups\` (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -353,6 +356,23 @@ const migrateEventStartDate = async () => {
     }
     catch (error) {
         console.error('Error migrating event start_date:', error?.message || error);
+    }
+};
+const migrateEmailCustomizations = async () => {
+    try {
+        await databaseService.query(`
+      CREATE TABLE IF NOT EXISTS email_customizations (
+        id INT PRIMARY KEY,
+        header_text TEXT NULL,
+        footer_text TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+        console.log('🛠️ Email customizations table created/verified');
+    }
+    catch (error) {
+        console.error('Error migrating email customizations:', error?.message || error);
     }
 };
 const migrateCancellationFeature = async () => {

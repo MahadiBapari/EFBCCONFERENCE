@@ -13,6 +13,7 @@ import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
 import cancellationRoutes from './routes/cancellationRoutes';
 import paymentsRoutes from './routes/paymentsRoutes';
+import customizationRoutes from './routes/customizationRoutes';
 
 // Load environment variables (only from .env in non-production)
 if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
@@ -38,6 +39,7 @@ app.use('/api/registrations', registrationRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api', cancellationRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/customization', customizationRoutes);
 
 // Global database service
 let databaseService: DatabaseService;
@@ -146,6 +148,7 @@ const createTables = async () => {
     await migrateCancellationFeature();
     await migrateEventDescriptionToArray();
     await migrateEventStartDate();
+    await migrateEmailCustomizations();
 
     // Groups table
     await databaseService.query(`
@@ -414,6 +417,24 @@ const migrateEventStartDate = async (): Promise<void> => {
     }
   } catch (error: any) {
     console.error('Error migrating event start_date:', error?.message || error);
+  }
+};
+
+// Migration helper to create email_customizations table
+const migrateEmailCustomizations = async (): Promise<void> => {
+  try {
+    await databaseService.query(`
+      CREATE TABLE IF NOT EXISTS email_customizations (
+        id INT PRIMARY KEY,
+        header_text TEXT NULL,
+        footer_text TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('🛠️ Email customizations table created/verified');
+  } catch (error: any) {
+    console.error('Error migrating email customizations:', error?.message || error);
   }
 };
 
