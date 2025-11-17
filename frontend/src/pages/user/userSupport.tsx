@@ -2,60 +2,60 @@ import React, { useState } from 'react';
 import '../../styles/UserSupport.css';
 
 export const UserSupport: React.FC = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: '',
-  });
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+//   const [formData, setFormData] = useState({
+//     name: '',
+//     email: '',
+//     subject: '',
+//     message: '',
+//   });
+//   const [submitted, setSubmitted] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
+//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+//     setFormData(prev => ({
+//       ...prev,
+//       [e.target.name]: e.target.value,
+//     }));
+//   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSubmitted(false);
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+//     setError(null);
+//     setSubmitted(false);
 
-    // Basic validation
-    if (!formData.name.trim() || !formData.email.trim() || !formData.subject.trim() || !formData.message.trim()) {
-      setError('Please fill in all fields');
-      return;
-    }
+//     // Basic validation
+//     if (!formData.name.trim() || !formData.email.trim() || !formData.subject.trim() || !formData.message.trim()) {
+//       setError('Please fill in all fields');
+//       return;
+//     }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
+//     // Email validation
+//     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//     if (!emailRegex.test(formData.email)) {
+//       setError('Please enter a valid email address');
+//       return;
+//     }
 
-    // Here you would typically send the form data to your backend
-    // For now, we'll just show a success message
-    try {
-      // TODO: Implement API call to send support request
-      // await apiClient.post('/support/contact', formData);
+//     // Here you would typically send the form data to your backend
+//     // For now, we'll just show a success message
+//     try {
+//       // TODO: Implement API call to send support request
+//       // await apiClient.post('/support/contact', formData);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+//       // Simulate API call
+//       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setSubmitted(true);
-      setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
-      });
-    } catch (err: any) {
-      setError(err?.response?.data?.error || 'Failed to send message. Please try again.');
-    }
-  };
+//       setSubmitted(true);
+//       setFormData({
+//         name: '',
+//         email: '',
+//         subject: '',
+//         message: '',
+//       });
+//     } catch (err: any) {
+//       setError(err?.response?.data?.error || 'Failed to send message. Please try again.');
+//     }
+//   };
 
   return (
     <div className="container">
