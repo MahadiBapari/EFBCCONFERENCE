@@ -61,9 +61,6 @@ export const UserSupport: React.FC = () => {
     <div className="container">
       <div className="page-header">
         <h1>Support & Contact</h1>
-        <p className="page-description">
-          Have a question or need assistance? We're here to help. Fill out the form below or use the contact information provided.
-        </p>
       </div>
 
       <div className="support-content">
@@ -101,7 +98,7 @@ export const UserSupport: React.FC = () => {
             </div>
           </div>
 
-          {/* Contact Form Card */}
+          {/* Contact Form Card
           <div className="card contact-form-card">
             <h2>Send us a Message</h2>
             {submitted && (
@@ -184,7 +181,7 @@ export const UserSupport: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
+          </div> */}
         </div>
 
         {/* FAQ Section */}
