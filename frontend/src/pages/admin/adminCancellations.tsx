@@ -111,7 +111,6 @@ export const AdminCancellations: React.FC<{ onChanged?: () => void | Promise<voi
                 <th>Email</th>
                 <th>Event</th>
                 <th>Reason</th>
-                <th>Cancelled At</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -122,7 +121,6 @@ export const AdminCancellations: React.FC<{ onChanged?: () => void | Promise<voi
                   <td>{r.user_email}</td>
                   <td>{r.event_name || r.event_id}</td>
                   <td>{r.reason || '-'}</td>
-                  <td>{r.processed_at ? new Date(r.processed_at).toLocaleString() : '-'}</td>
                   <td>
                     <button className="btn btn-secondary btn-sm" onClick={()=>restore(r.id)}>Restore</button>
                   </td>
