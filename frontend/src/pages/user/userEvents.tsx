@@ -12,6 +12,7 @@ interface UserEventsProps {
   handleCancelRegistration: (regId: number) => void;
   user: User;
   onBeginRegistration: (eventId: number) => void;
+  pendingCancellationIds?: number[];
 }
 
 export const UserEvents: React.FC<UserEventsProps> = ({ 
@@ -21,6 +22,7 @@ export const UserEvents: React.FC<UserEventsProps> = ({
   handleCancelRegistration, 
   user,
   onBeginRegistration,
+  pendingCancellationIds = [],
 }) => {
   // Local edit state no longer needed here
 
@@ -39,6 +41,7 @@ export const UserEvents: React.FC<UserEventsProps> = ({
   };
 
   const handleCancel = (regId: number) => {
+    if (pendingCancellationIds.includes(regId)) return;
     if (window.confirm("Are you sure you want to cancel your registration for this event?")) {
       handleCancelRegistration(regId);
     }

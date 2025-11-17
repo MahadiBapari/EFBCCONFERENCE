@@ -5,6 +5,7 @@ import { LoginPage } from './pages/authentication/login';
 import { RegistrationPage } from './pages/authentication/registration';
 import ResetPasswordPage from './pages/authentication/resetPassword';
 import { Sidebar } from './components/Sidebar';
+import { Modal } from './components/Modal';
 import { UserDashboard } from './pages/user/userDashboard';
 import { UserEvents } from './pages/user/userEvents';
 import { UserRegistration } from './pages/user/userRegistration';
@@ -88,6 +89,12 @@ const App: React.FC = () => {
   const [adminEditingRegistrationId, setAdminEditingRegistrationId] = useState<number | null>(null);
   const [adminNewRegistrationUser, setAdminNewRegistrationUser] = useState<{ id: number; name: string; email: string } | null>(null);
   const [adminNewRegistrationEventId, setAdminNewRegistrationEventId] = useState<number | null>(null);
+  const [pendingCancellationIds, setPendingCancellationIds] = useState<number[]>([]);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelTargetRegId, setCancelTargetRegId] = useState<number | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
     document.body.className = `${theme}-theme`;
@@ -382,13 +389,27 @@ const handleLogout = () => {
     save();
   };
 
-  const handleCancelRegistration = async (regId: number) => {
-    const reason = window.prompt('Please share a brief reason for cancellation (optional):') || '';
+  const handleCancelRegistration = (regId: number) => {
+    setCancelTargetRegId(regId);
+    setCancelReason('');
+    setCancelError(null);
+    setCancelModalOpen(true);
+  };
+
+  const confirmCancelRegistration = async () => {
+    if (!cancelTargetRegId) return;
+    setCancelSubmitting(true);
+    setCancelError(null);
     try {
-      await cancelApi.request(regId, reason);
-      alert('Cancellation request submitted. An admin will review it.');
-    } catch (e) {
-      alert('Failed to submit cancellation request');
+      await cancelApi.request(cancelTargetRegId, cancelReason.trim());
+      setPendingCancellationIds(prev =>
+        prev.includes(cancelTargetRegId) ? prev : [...prev, cancelTargetRegId],
+      );
+      setCancelModalOpen(false);
+    } catch (e: any) {
+      setCancelError(e?.response?.data?.error || 'Failed to submit cancellation request');
+    } finally {
+      setCancelSubmitting(false);
     }
   };
 
@@ -487,6 +508,7 @@ const handleLogout = () => {
             handleCancelRegistration={handleCancelRegistration}
             user={user}
             onBeginRegistration={(eventId?: number) => beginRegistration(eventId)}
+            pendingCancellationIds={pendingCancellationIds}
           />;
         case 'profile':
           return <UserProfile user={user} onUpdateProfile={handleUpdateProfile} />;
@@ -501,6 +523,7 @@ const handleLogout = () => {
             handleCancelRegistration={handleCancelRegistration}
             user={user} 
             onBeginRegistration={() => beginRegistration()}
+            pendingCancellationIds={pendingCancellationIds}
           />;
         case 'registration':
           return <UserRegistration
@@ -658,6 +681,45 @@ const handleLogout = () => {
           </button>
         </header>
         {renderView()}
+        {cancelModalOpen && (
+          <Modal
+            title="Cancel Registration"
+            onClose={() => !cancelSubmitting && setCancelModalOpen(false)}
+          >
+            <div className="form-group">
+              <p>Please share a brief reason for your cancellation (optional, but helpful for us).</p>
+              <label htmlFor="cancelReason" className="form-label">Reason for cancellation</label>
+              <textarea
+                id="cancelReason"
+                className="form-control"
+                rows={4}
+                value={cancelReason}
+                onChange={e => setCancelReason(e.target.value)}
+                placeholder="Example: schedule conflict, travel issues, etc."
+                disabled={cancelSubmitting}
+              />
+            </div>
+            {cancelError && <div className="error-message" style={{ marginTop: '0.5rem' }}>{cancelError}</div>}
+            <div className="modal-footer-actions" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setCancelModalOpen(false)}
+                disabled={cancelSubmitting}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={confirmCancelRegistration}
+                disabled={cancelSubmitting}
+              >
+                {cancelSubmitting ? 'Sending...' : 'Send Request'}
+              </button>
+            </div>
+          </Modal>
+        )}
       </main>
     </div>
   );

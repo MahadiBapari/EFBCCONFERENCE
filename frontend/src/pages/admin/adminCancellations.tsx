@@ -10,22 +10,27 @@ type CancelRow = {
   reason?: string;
   status: 'pending'|'approved'|'rejected';
   created_at?: string;
+  processed_at?: string;
   user_name?: string;
   user_email?: string;
   event_name?: string;
 };
 
 export const AdminCancellations: React.FC<{ onChanged?: () => void | Promise<void> }> = ({ onChanged }) => {
-  const [rows, setRows] = useState<CancelRow[]>([]);
+  const [pendingRows, setPendingRows] = useState<CancelRow[]>([]);
+  const [approvedRows, setApprovedRows] = useState<CancelRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState<Record<number,string>>({});
 
   const load = async () => {
     setLoading(true);
     try {
-      const res: any = await cancelApi.list('pending');
-      const data = (res as any).data || res?.data || [];
-      setRows(data);
+      const resPending: any = await cancelApi.list('pending');
+      const dataPending = (resPending as any).data || resPending?.data || [];
+      setPendingRows(dataPending);
+      const resApproved: any = await cancelApi.list('approved');
+      const dataApproved = (resApproved as any).data || resApproved?.data || [];
+      setApprovedRows(dataApproved);
     } finally { setLoading(false); }
   };
 
@@ -41,6 +46,11 @@ export const AdminCancellations: React.FC<{ onChanged?: () => void | Promise<voi
     await load();
     if (onChanged) await onChanged();
   };
+  const restore = async (id: number) => {
+    await cancelApi.restore(id);
+    await load();
+    if (onChanged) await onChanged();
+  };
 
   if (loading) {
     return <div className="container"><div className="page-header"><h1>Cancellation Requests</h1></div><p>Loading…</p></div>;
@@ -49,10 +59,13 @@ export const AdminCancellations: React.FC<{ onChanged?: () => void | Promise<voi
   return (
     <div className="container">
       <div className="page-header"><h1>Cancellation Requests</h1></div>
-      {rows.length === 0 ? (
+
+      {/* Pending requests */}
+      {pendingRows.length === 0 ? (
         <div className="card"><p>No pending requests.</p></div>
       ) : (
         <div className="card">
+          <h2 className="section-title">Pending Requests</h2>
           <table className="cancel-table">
             <thead>
               <tr>
@@ -65,7 +78,7 @@ export const AdminCancellations: React.FC<{ onChanged?: () => void | Promise<voi
               </tr>
             </thead>
             <tbody>
-              {rows.map(r => (
+              {pendingRows.map(r => (
                 <tr key={r.id}>
                   <td>{r.user_name || r.user_id}</td>
                   <td>{r.user_email}</td>
@@ -77,6 +90,41 @@ export const AdminCancellations: React.FC<{ onChanged?: () => void | Promise<voi
                   <td>
                     <button className="btn btn-primary btn-sm mr-8" onClick={()=>approve(r.id)}>Approve</button>
                     <button className="btn btn-danger btn-sm" onClick={()=>reject(r.id)}>Reject</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Cancelled registrations (approved requests) */}
+      <div className="page-header" style={{ marginTop: '2rem' }}><h2>Cancelled Registrations</h2></div>
+      {approvedRows.length === 0 ? (
+        <div className="card"><p>No cancelled registrations.</p></div>
+      ) : (
+        <div className="card">
+          <table className="cancel-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Event</th>
+                <th>Reason</th>
+                <th>Cancelled At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {approvedRows.map(r => (
+                <tr key={r.id}>
+                  <td>{r.user_name || r.user_id}</td>
+                  <td>{r.user_email}</td>
+                  <td>{r.event_name || r.event_id}</td>
+                  <td>{r.reason || '-'}</td>
+                  <td>{r.processed_at ? new Date(r.processed_at).toLocaleString() : '-'}</td>
+                  <td>
+                    <button className="btn btn-secondary btn-sm" onClick={()=>restore(r.id)}>Restore</button>
                   </td>
                 </tr>
               ))}

@@ -13,15 +13,17 @@ interface UserDashboardProps {
   handleCancelRegistration: (regId: number) => void;
   user: User;
   onBeginRegistration: (eventId?: number) => void;
+  pendingCancellationIds?: number[];
 }
 
 export const UserDashboard: React.FC<UserDashboardProps> = ({ 
   events, 
   registrations, 
-  handleSaveRegistration, 
+  handleSaveRegistration,
   handleCancelRegistration, 
   user,
   onBeginRegistration,
+  pendingCancellationIds = [],
 }) => {
   const [showPreview, setShowPreview] = useState(false);
 
@@ -97,6 +99,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               <h3>Your Registration:</h3>
               <p><strong>Name:</strong> {userRegistration.name}</p>
               <p><strong>Activity:</strong> {userRegistration.category}</p>
+              {pendingCancellationIds.includes(userRegistration.id) && (
+                <p className="cancellation-reason"><strong>Status:</strong> Cancellation request sent</p>
+              )}
               {(userRegistration as any).status === 'cancelled' ? (
                 <div>
                   <span className="event-status status-expired">Cancelled</span>
@@ -115,8 +120,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   <button
                     className="btn btn-danger"
                     onClick={() => handleCancelRegistration(userRegistration.id)}
+                    disabled={pendingCancellationIds.includes(userRegistration.id)}
                   >
-                    Cancel Registration
+                    {pendingCancellationIds.includes(userRegistration.id) ? 'Request Sent' : 'Cancel Registration'}
                   </button>
                 </div>
               )}

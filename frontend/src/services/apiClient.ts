@@ -129,5 +129,8 @@ export const cancelApi = {
   },
   async reject(id: number, adminNote?: string): Promise<any> {
     return apiClient.put(`/cancel-requests/${id}/reject`, { adminNote });
+  },
+  async restore(id: number): Promise<any> {
+    return apiClient.put(`/cancel-requests/${id}/restore`, {});
   }
 };

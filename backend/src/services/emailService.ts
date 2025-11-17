@@ -353,5 +353,103 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
 
   await sendMail({ to, subject, text, html });
 }
+ 
+// Email to admin when a user submits a cancellation request
+export async function sendCancellationRequestAdminEmail(params: {
+  registrationId: number;
+  userName?: string;
+  userEmail?: string;
+  eventName?: string;
+  reason?: string | null;
+}): Promise<void> {
+  const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
+  const to =
+    process.env.ADMIN_EMAIL ||
+    process.env.SUPPORT_EMAIL ||
+    process.env.EMAIL_FROM ||
+    'admin@example.com';
+  const subject = `New cancellation request for ${params.eventName || 'event'} (#${params.registrationId})`;
 
+  const html = await renderEmailTemplate({
+    subject,
+    heading: 'New cancellation request',
+    preheader: 'A user has requested to cancel a registration.',
+    contentHtml: `
+      <p style="margin:0 0 8px 0;">A new cancellation request has been submitted in the ${brand} portal.</p>
+      <table role="presentation" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr>
+          <td style="color:#6b7280;">Registration ID</td>
+          <td><strong>#${params.registrationId}</strong></td>
+        </tr>
+        ${params.userName ? `<tr><td style="color:#6b7280;">User</td><td>${params.userName}</td></tr>` : ''}
+        ${params.userEmail ? `<tr><td style="color:#6b7280;">Email</td><td>${params.userEmail}</td></tr>` : ''}
+        ${params.eventName ? `<tr><td style="color:#6b7280;">Event</td><td>${params.eventName}</td></tr>` : ''}
+        ${params.reason ? `<tr><td style="color:#6b7280;">Reason</td><td>${params.reason}</td></tr>` : ''}
+      </table>
+      <p style="margin:12px 0 0 0;">You can review and approve or reject this request from the admin Cancellation Requests page.</p>
+    `,
+  });
+
+  const lines: string[] = [];
+  lines.push(`New cancellation request in ${brand}.`);
+  lines.push(`Registration ID: #${params.registrationId}.`);
+  if (params.userName) lines.push(`User: ${params.userName}.`);
+  if (params.userEmail) lines.push(`Email: ${params.userEmail}.`);
+  if (params.eventName) lines.push(`Event: ${params.eventName}.`);
+  if (params.reason) lines.push(`Reason: ${params.reason}.`);
+  const text = lines.join(' ');
+
+  await sendMail({ to, subject, text, html });
+}
+
+// Email to user when their cancellation is approved or rejected
+export async function sendCancellationDecisionEmail(params: {
+  to: string;
+  userName?: string;
+  eventName?: string;
+  status: 'approved' | 'rejected';
+  reason?: string | null;
+  adminNote?: string | null;
+}): Promise<void> {
+  const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
+  const subject =
+    params.status === 'approved'
+      ? 'Your registration cancellation has been approved'
+      : 'Your registration cancellation has been reviewed';
+
+  const statusText = params.status === 'approved' ? 'approved' : 'not approved';
+
+  const html = await renderEmailTemplate({
+    subject,
+    heading: 'Cancellation request update',
+    preheader: `Your cancellation request has been ${statusText}.`,
+    contentHtml: `
+      <p style="margin:0 0 12px 0;">Hi ${params.userName || 'there'},</p>
+      <p style="margin:0 0 8px 0;">This is an update regarding your recent request to cancel your registration${params.eventName ? ` for <strong>${params.eventName}</strong>` : ''}.</p>
+      <p style="margin:0 0 8px 0;">Status: <strong style="text-transform:capitalize;">${statusText}</strong></p>
+      ${
+        params.reason
+          ? `<p style="margin:0 0 8px 0;">Your original reason for cancellation:</p>
+             <p style="margin:0 0 8px 0;white-space:pre-line;">${params.reason}</p>`
+          : ''
+      }
+      ${
+        params.adminNote
+          ? `<p style="margin:0 0 8px 0;">Admin note:</p>
+             <p style="margin:0 0 8px 0;white-space:pre-line;">${params.adminNote}</p>`
+          : ''
+      }
+      <p style="margin:12px 0 0 0;">If you have any questions, please contact the conference organizers.</p>
+    `,
+  });
+
+  const lines: string[] = [];
+  lines.push(`Your cancellation request has been ${statusText}.`);
+  if (params.eventName) lines.push(`Event: ${params.eventName}.`);
+  if (params.reason) lines.push(`Your reason: ${params.reason}.`);
+  if (params.adminNote) lines.push(`Admin note: ${params.adminNote}.`);
+  const text = lines.join(' ');
+
+  await sendMail({ to: params.to, subject, text, html });
+}
 
