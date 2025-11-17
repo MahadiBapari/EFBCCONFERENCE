@@ -192,5 +192,21 @@ router.put('/cancel-requests/:id/restore', async (req: Request, res: Response) =
   }
 });
 
+// List current user's pending cancellation requests (user)
+router.get('/my-cancel-requests', async (req: Request, res: Response) => {
+  try {
+    const auth = getAuth(req);
+    if (!auth.id) return res.status(401).json({ success: false, error: 'Unauthorized' });
+    const db = getDb();
+    const rows = await db.query(
+      'SELECT id, registration_id, event_id, status, created_at FROM cancellation_requests WHERE user_id=? AND status="pending" ORDER BY created_at DESC',
+      [auth.id]
+    );
+    return res.json({ success: true, data: rows });
+  } catch {
+    return res.status(500).json({ success: false, error: 'Failed to load requests' });
+  }
+});
+
 export default router;
 

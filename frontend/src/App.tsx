@@ -224,6 +224,18 @@ useEffect(() => {
         category: r.category ?? (r.wednesdayActivity ?? 'Networking'),
       }));
       setRegistrations(normalized);
+
+      // Also load any pending cancellation requests for the current user
+      try {
+        const pendingRes: any = await cancelApi.listMinePending();
+        const pendingData = (pendingRes as any).data || pendingRes?.data || [];
+        const regIds = Array.isArray(pendingData)
+          ? pendingData.map((r: any) => Number(r.registration_id)).filter((id: any) => Number.isFinite(id))
+          : [];
+        setPendingCancellationIds(regIds);
+      } catch (err) {
+        console.warn('Failed to load pending cancellation requests for user:', err);
+      }
     } catch (err) {
       console.error('Failed to load registrations from API:', err);
     }
