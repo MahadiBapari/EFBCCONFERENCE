@@ -18,6 +18,7 @@ interface UserRegistrationProps {
   targetEventId?: number | null;
   onBack: () => void;
   onSave: (regData: Registration) => void;
+  isAdminEdit?: boolean; // True when admin is editing/creating registration
 }
 
 export const UserRegistration: React.FC<UserRegistrationProps> = ({
@@ -27,6 +28,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   targetEventId,
   onBack,
   onSave,
+  isAdminEdit = false,
 }) => {
   const toBooleanYesNo = (v: any): boolean => v === true || v === 'Yes' || v === 'yes' || v === 1;
   const activeEvent = useMemo(() => events.find(e => !isEventExpired(e.date)), [events]);
@@ -227,7 +229,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     e.preventDefault();
     if (!event) return;
     if (!validateForm()) return;
-    if ((formData.paymentMethod || 'Card') === 'Card' && !isAlreadyPaid) return; // handled by Pay & Complete button when not already paid
+    // Skip payment validation in admin edit mode
+    if (!isAdminEdit && (formData.paymentMethod || 'Card') === 'Card' && !isAlreadyPaid) return; // handled by Pay & Complete button when not already paid
     setIsSubmitting(true);
     try {
       // Compose address string for persistence
@@ -814,29 +817,56 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             </div>
           </div>
 
-          {(!isEditing || hadSpouseTicket) && (
+          {/* Spouse section logic:
+              - User edit mode: Only show if spouse ticket was originally purchased (read-only, can't add new)
+              - Admin edit mode: Always show, allow adding/editing spouse
+              - Create mode (both user and admin): Always show, allow adding spouse */}
+          {(!isEditing || hadSpouseTicket || isAdminEdit) && (
             <div className="form-section">
               <h3 className="section-title">Spouse/Guest Information</h3>
-              {!isEditing && (
+              {(!isEditing || isAdminEdit) && (
                 <div className="form-group">
                   <label className="checkbox-label">
-                    <input type="checkbox" checked={!!formData.spouseDinnerTicket} onChange={e => handleInputChange('spouseDinnerTicket', e.target.checked)} />
+                    <input 
+                      type="checkbox" 
+                      checked={!!formData.spouseDinnerTicket} 
+                      onChange={e => handleInputChange('spouseDinnerTicket', e.target.checked)}
+                      disabled={isEditing && !isAdminEdit} // Disable in user edit mode
+                    />
                     <span>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
                   </label>
                 </div>
               )}
-              {/* In edit mode: show spouse name fields only if ticket was purchased originally.
-                  In create mode: show fields when checkbox is selected. */}
-              {( (isEditing && hadSpouseTicket) || (!isEditing && formData.spouseDinnerTicket) ) && (
+              {/* Show spouse name fields:
+                  - In user edit mode: only if ticket was purchased originally
+                  - In admin edit mode: if checkbox is selected
+                  - In create mode: if checkbox is selected */}
+              {( (isEditing && !isAdminEdit && hadSpouseTicket) || 
+                  (isEditing && isAdminEdit && formData.spouseDinnerTicket) || 
+                  (!isEditing && formData.spouseDinnerTicket) ) && (
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="spouseFirstName" className="form-label">Spouse/Guest's First Name <span className="required-asterisk">*</span></label>
-                    <input id="spouseFirstName" type="text" className={`form-control ${errors.spouseFirstName ? 'error' : ''}`} value={formData.spouseFirstName || ''} onChange={e => handleInputChange('spouseFirstName', e.target.value)} />
+                    <input 
+                      id="spouseFirstName" 
+                      type="text" 
+                      className={`form-control ${errors.spouseFirstName ? 'error' : ''}`} 
+                      value={formData.spouseFirstName || ''} 
+                      onChange={e => handleInputChange('spouseFirstName', e.target.value)}
+                      disabled={isEditing && !isAdminEdit && hadSpouseTicket} // Disable in user edit mode
+                    />
                     {errors.spouseFirstName && <div className="error-message">{errors.spouseFirstName}</div>}
                   </div>
                   <div className="form-group">
                     <label htmlFor="spouseLastName" className="form-label">Spouse/Guest's Last Name <span className="required-asterisk">*</span></label>
-                    <input id="spouseLastName" type="text" className={`form-control ${errors.spouseLastName ? 'error' : ''}`} value={formData.spouseLastName || ''} onChange={e => handleInputChange('spouseLastName', e.target.value)} />
+                    <input 
+                      id="spouseLastName" 
+                      type="text" 
+                      className={`form-control ${errors.spouseLastName ? 'error' : ''}`} 
+                      value={formData.spouseLastName || ''} 
+                      onChange={e => handleInputChange('spouseLastName', e.target.value)}
+                      disabled={isEditing && !isAdminEdit && hadSpouseTicket} // Disable in user edit mode
+                    />
                     {errors.spouseLastName && <div className="error-message">{errors.spouseLastName}</div>}
                   </div>
                 </div>
@@ -844,22 +874,24 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             </div>
           )}
 
-          <div className="form-section">
-            <h3 className="section-title">Payment Information</h3>
-            {isAlreadyPaid ? (
-              <div className="payment-summary">
-                <div className="payment-item">
-                  <span>Paid:</span>
-                  <span>Yes</span>
-                </div>
-                {(registration as any)?.squarePaymentId && (
+          {/* Payment section: Hide in admin edit mode, show in user mode */}
+          {!isAdminEdit && (
+            <div className="form-section">
+              <h3 className="section-title">Payment Information</h3>
+              {isAlreadyPaid ? (
+                <div className="payment-summary">
                   <div className="payment-item">
-                    <span>Square Payment ID:</span>
-                    <span>{(registration as any).squarePaymentId}</span>
+                    <span>Paid:</span>
+                    <span>Yes</span>
                   </div>
-                )}
-              </div>
-            ) : (
+                  {(registration as any)?.squarePaymentId && (
+                    <div className="payment-item">
+                      <span>Square Payment ID:</span>
+                      <span>{(registration as any).squarePaymentId}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
               <>
                 {(() => {
                   const baseTotal = Number(formData.totalPrice || 0);
@@ -926,11 +958,13 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 </div>
               </>
             )}
-          </div>
+            </div>
+          )}
 
           <div className="modal-footer-actions" style={{ marginTop: '1rem' }}>
             <button type="button" className="btn btn-secondary" onClick={onBack} disabled={isSubmitting}>Cancel</button>
-            {isAlreadyPaid || (formData.paymentMethod || 'Card') === 'Check' ? (
+            {/* In admin edit mode, always allow saving without payment */}
+            {isAdminEdit || isAlreadyPaid || (formData.paymentMethod || 'Card') === 'Check' ? (
               <button className="btn btn-primary btn-save" type="submit" form="registration-form" disabled={isSubmitting}>
                 {isSubmitting ? 'Saving...' : (registration ? 'Update Registration' : 'Complete Registration')}
               </button>

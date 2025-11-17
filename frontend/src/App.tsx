@@ -588,6 +588,7 @@ const handleLogout = () => {
               setAdminEditingRegistrationId(null);
               setView('attendees');
             }}
+            isAdminEdit={true}
           />;
         case 'createRegistration':
           if (!adminNewRegistrationUser || !adminNewRegistrationEventId) {
@@ -611,6 +612,7 @@ const handleLogout = () => {
                 setAdminNewRegistrationEventId(null);
                 setView('attendees');
               }}
+              isAdminEdit={true}
             />
           );
         default:
