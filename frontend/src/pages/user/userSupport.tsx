@@ -69,7 +69,7 @@ export const UserSupport: React.FC = () => {
           <div className="card contact-info-card">
             <h2>Contact Information</h2>
             <div className="contact-item">
-              <div className="contact-icon">📧</div>
+              
               <div className="contact-details">
                 <h3>Email</h3>
                 <p>
@@ -78,7 +78,7 @@ export const UserSupport: React.FC = () => {
               </div>
             </div>
             <div className="contact-item">
-              <div className="contact-icon">📍</div>
+              
               <div className="contact-details">
                 <h3>Address</h3>
                 <p>
@@ -90,7 +90,7 @@ export const UserSupport: React.FC = () => {
               </div>
             </div>
             <div className="contact-item">
-              <div className="contact-icon">⏰</div>
+             
               <div className="contact-details">
                 <h3>Response Time</h3>
                 <p>We typically respond within 24-48 hours during business days.</p>
