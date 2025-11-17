@@ -9,6 +9,7 @@ import { UserDashboard } from './pages/user/userDashboard';
 import { UserEvents } from './pages/user/userEvents';
 import { UserRegistration } from './pages/user/userRegistration';
 import { UserProfile } from './pages/user/userProfile';
+import { UserSupport } from './pages/user/userSupport';
 import { AdminEvents } from './pages/admin/adminEvents';
 import { AdminEventForm } from './pages/admin/adminEventForm';
 import { AdminAttendees } from './pages/admin/adminAttendees';
@@ -489,6 +490,8 @@ const handleLogout = () => {
           />;
         case 'profile':
           return <UserProfile user={user} onUpdateProfile={handleUpdateProfile} />;
+        case 'support':
+          return <UserSupport />;
         case 'dashboard':
         default:
           return <UserDashboard 
