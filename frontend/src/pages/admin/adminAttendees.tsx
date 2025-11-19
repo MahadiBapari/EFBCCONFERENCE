@@ -34,6 +34,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   // Removed unused local edit state to satisfy CI lint rules
   const [selectedRegIds, setSelectedRegIds] = useState<number[]>([]);
   const [previewRegId, setPreviewRegId] = useState<number | null>(null);
+  const [showDetailTable, setShowDetailTable] = useState(false);
 
   // State for Add Attendee (select user) modal
   interface SimpleUser {
@@ -199,12 +200,81 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   }, [groups]);
 
   const handleExportCSV = () => {
-    const headers = ["Name", "Email", "Category"];
+    const headers = [
+      "Badge Name",
+      "First Name",
+      "Last Name",
+      "Email",
+      "Secondary Email",
+      "Organization",
+      "Job Title",
+      "Address",
+      "Mobile",
+      "Office Phone",
+      "First Time?",
+      "Company Type",
+      "Company Type Other",
+      "Emergency Contact Name",
+      "Emergency Contact Phone",
+      "Activity",
+      "Tuesday Early Reception",
+      "Wednesday Reception",
+      "Thursday Breakfast",
+      "Thursday Luncheon",
+      "Thursday Dinner",
+      "Friday Breakfast",
+      "Dietary Restrictions",
+      "Special Requests",
+      "Spouse First Name",
+      "Spouse Last Name",
+      "Spouse Dinner Ticket",
+      "Club Rentals",
+      "Golf Handicap",
+      "Massage Time Slot",
+      "Payment Method",
+      "Paid?",
+      "Payment ID",
+      "Total Price",
+    ];
+    const escapeCell = (value: any) =>
+      `"${String(value ?? '').replace(/"/g, '""')}"`;
+
     const rows = filteredRegistrations.map(reg =>
       [
-        `"${reg.name.replace(/"/g, '""')}"`,
-        `"${reg.email.replace(/"/g, '""')}"`,
-        `"${reg.category.replace(/"/g, '""')}"`
+        escapeCell(reg.badgeName),
+        escapeCell(reg.firstName),
+        escapeCell(reg.lastName),
+        escapeCell(reg.email),
+        escapeCell(reg.secondaryEmail),
+        escapeCell(reg.organization),
+        escapeCell(reg.jobTitle),
+        escapeCell(reg.address),
+        escapeCell(reg.mobile),
+        escapeCell(reg.officePhone),
+        escapeCell(reg.isFirstTimeAttending ? 'Yes' : 'No'),
+        escapeCell(reg.companyType),
+        escapeCell(reg.companyTypeOther),
+        escapeCell(reg.emergencyContactName),
+        escapeCell(reg.emergencyContactPhone),
+        escapeCell(reg.wednesdayActivity),
+        escapeCell((reg as any).tuesdayEarlyReception),
+        escapeCell(reg.wednesdayReception),
+        escapeCell(reg.thursdayBreakfast),
+        escapeCell(reg.thursdayLuncheon),
+        escapeCell(reg.thursdayDinner),
+        escapeCell(reg.fridayBreakfast),
+        escapeCell(reg.dietaryRestrictions),
+        escapeCell((reg as any).specialRequests),
+        escapeCell(reg.spouseFirstName),
+        escapeCell(reg.spouseLastName),
+        escapeCell(reg.spouseDinnerTicket ? 'Yes' : 'No'),
+        escapeCell((reg as any).clubRentals),
+        escapeCell(reg.golfHandicap),
+        escapeCell((reg as any).massageTimeSlot),
+        escapeCell(reg.paymentMethod),
+        escapeCell((reg as any).paid ? 'Yes' : 'No'),
+        escapeCell((reg as any).squarePaymentId || ''),
+        escapeCell(reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''),
       ].join(',')
     );
 
@@ -214,7 +284,8 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
-      link.setAttribute("download", "attendees.csv");
+      // Excel opens CSV files; using .xlsx extension for convenience
+      link.setAttribute("download", "attendees.xlsx");
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
@@ -279,6 +350,13 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       <div>    
         <div className="page-actions">
           <button className="btn btn-primary" onClick={handleOpenAddAttendee}>Add Attendee</button>
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={() => setShowDetailTable(prev => !prev)}
+          >
+            {showDetailTable ? 'Hide Table' : 'Table'}
+          </button>
           <button className="btn btn-secondary" onClick={handleExportCSV}>Export CSV</button>
           <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button>
         </div>
@@ -381,6 +459,92 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
         </div>
       ) : (
         <p>No attendees found for this filter.</p>
+      )}
+
+      {/* Detailed table view for selected event, similar to RegistrationPreview */}
+      {showDetailTable && filteredRegistrations.length > 0 && (
+        <div className="table-wrapper detailed-table-wrapper" style={{ marginTop: '2rem', overflowX: 'auto' }}>
+          <table className="table detailed-table">
+            <thead>
+              <tr>
+                <th>Badge Name</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Secondary Email</th>
+                <th>Organization</th>
+                <th>Job Title</th>
+                <th>Address</th>
+                <th>Mobile</th>
+                <th>Office Phone</th>
+                <th>First Time?</th>
+                <th>Company Type</th>
+                <th>Company Type Other</th>
+                <th>Emergency Contact Name</th>
+                <th>Emergency Contact Phone</th>
+                <th>Activity</th>
+                <th>Club Rentals</th>
+                <th>Golf Handicap</th>
+                <th>Massage Time Slot</th>
+                <th>Tuesday Early Reception</th>
+                <th>Wednesday Reception</th>
+                <th>Thursday Breakfast</th>
+                <th>Thursday Luncheon</th>
+                <th>Thursday Dinner</th>
+                <th>Friday Breakfast</th>
+                <th>Dietary Restrictions</th>
+                <th>Special Requests</th>
+                <th>Spouse First Name</th>
+                <th>Spouse Last Name</th>
+                <th>Spouse Dinner Ticket</th>
+                <th>Payment Method</th>
+                <th>Paid?</th>
+                <th>Payment ID</th>
+                <th>Total Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRegistrations.map(reg => (
+                <tr key={`detail-${reg.id}`}>
+                  <td>{reg.badgeName}</td>
+                  <td>{reg.firstName}</td>
+                  <td>{reg.lastName}</td>
+                  <td>{reg.email}</td>
+                  <td>{reg.secondaryEmail}</td>
+                  <td>{reg.organization}</td>
+                  <td>{reg.jobTitle}</td>
+                  <td>{reg.address}</td>
+                  <td>{reg.mobile}</td>
+                  <td>{reg.officePhone}</td>
+                  <td>{reg.isFirstTimeAttending ? 'Yes' : 'No'}</td>
+                  <td>{reg.companyType}</td>
+                  <td>{reg.companyTypeOther}</td>
+                  <td>{reg.emergencyContactName}</td>
+                  <td>{reg.emergencyContactPhone}</td>
+                  <td>{reg.wednesdayActivity}</td>
+                  <td>{(reg as any).clubRentals}</td>
+                  <td>{reg.golfHandicap}</td>
+                  <td>{(reg as any).massageTimeSlot}</td>
+                  <td>{(reg as any).tuesdayEarlyReception}</td>
+                  <td>{reg.wednesdayReception}</td>
+                  <td>{reg.thursdayBreakfast}</td>
+                  <td>{reg.thursdayLuncheon}</td>
+                  <td>{reg.thursdayDinner}</td>
+                  <td>{reg.fridayBreakfast}</td>
+                  <td>{reg.dietaryRestrictions}</td>
+                  <td>{(reg as any).specialRequests}</td>
+                  <td>{reg.spouseFirstName}</td>
+                  <td>{reg.spouseLastName}</td>
+                  <td>{reg.spouseDinnerTicket ? 'Yes' : 'No'}</td>
+                  <td>{reg.paymentMethod}</td>
+                  <td>{(reg as any).paid ? 'Yes' : 'No'}</td>
+                  <td>{(reg as any).squarePaymentId || ''}</td>
+                  <td>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {previewRegId && (() => {
