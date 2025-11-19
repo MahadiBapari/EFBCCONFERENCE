@@ -110,9 +110,10 @@
 
 .table th,
 .table td {
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   text-align: left;
   border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
 }
 
 .table th {
@@ -126,6 +127,31 @@
 
 .table td {
   color: var(--text-primary);
+}
+
+/* Wider, scrollable layout for bulk attendee detail table */
+.detailed-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.detailed-table {
+  min-width: 1200px;
+  table-layout: auto;
+  font-size: 0.9rem;
+}
+
+.detailed-table th,
+.detailed-table td {
+  white-space: nowrap;
+}
+
+.detailed-table th:nth-child(8),
+.detailed-table td:nth-child(8),
+.detailed-table th:nth-child(9),
+.detailed-table td:nth-child(9) {
+  max-width: 260px;
+  white-space: normal;
 }
 
 .th-checkbox,
