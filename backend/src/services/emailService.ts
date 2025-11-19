@@ -453,3 +453,32 @@ export async function sendCancellationDecisionEmail(params: {
   await sendMail({ to: params.to, subject, text, html });
 }
 
+// Email to user when a previously cancelled registration is restored
+export async function sendRegistrationRestoredEmail(params: {
+  to: string;
+  userName?: string;
+  eventName?: string;
+}): Promise<void> {
+  const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
+  const subject = 'Your registration has been restored';
+
+  const html = await renderEmailTemplate({
+    subject,
+    heading: 'Registration restored',
+    preheader: 'Your conference registration has been restored.',
+    contentHtml: `
+      <p style="margin:0 0 12px 0;">Hi ${params.userName || 'there'},</p>
+      <p style="margin:0 0 8px 0;">Good news! Your registration${params.eventName ? ` for <strong>${params.eventName}</strong>` : ''} has been restored.</p>
+      <p style="margin:0 0 8px 0;">You are once again listed as an active attendee for this event.</p>
+      <p style="margin:12px 0 0 0;">If you have any questions or need to make changes to your registration, you can log in to the portal at any time.</p>
+    `,
+  });
+
+  const lines: string[] = [];
+  lines.push('Your registration has been restored.');
+  if (params.eventName) lines.push(`Event: ${params.eventName}.`);
+  const text = lines.join(' ');
+
+  await sendMail({ to: params.to, subject, text, html });
+}
+

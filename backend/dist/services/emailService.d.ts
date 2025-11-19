@@ -29,4 +29,9 @@ export declare function sendCancellationDecisionEmail(params: {
     reason?: string | null;
     adminNote?: string | null;
 }): Promise<void>;
+export declare function sendRegistrationRestoredEmail(params: {
+    to: string;
+    userName?: string;
+    eventName?: string;
+}): Promise<void>;
 //# sourceMappingURL=emailService.d.ts.map

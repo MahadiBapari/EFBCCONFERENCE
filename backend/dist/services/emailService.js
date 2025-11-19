@@ -9,6 +9,7 @@ exports.sendAdminCreatedUserEmail = sendAdminCreatedUserEmail;
 exports.sendPasswordResetEmail = sendPasswordResetEmail;
 exports.sendCancellationRequestAdminEmail = sendCancellationRequestAdminEmail;
 exports.sendCancellationDecisionEmail = sendCancellationDecisionEmail;
+exports.sendRegistrationRestoredEmail = sendRegistrationRestoredEmail;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const dotenv_1 = __importDefault(require("dotenv"));
 if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
@@ -401,6 +402,27 @@ async function sendCancellationDecisionEmail(params) {
         lines.push(`Your reason: ${params.reason}.`);
     if (params.adminNote)
         lines.push(`Admin note: ${params.adminNote}.`);
+    const text = lines.join(' ');
+    await sendMail({ to: params.to, subject, text, html });
+}
+async function sendRegistrationRestoredEmail(params) {
+    const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
+    const subject = 'Your registration has been restored';
+    const html = await renderEmailTemplate({
+        subject,
+        heading: 'Registration restored',
+        preheader: 'Your conference registration has been restored.',
+        contentHtml: `
+      <p style="margin:0 0 12px 0;">Hi ${params.userName || 'there'},</p>
+      <p style="margin:0 0 8px 0;">Good news! Your registration${params.eventName ? ` for <strong>${params.eventName}</strong>` : ''} has been restored.</p>
+      <p style="margin:0 0 8px 0;">You are once again listed as an active attendee for this event.</p>
+      <p style="margin:12px 0 0 0;">If you have any questions or need to make changes to your registration, you can log in to the portal at any time.</p>
+    `,
+    });
+    const lines = [];
+    lines.push('Your registration has been restored.');
+    if (params.eventName)
+        lines.push(`Event: ${params.eventName}.`);
     const text = lines.join(' ');
     await sendMail({ to: params.to, subject, text, html });
 }

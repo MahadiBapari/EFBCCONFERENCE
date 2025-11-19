@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { DatabaseService } from '../services/databaseService';
-import { sendCancellationRequestAdminEmail, sendCancellationDecisionEmail } from '../services/emailService';
+import { sendCancellationRequestAdminEmail, sendCancellationDecisionEmail, sendRegistrationRestoredEmail } from '../services/emailService';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
@@ -186,6 +186,22 @@ router.put('/cancel-requests/:id/restore', async (req: Request, res: Response) =
       'UPDATE cancellation_requests SET status="rejected", admin_id=? WHERE id=?',
       [auth.id || null, id]
     );
+    // Notify user that registration has been restored (best-effort)
+    try {
+      const userRows = await db.query('SELECT name, email FROM users WHERE id=? LIMIT 1', [r.user_id]);
+      const eventRows = await db.query('SELECT name FROM events WHERE id=? LIMIT 1', [r.event_id]);
+      const user = userRows[0] || {};
+      const event = eventRows[0] || {};
+      if (user.email) {
+        await sendRegistrationRestoredEmail({
+          to: user.email,
+          userName: user.name,
+          eventName: event.name,
+        });
+      }
+    } catch (err) {
+      console.warn('Failed to send registration restored email:', (err as any)?.message || err);
+    }
     return res.json({ success: true, message: 'Registration restored' });
   } catch {
     return res.status(500).json({ success: false, error: 'Restore failed' });
