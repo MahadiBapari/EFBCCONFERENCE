@@ -254,9 +254,9 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  // const handlePrint = () => {
+  //   window.print();
+  // };
 
   const handleOpenAddAttendee = () => {
     if (!selectedEventId) {
