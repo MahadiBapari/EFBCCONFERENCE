@@ -218,7 +218,8 @@ useEffect(() => {
         wednesdayActivity: r.wednesdayActivity ?? r.category ?? 'None',
         golfHandicap: r.golfHandicap ?? '',
         golfClubPreference: r.golfClubPreference ?? 'Own Clubs',
-        massageTimeSlot: r.massageTimeSlot ?? '8:00 AM- 10:00 AM',
+        clubRentals: r.clubRentals ?? r.club_rentals ?? '',
+        massageTimeSlot: r.massageTimeSlot ?? r.massage_time_slot ?? '',
         // Meals
         tuesdayEarlyReception: r.tuesdayEarlyReception ?? r.tuesday_early_reception ?? '',
         wednesdayReception: r.wednesdayReception ?? 'I will attend',
