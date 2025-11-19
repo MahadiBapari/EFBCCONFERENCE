@@ -4,6 +4,7 @@ import { formatDateShort } from '../../utils/dateUtils';
 import '../../styles/AdminAttendees.css';
 import { RegistrationPreview } from '../../components/RegistrationPreview';
 import { apiClient } from '../../services/apiClient';
+import * as XLSX from 'xlsx';
 
 interface AdminAttendeesProps {
   registrations: Registration[];
@@ -199,98 +200,58 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     }, {});
   }, [groups]);
 
-  const handleExportCSV = () => {
-    const headers = [
-      "Badge Name",
-      "First Name",
-      "Last Name",
-      "Email",
-      "Secondary Email",
-      "Organization",
-      "Job Title",
-      "Address",
-      "Mobile",
-      "Office Phone",
-      "First Time?",
-      "Company Type",
-      "Company Type Other",
-      "Emergency Contact Name",
-      "Emergency Contact Phone",
-      "Activity",
-      "Club Rentals",
-      "Golf Handicap",
-      "Massage Time Slot",
-      "Tuesday Early Reception",
-      "Wednesday Reception",
-      "Thursday Breakfast",
-      "Thursday Luncheon",
-      "Thursday Dinner",
-      "Friday Breakfast",
-      "Dietary Restrictions",
-      "Special Requests",
-      "Spouse First Name",
-      "Spouse Last Name",
-      "Spouse Dinner Ticket",
-      "Payment Method",
-      "Paid?",
-      "Payment ID",
-      "Total Price",
-    ];
-    const escapeCell = (value: any) =>
-      `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const handleExportXlsx = () => {
+    // Build row objects matching the detailed table
+    const rows = filteredRegistrations.map((reg) => ({
+      'Badge Name': reg.badgeName,
+      'First Name': reg.firstName,
+      'Last Name': reg.lastName,
+      'Email': reg.email,
+      'Secondary Email': reg.secondaryEmail,
+      'Organization': reg.organization,
+      'Job Title': reg.jobTitle,
+      'Address': reg.address,
+      'Mobile': reg.mobile,
+      'Office Phone': reg.officePhone,
+      'First Time?': reg.isFirstTimeAttending ? 'Yes' : 'No',
+      'Company Type': reg.companyType,
+      'Company Type Other': reg.companyTypeOther,
+      'Emergency Contact Name': reg.emergencyContactName,
+      'Emergency Contact Phone': reg.emergencyContactPhone,
+      'Activity': reg.wednesdayActivity,
+      'Club Rentals': (reg as any).clubRentals,
+      'Golf Handicap': reg.golfHandicap,
+      'Massage Time Slot': (reg as any).massageTimeSlot,
+      'Tuesday Early Reception': (reg as any).tuesdayEarlyReception,
+      'Wednesday Reception': reg.wednesdayReception,
+      'Thursday Breakfast': reg.thursdayBreakfast,
+      'Thursday Luncheon': reg.thursdayLuncheon,
+      'Thursday Dinner': reg.thursdayDinner,
+      'Friday Breakfast': reg.fridayBreakfast,
+      'Dietary Restrictions': reg.dietaryRestrictions,
+      'Special Requests': (reg as any).specialRequests,
+      'Spouse First Name': reg.spouseFirstName,
+      'Spouse Last Name': reg.spouseLastName,
+      'Spouse Dinner Ticket': reg.spouseDinnerTicket ? 'Yes' : 'No',
+      'Payment Method': reg.paymentMethod,
+      'Paid?': (reg as any).paid ? 'Yes' : 'No',
+      'Payment ID': (reg as any).squarePaymentId || '',
+      'Total Price': reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : '',
+    }));
 
-    const rows = filteredRegistrations.map(reg =>
-      [
-        escapeCell(reg.badgeName),
-        escapeCell(reg.firstName),
-        escapeCell(reg.lastName),
-        escapeCell(reg.email),
-        escapeCell(reg.secondaryEmail),
-        escapeCell(reg.organization),
-        escapeCell(reg.jobTitle),
-        escapeCell(reg.address),
-        escapeCell(reg.mobile),
-        escapeCell(reg.officePhone),
-        escapeCell(reg.isFirstTimeAttending ? 'Yes' : 'No'),
-        escapeCell(reg.companyType),
-        escapeCell(reg.companyTypeOther),
-        escapeCell(reg.emergencyContactName),
-        escapeCell(reg.emergencyContactPhone),
-        escapeCell(reg.wednesdayActivity),
-        escapeCell((reg as any).clubRentals),
-        escapeCell(reg.golfHandicap),
-        escapeCell((reg as any).massageTimeSlot),
-        escapeCell((reg as any).tuesdayEarlyReception),
-        escapeCell(reg.wednesdayReception),
-        escapeCell(reg.thursdayBreakfast),
-        escapeCell(reg.thursdayLuncheon),
-        escapeCell(reg.thursdayDinner),
-        escapeCell(reg.fridayBreakfast),
-        escapeCell(reg.dietaryRestrictions),
-        escapeCell((reg as any).specialRequests),
-        escapeCell(reg.spouseFirstName),
-        escapeCell(reg.spouseLastName),
-        escapeCell(reg.spouseDinnerTicket ? 'Yes' : 'No'),
-        escapeCell(reg.paymentMethod),
-        escapeCell((reg as any).paid ? 'Yes' : 'No'),
-        escapeCell((reg as any).squarePaymentId || ''),
-        escapeCell(reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''),
-      ].join(',')
-    );
-
-    const csvContent = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      // Excel opens CSV files; using .xlsx extension for convenience
-      link.setAttribute("download", "attendees.xlsx");
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Attendees');
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = 'attendees.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handlePrint = () => {
@@ -357,7 +318,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
           >
             {showDetailTable ? 'Hide Table' : 'Table'}
           </button>
-          <button className="btn btn-secondary" onClick={handleExportCSV}>Export CSV</button>
+          <button className="btn btn-secondary" onClick={handleExportXlsx}>Export XLSX</button>
           <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button>
         </div>
       </div>
