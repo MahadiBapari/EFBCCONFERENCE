@@ -79,7 +79,10 @@ export const AdminCustomization: React.FC = () => {
           <h1>Email Customization</h1>
         </div>
         <div className="card">
-          <div className="loading-spinner">Loading...</div>
+          <div className="loading-spinner">
+            <div className="loading-spinner-circle" />
+            <span>Loading email customization…</span>
+          </div>
         </div>
       </div>
     );
