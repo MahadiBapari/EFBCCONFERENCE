@@ -405,146 +405,146 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       )}
       
       {filteredRegistrations.length > 0 ? (
-        <div className="table-wrapper printable-area">
-          <table className="table">
-            <thead>
-              <tr>
-                <th className="th-checkbox no-print">
-                  <input 
-                    type="checkbox" 
-                    checked={isAllSelected}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                    aria-label="Select all attendees"
-                  />
-                </th>
-                <th>Name</th><th>Email</th><th>Category</th><th className="no-print">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRegistrations.map(reg => (
-                <tr key={reg.id}>
-                  <td className="td-checkbox no-print">
+        showDetailTable ? (
+          // Full-page detailed table, based on selected event
+          <div className="table-wrapper detailed-table-wrapper" style={{ marginTop: '1.5rem', overflowX: 'auto' }}>
+            <table className="table detailed-table">
+              <thead>
+                <tr>
+                  <th>Badge Name</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
+                  <th>Email</th>
+                  <th>Secondary Email</th>
+                  <th>Organization</th>
+                  <th>Job Title</th>
+                  <th>Address</th>
+                  <th>Mobile</th>
+                  <th>Office Phone</th>
+                  <th>First Time?</th>
+                  <th>Company Type</th>
+                  <th>Company Type Other</th>
+                  <th>Emergency Contact Name</th>
+                  <th>Emergency Contact Phone</th>
+                  <th>Activity</th>
+                  <th>Club Rentals</th>
+                  <th>Golf Handicap</th>
+                  <th>Massage Time Slot</th>
+                  <th>Tuesday Early Reception</th>
+                  <th>Wednesday Reception</th>
+                  <th>Thursday Breakfast</th>
+                  <th>Thursday Luncheon</th>
+                  <th>Thursday Dinner</th>
+                  <th>Friday Breakfast</th>
+                  <th>Dietary Restrictions</th>
+                  <th>Special Requests</th>
+                  <th>Spouse First Name</th>
+                  <th>Spouse Last Name</th>
+                  <th>Spouse Dinner Ticket</th>
+                  <th>Payment Method</th>
+                  <th>Paid?</th>
+                  <th>Payment ID</th>
+                  <th>Total Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRegistrations.map(reg => (
+                  <tr key={`detail-${reg.id}`}>
+                    <td>{reg.badgeName}</td>
+                    <td>{reg.firstName}</td>
+                    <td>{reg.lastName}</td>
+                    <td>{reg.email}</td>
+                    <td>{reg.secondaryEmail}</td>
+                    <td>{reg.organization}</td>
+                    <td>{reg.jobTitle}</td>
+                    <td>{reg.address}</td>
+                    <td>{reg.mobile}</td>
+                    <td>{reg.officePhone}</td>
+                    <td>{reg.isFirstTimeAttending ? 'Yes' : 'No'}</td>
+                    <td>{reg.companyType}</td>
+                    <td>{reg.companyTypeOther}</td>
+                    <td>{reg.emergencyContactName}</td>
+                    <td>{reg.emergencyContactPhone}</td>
+                    <td>{reg.wednesdayActivity}</td>
+                    <td>{(reg as any).clubRentals}</td>
+                    <td>{reg.golfHandicap}</td>
+                    <td>{(reg as any).massageTimeSlot}</td>
+                    <td>{(reg as any).tuesdayEarlyReception}</td>
+                    <td>{reg.wednesdayReception}</td>
+                    <td>{reg.thursdayBreakfast}</td>
+                    <td>{reg.thursdayLuncheon}</td>
+                    <td>{reg.thursdayDinner}</td>
+                    <td>{reg.fridayBreakfast}</td>
+                    <td>{reg.dietaryRestrictions}</td>
+                    <td>{(reg as any).specialRequests}</td>
+                    <td>{reg.spouseFirstName}</td>
+                    <td>{reg.spouseLastName}</td>
+                    <td>{reg.spouseDinnerTicket ? 'Yes' : 'No'}</td>
+                    <td>{reg.paymentMethod}</td>
+                    <td>{(reg as any).paid ? 'Yes' : 'No'}</td>
+                    <td>{(reg as any).squarePaymentId || ''}</td>
+                    <td>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="table-wrapper printable-area">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th className="th-checkbox no-print">
                     <input 
                       type="checkbox" 
-                      checked={selectedRegIds.includes(reg.id)}
-                      onChange={(e) => handleSelectOne(reg.id, e.target.checked)}
-                      aria-label={`Select ${reg.name}`}
+                      checked={isAllSelected}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      aria-label="Select all attendees"
                     />
-                  </td>
-                  <td>{reg.name}</td>
-                  <td>{reg.email}</td>
-                  <td>{reg.category}</td>
-                  <td className="no-print">
-                    <div className="action-buttons">
-                      <button 
-                        className="btn btn-secondary btn-sm" 
-                        onClick={() => setPreviewRegId(reg.id)}
-                        title="Details"
-                      >
-                        🔍 Details
-                      </button>
-                      <button 
-                        className="btn btn-primary btn-sm" 
-                        onClick={() => onEditRegistration(reg.id)}
-                        title="Edit"
-                      >
-                        ✏️ Edit
-                      </button>
-                    </div>
-                  </td>
+                  </th>
+                  <th>Name</th><th>Email</th><th>Category</th><th className="no-print">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredRegistrations.map(reg => (
+                  <tr key={reg.id}>
+                    <td className="td-checkbox no-print">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedRegIds.includes(reg.id)}
+                        onChange={(e) => handleSelectOne(reg.id, e.target.checked)}
+                        aria-label={`Select ${reg.name}`}
+                      />
+                    </td>
+                    <td>{reg.name}</td>
+                    <td>{reg.email}</td>
+                    <td>{reg.category}</td>
+                    <td className="no-print">
+                      <div className="action-buttons">
+                        <button 
+                          className="btn btn-secondary btn-sm" 
+                          onClick={() => setPreviewRegId(reg.id)}
+                          title="Details"
+                        >
+                          🔍 Details
+                        </button>
+                        <button 
+                          className="btn btn-primary btn-sm" 
+                          onClick={() => onEditRegistration(reg.id)}
+                          title="Edit"
+                        >
+                          ✏️ Edit
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
       ) : (
         <p>No attendees found for this filter.</p>
-      )}
-
-      {/* Detailed table view for selected event, similar to RegistrationPreview */}
-      {showDetailTable && filteredRegistrations.length > 0 && (
-        <div className="table-wrapper detailed-table-wrapper" style={{ marginTop: '2rem', overflowX: 'auto' }}>
-          <table className="table detailed-table">
-            <thead>
-              <tr>
-                <th>Badge Name</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Email</th>
-                <th>Secondary Email</th>
-                <th>Organization</th>
-                <th>Job Title</th>
-                <th>Address</th>
-                <th>Mobile</th>
-                <th>Office Phone</th>
-                <th>First Time?</th>
-                <th>Company Type</th>
-                <th>Company Type Other</th>
-                <th>Emergency Contact Name</th>
-                <th>Emergency Contact Phone</th>
-                <th>Activity</th>
-                <th>Club Rentals</th>
-                <th>Golf Handicap</th>
-                <th>Massage Time Slot</th>
-                <th>Tuesday Early Reception</th>
-                <th>Wednesday Reception</th>
-                <th>Thursday Breakfast</th>
-                <th>Thursday Luncheon</th>
-                <th>Thursday Dinner</th>
-                <th>Friday Breakfast</th>
-                <th>Dietary Restrictions</th>
-                <th>Special Requests</th>
-                <th>Spouse First Name</th>
-                <th>Spouse Last Name</th>
-                <th>Spouse Dinner Ticket</th>
-                <th>Payment Method</th>
-                <th>Paid?</th>
-                <th>Payment ID</th>
-                <th>Total Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRegistrations.map(reg => (
-                <tr key={`detail-${reg.id}`}>
-                  <td>{reg.badgeName}</td>
-                  <td>{reg.firstName}</td>
-                  <td>{reg.lastName}</td>
-                  <td>{reg.email}</td>
-                  <td>{reg.secondaryEmail}</td>
-                  <td>{reg.organization}</td>
-                  <td>{reg.jobTitle}</td>
-                  <td>{reg.address}</td>
-                  <td>{reg.mobile}</td>
-                  <td>{reg.officePhone}</td>
-                  <td>{reg.isFirstTimeAttending ? 'Yes' : 'No'}</td>
-                  <td>{reg.companyType}</td>
-                  <td>{reg.companyTypeOther}</td>
-                  <td>{reg.emergencyContactName}</td>
-                  <td>{reg.emergencyContactPhone}</td>
-                  <td>{reg.wednesdayActivity}</td>
-                  <td>{(reg as any).clubRentals}</td>
-                  <td>{reg.golfHandicap}</td>
-                  <td>{(reg as any).massageTimeSlot}</td>
-                  <td>{(reg as any).tuesdayEarlyReception}</td>
-                  <td>{reg.wednesdayReception}</td>
-                  <td>{reg.thursdayBreakfast}</td>
-                  <td>{reg.thursdayLuncheon}</td>
-                  <td>{reg.thursdayDinner}</td>
-                  <td>{reg.fridayBreakfast}</td>
-                  <td>{reg.dietaryRestrictions}</td>
-                  <td>{(reg as any).specialRequests}</td>
-                  <td>{reg.spouseFirstName}</td>
-                  <td>{reg.spouseLastName}</td>
-                  <td>{reg.spouseDinnerTicket ? 'Yes' : 'No'}</td>
-                  <td>{reg.paymentMethod}</td>
-                  <td>{(reg as any).paid ? 'Yes' : 'No'}</td>
-                  <td>{(reg as any).squarePaymentId || ''}</td>
-                  <td>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       )}
 
       {previewRegId && (() => {
