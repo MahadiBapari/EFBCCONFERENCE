@@ -319,7 +319,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
             {showDetailTable ? 'Hide Table' : 'Table'}
           </button>
           <button className="btn btn-secondary" onClick={handleExportXlsx}>Export XLSX</button>
-          <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button>
+          {/* <button className="btn btn-secondary" onClick={handlePrint}>Print / PDF</button> */}
         </div>
       </div>
       <div className="category-tabs">
