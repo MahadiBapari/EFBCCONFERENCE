@@ -95,10 +95,28 @@ const App: React.FC = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [alertState, setAlertState] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: '',
+  });
 
   useEffect(() => {
     document.body.className = `${theme}-theme`;
   }, [theme]);
+
+  // Override default window.alert to use a centered modal
+  useEffect(() => {
+    const originalAlert = window.alert;
+    (window as any).alert = (msg?: any) => {
+      setAlertState({
+        open: true,
+        message: typeof msg === 'string' ? msg : String(msg),
+      });
+    };
+    return () => {
+      window.alert = originalAlert;
+    };
+  }, []);
 
   // Loader shared so pages can trigger refresh after CRUD
   const loadEventsFromApi = async () => {
@@ -728,6 +746,23 @@ const handleLogout = () => {
                 disabled={cancelSubmitting}
               >
                 {cancelSubmitting ? 'Sending...' : 'Send Request'}
+              </button>
+            </div>
+          </Modal>
+        )}
+        {alertState.open && (
+          <Modal
+            title="Notification"
+            onClose={() => setAlertState({ open: false, message: '' })}
+          >
+            <p>{alertState.message}</p>
+            <div className="modal-footer-actions" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setAlertState({ open: false, message: '' })}
+              >
+                OK
               </button>
             </div>
           </Modal>
