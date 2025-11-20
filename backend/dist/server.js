@@ -450,13 +450,20 @@ app.get('/api/demo/setup', async (req, res) => {
             date: '2024-04-22',
             activities: JSON.stringify(['Golf', 'Fishing', 'Networking', 'Tennis', 'Swimming']),
             location: 'Disney\'s Yacht & Beach Club Resorts, Orlando, Florida',
-            description: 'Annual East Florida Business Conference featuring networking, education, and recreational activities.'
+            description: JSON.stringify([
+                'Annual East Florida Business Conference featuring networking, education, and recreational activities.',
+            ]),
         };
         await databaseService.query('INSERT IGNORE INTO events (name, date, activities, location, description) VALUES (?, ?, ?, ?, ?)', [demoEvent.name, demoEvent.date, demoEvent.activities, demoEvent.location, demoEvent.description]);
+        const demoEventRows = await databaseService.query('SELECT id FROM events WHERE name = ? ORDER BY id ASC LIMIT 1', [demoEvent.name]);
+        const demoEventId = demoEventRows[0]?.id;
+        if (!demoEventId) {
+            throw new Error('Demo event could not be found after insert.');
+        }
         const demoGroups = [
-            { eventId: 1, category: 'Networking', name: 'Networking Group 1' },
-            { eventId: 1, category: 'Golf', name: 'Golf Group 1' },
-            { eventId: 1, category: 'Fishing', name: 'Fishing Group 1' }
+            { eventId: demoEventId, category: 'Networking', name: 'Networking Group 1' },
+            { eventId: demoEventId, category: 'Golf', name: 'Golf Group 1' },
+            { eventId: demoEventId, category: 'Fishing', name: 'Fishing Group 1' }
         ];
         for (const group of demoGroups) {
             await databaseService.query('INSERT IGNORE INTO `groups` (eventId, category, name) VALUES (?, ?, ?)', [group.eventId, group.category, group.name]);
