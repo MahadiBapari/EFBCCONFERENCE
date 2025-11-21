@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MOCK_REGISTRATIONS, MOCK_GROUPS } from './data/mockData';
+import { MOCK_REGISTRATIONS } from './data/mockData';
 import { LoginPage } from './pages/authentication/login';
 import { RegistrationPage } from './pages/authentication/registration';
 import ResetPasswordPage from './pages/authentication/resetPassword';
