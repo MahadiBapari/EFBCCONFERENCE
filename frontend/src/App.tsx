@@ -19,7 +19,7 @@ import { AdminCustomization, EmailCustomization } from './pages/admin/adminCusto
 import { EventDetailsPage } from './pages/admin/eventsDetails';
 import { Event, Registration, Group, User, RegisterForm } from './types';
 import apiClient, { authApi } from './services/apiClient';
-import { cancelApi } from './services/apiClient';
+import { cancelApi, groupsApi } from './services/apiClient';
 import { AdminCancellations } from './pages/admin/adminCancellations';
 
 const AdminSecurity: React.FC = () => {
@@ -79,7 +79,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<string>('');
   const [events, setEvents] = useState<Event[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>(MOCK_REGISTRATIONS);
-  const [groups, setGroups] = useState<Group[]>(MOCK_GROUPS);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [viewingEventId, setViewingEventId] = useState<number | null>(null);
   const [user, setUser] = useState<User>({ id: 999, name: "Current User", email: "current.user@example.com" });
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -180,30 +180,33 @@ const App: React.FC = () => {
 useEffect(() => {
   const init = async () => {
     const token = localStorage.getItem('token');
-    if (!token) {
-      setAuthInitializing(false);
-      return;
-    }
 
     try {
-      const res = await authApi.me();
-      const me = (res as any).data || {};
-      if (me.role) {
-        setRole(me.role);
-        setUser({
-          id: me.id || 999,
-          name: me.name || 'Current User',
-          email: me.email || 'current.user@example.com',
-          role: me.role,
-        });
-        setView(me.role === 'admin' ? 'events' : 'dashboard');
-        await Promise.all([loadEventsFromApi(), loadRegistrationsFromApi()]);
+      if (token) {
+        const res = await authApi.me();
+        const me = (res as any).data || {};
+        if (me.role) {
+          setRole(me.role);
+          setUser({
+            id: me.id || 999,
+            name: me.name || 'Current User',
+            email: me.email || 'current.user@example.com',
+            role: me.role,
+          });
+          setView(me.role === 'admin' ? 'events' : 'dashboard');
+        } else {
+          localStorage.removeItem('token');
+        }
       } else {
-        // If token is invalid or user not found, clear it
+        // no token, stay on auth screens
+      }
+
+      // Load shared data regardless of auth so admin/user see latest lists after login
+      await Promise.all([loadEventsFromApi(), loadRegistrationsFromApi(), loadGroupsFromApi()]);
+    } catch (e) {
+      if (token) {
         localStorage.removeItem('token');
       }
-    } catch (e) {
-      localStorage.removeItem('token');
     } finally {
       setAuthInitializing(false);
     }
@@ -300,6 +303,16 @@ useEffect(() => {
       console.warn('Failed to load cancellation requests:', err);
     } finally {
       setCancellationsLoading(false);
+    }
+  };
+
+  const loadGroupsFromApi = async () => {
+    try {
+      const res: any = await groupsApi.list({ page: 1, limit: 500 });
+      const data = (res as any).data || res?.data || [];
+      setGroups(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load groups from API:', err);
     }
   };
 
@@ -513,14 +526,33 @@ const handleLogout = () => {
 
   // Removed unused handleDeleteEvent to satisfy CI lint rules
 
-  const handleDeleteGroup = (groupId: number) => {
-    if (window.confirm("Are you sure you want to delete this group? All members will become unassigned.")) {
+  const handleDeleteGroup = async (groupId: number) => {
+    if (!window.confirm("Are you sure you want to delete this group? All members will become unassigned.")) {
+      return;
+    }
+    try {
+      await groupsApi.remove(groupId);
       setGroups(prev => prev.filter(g => g.id !== groupId));
+    } catch (e) {
+      console.error('Failed to delete group', e);
+      alert('Failed to delete group. Please try again.');
     }
   };
 
-  const handleCreateGroup = (groupData: Omit<Group, 'id'>) => {
-    setGroups(prev => [...prev, { ...groupData, id: Date.now() }]);
+  const handleCreateGroup = async (groupData: Omit<Group, 'id'>) => {
+    try {
+      const res: any = await groupsApi.create(groupData);
+      const created = (res as any).data || res?.data;
+      if (created) {
+        setGroups(prev => [...prev, created as Group]);
+      } else {
+        // Fallback: reload from API
+        await loadGroupsFromApi();
+      }
+    } catch (e) {
+      console.error('Failed to create group', e);
+      alert('Failed to create group. Please try again.');
+    }
   };
   
   const handleDeleteRegistrations = (regIds: number[]) => {

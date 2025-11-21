@@ -137,3 +137,25 @@ export const cancelApi = {
     return apiClient.get('/my-cancel-requests');
   }
 };
+
+// Groups helpers
+export const groupsApi = {
+  async list(params?: { eventId?: number; category?: string; page?: number; limit?: number }): Promise<any> {
+    const searchParams = new URLSearchParams();
+    if (params?.eventId) searchParams.append('eventId', String(params.eventId));
+    if (params?.category) searchParams.append('category', params.category);
+    searchParams.append('page', String(params?.page ?? 1));
+    searchParams.append('limit', String(params?.limit ?? 500));
+    const qs = searchParams.toString();
+    return apiClient.get(`/groups${qs ? `?${qs}` : ''}`);
+  },
+  async create(payload: { eventId: number; category: string; name: string; members?: number[] }): Promise<any> {
+    return apiClient.post('/groups', payload);
+  },
+  async remove(id: number): Promise<any> {
+    return apiClient.delete(`/groups/${id}`);
+  },
+  async update(id: number, payload: { eventId?: number; category?: string; name?: string; members?: number[] }): Promise<any> {
+    return apiClient.put(`/groups/${id}`, payload);
+  },
+};

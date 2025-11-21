@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Registration, Group, Event } from '../../types';
 import { formatDateShort } from '../../utils/dateUtils';
 import '../../styles/AdminGroups.css';
+import { groupsApi } from '../../services/apiClient';
 
 interface AdminGroupsProps {
   registrations: Registration[];
@@ -75,9 +76,17 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     setEditingGroup({ id: null, name: "" });
   };
 
+  const persistMembers = async (groupId: number, members: number[]) => {
+    try {
+      await groupsApi.update(groupId, { members });
+    } catch (err) {
+      console.error('Failed to persist group members', err);
+    }
+  };
+
   const handleAssignMember = (groupId: number, regId: number) => {
     if (!groupId) return;
-    setGroups(g => g.map(group => {
+    const updated = groups.map(group => {
       if (group.id === groupId) {
         if (group.members.includes(regId)) return group;
         return { ...group, members: [...group.members, regId] };
@@ -86,21 +95,31 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
         return { ...group, members: group.members.filter(m => m !== regId) };
       }
       return group;
-    }));
+    });
+    setGroups(updated);
+    const changed = updated.find(g => g.id === groupId);
+    if (changed) {
+      persistMembers(changed.id, changed.members);
+    }
   };
   
   const handleRemoveMember = (groupId: number, memberId: number) => {
-    setGroups(g => g.map(group => {
+    const updated = groups.map(group => {
       if (group.id === groupId) {
         return { ...group, members: group.members.filter(m => m !== memberId) };
       }
       return group;
-    }));
+    });
+    setGroups(updated);
+    const changed = updated.find(g => g.id === groupId);
+    if (changed) {
+      persistMembers(changed.id, changed.members);
+    }
   };
   
   const handleMoveMember = (memberId: number, sourceGroupId: number, targetGroupId: number) => {
     if (!targetGroupId || sourceGroupId === targetGroupId) return;
-    setGroups(g => g.map(group => {
+    const updated = groups.map(group => {
       if (group.id === sourceGroupId) {
         return { ...group, members: group.members.filter(m => m !== memberId) };
       }
@@ -108,7 +127,12 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
         return { ...group, members: [...group.members, memberId] };
       }
       return group;
-    }));
+    });
+    setGroups(updated);
+    const target = updated.find(g => g.id === targetGroupId);
+    if (target) {
+      persistMembers(target.id, target.members);
+    }
   };
 
   // Drag and Drop Handlers for reordering members
@@ -123,7 +147,7 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     const sourceIndex = draggedItem.index;
     if (sourceIndex === targetIndex) return;
 
-    setGroups(currentGroups => currentGroups.map(group => {
+    const updated = groups.map(group => {
       if (group.id === targetGroupId) {
         const membersCopy = [...group.members];
         const [removedItem] = membersCopy.splice(sourceIndex, 1);
@@ -131,7 +155,12 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
         return { ...group, members: membersCopy };
       }
       return group;
-    }));
+    });
+    setGroups(updated);
+    const changed = updated.find(g => g.id === targetGroupId);
+    if (changed) {
+      persistMembers(changed.id, changed.members);
+    }
   };
 
   const handleDragEnd = () => {
