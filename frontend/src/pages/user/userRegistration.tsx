@@ -375,7 +375,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         return;
       }
       const s = document.createElement('script');
-      s.src = 'https://sandbox.web.squarecdn.com/v1/square.js';
+      const squareSdkUrl =
+        process.env.NODE_ENV === 'production'
+          ? 'https://web.squarecdn.com/v1/square.js'          // PRODUCTION
+          : 'https://sandbox.web.squarecdn.com/v1/square.js'; // SANDBOX
+
+      s.src = squareSdkUrl;
       s.async = true;
       s.setAttribute('data-square-sdk', 'true');
       s.onload = () => { resolve(); };
