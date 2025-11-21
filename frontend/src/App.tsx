@@ -16,7 +16,7 @@ import { AdminEventForm } from './pages/admin/adminEventForm';
 import { AdminAttendees } from './pages/admin/adminAttendees';
 import { AdminGroups } from './pages/admin/adminGroups';
 import { AdminUsers } from './pages/admin/adminUsers';
-import { AdminCustomization } from './pages/admin/adminCustomization';
+import { AdminCustomization, EmailCustomization } from './pages/admin/adminCustomization';
 import { EventDetailsPage } from './pages/admin/eventsDetails';
 import { Event, Registration, Group, User, RegisterForm } from './types';
 import apiClient, { authApi } from './services/apiClient';
@@ -102,6 +102,7 @@ const App: React.FC = () => {
   const [cancellationPendingRows, setCancellationPendingRows] = useState<any[]>([]);
   const [cancellationApprovedRows, setCancellationApprovedRows] = useState<any[]>([]);
   const [cancellationsLoading, setCancellationsLoading] = useState<boolean>(false);
+  const [emailCustomizationCache, setEmailCustomizationCache] = useState<EmailCustomization | null>(null);
   const [adminUsersCache, setAdminUsersCache] = useState<User[]>([]);
   const [adminUsersPaginationCache, setAdminUsersPaginationCache] = useState<any | null>(null);
 
@@ -665,7 +666,12 @@ const handleLogout = () => {
             />
           );
         case 'customization':
-          return <AdminCustomization />;
+          return (
+            <AdminCustomization
+              initialCustomization={emailCustomizationCache}
+              onCacheUpdate={(c) => setEmailCustomizationCache(c)}
+            />
+          );
         case 'editRegistration':
           const editingReg = registrations.find(r => r.id === adminEditingRegistrationId);
           if (!editingReg) {

@@ -127,7 +127,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [currentPage, debouncedSearchQuery, usersPerPage]);
+  }, [currentPage, debouncedSearchQuery, usersPerPage, onCacheUpdate, pagination]);
 
   useEffect(() => {
     loadUsers();

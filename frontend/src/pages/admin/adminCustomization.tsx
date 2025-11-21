@@ -1,49 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../../styles/AdminCustomization.css';
 import apiClient from '../../services/apiClient';
 
-interface EmailCustomization {
+export interface EmailCustomization {
   id: number | null;
   headerText: string;
   footerText: string;
   updatedAt: string | null;
 }
 
-export const AdminCustomization: React.FC = () => {
-  const [customization, setCustomization] = useState<EmailCustomization>({
-    id: null,
-    headerText: '',
-    footerText: '',
-    updatedAt: null,
-  });
-  const [loading, setLoading] = useState(true);
+interface AdminCustomizationProps {
+  initialCustomization?: EmailCustomization | null;
+  onCacheUpdate?: (customization: EmailCustomization) => void;
+}
+
+export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
+  initialCustomization,
+  onCacheUpdate,
+}) => {
+  const [customization, setCustomization] = useState<EmailCustomization>(
+    initialCustomization || {
+      id: null,
+      headerText: '',
+      footerText: '',
+      updatedAt: null,
+    }
+  );
+  const [loading, setLoading] = useState(!initialCustomization);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadCustomization();
-  }, []);
-
-  const loadCustomization = async () => {
+  const loadCustomization = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await apiClient.get('/customization/email') as any;
       if (response.success && response.data) {
-        setCustomization({
+        const next: EmailCustomization = {
           id: response.data.id,
           headerText: response.data.headerText || '',
           footerText: response.data.footerText || '',
           updatedAt: response.data.updatedAt,
-        });
+        };
+        setCustomization(next);
+        if (onCacheUpdate) onCacheUpdate(next);
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to load email customization');
     } finally {
       setLoading(false);
     }
-  };
+  }, [onCacheUpdate]);
+
+  useEffect(() => {
+    if (initialCustomization) {
+      setCustomization(initialCustomization);
+      setLoading(false);
+    } else {
+      loadCustomization();
+    }
+  }, [initialCustomization, loadCustomization]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
