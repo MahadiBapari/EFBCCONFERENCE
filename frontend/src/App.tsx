@@ -99,6 +99,11 @@ const App: React.FC = () => {
     open: false,
     message: '',
   });
+  const [cancellationPendingRows, setCancellationPendingRows] = useState<any[]>([]);
+  const [cancellationApprovedRows, setCancellationApprovedRows] = useState<any[]>([]);
+  const [cancellationsLoading, setCancellationsLoading] = useState<boolean>(false);
+  const [adminUsersCache, setAdminUsersCache] = useState<User[]>([]);
+  const [adminUsersPaginationCache, setAdminUsersPaginationCache] = useState<any | null>(null);
 
   useEffect(() => {
     document.body.className = `${theme}-theme`;
@@ -257,6 +262,22 @@ useEffect(() => {
       }
     } catch (err) {
       console.error('Failed to load registrations from API:', err);
+    }
+  };
+
+  const loadCancellationRequestsFromApi = async () => {
+    setCancellationsLoading(true);
+    try {
+      const resPending: any = await cancelApi.list('pending');
+      const dataPending = (resPending as any).data || resPending?.data || [];
+      setCancellationPendingRows(Array.isArray(dataPending) ? dataPending : []);
+      const resApproved: any = await cancelApi.list('approved');
+      const dataApproved = (resApproved as any).data || resApproved?.data || [];
+      setCancellationApprovedRows(Array.isArray(dataApproved) ? dataApproved : []);
+    } catch (err) {
+      console.warn('Failed to load cancellation requests:', err);
+    } finally {
+      setCancellationsLoading(false);
     }
   };
 
@@ -526,6 +547,9 @@ const handleLogout = () => {
     setViewingEventId(null);
     setView(newView);
     setMobileSidebarOpen(false);
+    if (role === 'admin' && newView === 'cancellations') {
+      loadCancellationRequestsFromApi();
+    }
   };
 
   const renderView = () => {
@@ -620,9 +644,26 @@ const handleLogout = () => {
             handleCreateGroup={handleCreateGroup}
           />;
         case 'cancellations':
-          return <AdminCancellations onChanged={loadRegistrationsFromApi} />;
+          return (
+            <AdminCancellations
+              pendingRows={cancellationPendingRows}
+              approvedRows={cancellationApprovedRows}
+              loading={cancellationsLoading}
+              onReload={loadCancellationRequestsFromApi}
+              onChanged={loadRegistrationsFromApi}
+            />
+          );
         case 'allUsers':
-          return <AdminUsers />;
+          return (
+            <AdminUsers
+              initialUsers={adminUsersCache}
+              initialPagination={adminUsersPaginationCache}
+              onCacheUpdate={(users, pagination) => {
+                setAdminUsersCache(users);
+                setAdminUsersPaginationCache(pagination);
+              }}
+            />
+          );
         case 'customization':
           return <AdminCustomization />;
         case 'editRegistration':

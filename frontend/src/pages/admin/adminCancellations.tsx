@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { cancelApi } from '../../services/apiClient';
 import '../../styles/AdminCancellations.css';
 
@@ -16,40 +16,31 @@ type CancelRow = {
   event_name?: string;
 };
 
-export const AdminCancellations: React.FC<{ onChanged?: () => void | Promise<void> }> = ({ onChanged }) => {
-  const [pendingRows, setPendingRows] = useState<CancelRow[]>([]);
-  const [approvedRows, setApprovedRows] = useState<CancelRow[]>([]);
-  const [loading, setLoading] = useState(true);
+interface AdminCancellationsProps {
+  pendingRows: CancelRow[];
+  approvedRows: CancelRow[];
+  loading: boolean;
+  onReload: () => Promise<void> | void;
+  onChanged?: () => void | Promise<void>;
+}
+
+export const AdminCancellations: React.FC<AdminCancellationsProps> = ({ pendingRows, approvedRows, loading, onReload, onChanged }) => {
   const [note, setNote] = useState<Record<number,string>>({});
   const [activeTab, setActiveTab] = useState<'requests' | 'cancelled'>('requests');
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const resPending: any = await cancelApi.list('pending');
-      const dataPending = (resPending as any).data || resPending?.data || [];
-      setPendingRows(dataPending);
-      const resApproved: any = await cancelApi.list('approved');
-      const dataApproved = (resApproved as any).data || resApproved?.data || [];
-      setApprovedRows(dataApproved);
-    } finally { setLoading(false); }
-  };
-
-  useEffect(() => { load(); }, []);
-
   const approve = async (id: number) => {
     await cancelApi.approve(id, note[id]);
-    await load();
+    await onReload();
     if (onChanged) await onChanged();
   };
   const reject = async (id: number) => {
     await cancelApi.reject(id, note[id]);
-    await load();
+    await onReload();
     if (onChanged) await onChanged();
   };
   const restore = async (id: number) => {
     await cancelApi.restore(id);
-    await load();
+    await onReload();
     if (onChanged) await onChanged();
   };
 

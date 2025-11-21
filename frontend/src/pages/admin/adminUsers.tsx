@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import '../../styles/AdminUsers.css';
 import { apiClient, usersApi } from '../../services/apiClient';
 
-interface User {
+export interface User {
   id: number;
   name: string;
   email: string;
@@ -11,7 +11,7 @@ interface User {
   createdAt?: string;
 }
 
-interface PaginationInfo {
+export interface PaginationInfo {
   page: number;
   limit: number;
   total: number;
@@ -25,20 +25,33 @@ interface UsersApiResponse {
   error?: string;
 }
 
-export const AdminUsers: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [initialLoading, setInitialLoading] = useState(true);
+interface AdminUsersProps {
+  initialUsers?: User[];
+  initialPagination?: PaginationInfo | null;
+  onCacheUpdate?: (users: User[], pagination: PaginationInfo | null) => void;
+}
+
+export const AdminUsers: React.FC<AdminUsersProps> = ({
+  initialUsers,
+  initialPagination,
+  onCacheUpdate,
+}) => {
+  const hasInitial = !!(initialUsers && initialUsers.length > 0);
+  const [users, setUsers] = useState<User[]>(initialUsers || []);
+  const [initialLoading, setInitialLoading] = useState(!hasInitial);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    page: 1,
-    limit: 5,
-    total: 0,
-    totalPages: 0
-  });
+  const [pagination, setPagination] = useState<PaginationInfo>(
+    initialPagination || {
+      page: 1,
+      limit: 5,
+      total: 0,
+      totalPages: 0,
+    }
+  );
   const usersPerPage = 30; // For testing, will be 30 later
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -96,9 +109,14 @@ export const AdminUsers: React.FC = () => {
       
       const response = await apiClient.get<User[]>(`/users?${params.toString()}`) as UsersApiResponse;
       if (response.success && response.data) {
-        setUsers(Array.isArray(response.data) ? response.data : []);
+        const newUsers = Array.isArray(response.data) ? response.data : [];
+        setUsers(newUsers);
+        const newPagination = response.pagination || pagination;
         if (response.pagination) {
           setPagination(response.pagination);
+        }
+        if (onCacheUpdate) {
+          onCacheUpdate(newUsers, newPagination);
         }
       } else {
         setError('Failed to load users');
