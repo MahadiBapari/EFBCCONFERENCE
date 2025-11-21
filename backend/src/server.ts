@@ -150,18 +150,21 @@ const createTables = async () => {
     await migrateEventStartDate();
     await migrateEmailCustomizations();
 
-    // Groups table
+    // Groups table (basic definition; columns may be extended by migrations)
     await databaseService.query(`
       CREATE TABLE IF NOT EXISTS \`groups\` (
         id INT PRIMARY KEY AUTO_INCREMENT,
         eventId INT NOT NULL,
         category VARCHAR(100) NOT NULL,
         name VARCHAR(255) NOT NULL,
+        members TEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (eventId) REFERENCES events(id) ON DELETE CASCADE
       )
     `);
+
+    await migrateGroupsMembersColumn();
 
     console.log('Database tables created/verified');
   } catch (error) {
@@ -194,6 +197,27 @@ const migrateUsersEmailVerification = async (): Promise<void> => {
     }
   } catch (e) {
     console.warn('Skipping users email verification migration:', e);
+  }
+};
+
+// Ensure groups.members column exists
+const migrateGroupsMembersColumn = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    const cols: any[] = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+      [dbName, 'groups']
+    );
+    const hasMembers = cols.some((c: any) => c.COLUMN_NAME === 'members');
+    if (!hasMembers) {
+      await databaseService.query('ALTER TABLE `groups` ADD COLUMN `members` TEXT NULL AFTER `name`');
+      console.log('Added members column to groups table');
+    }
+  } catch (error) {
+    console.error('Error migrating groups.members column:', error);
   }
 };
 
