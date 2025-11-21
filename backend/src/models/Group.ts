@@ -9,6 +9,17 @@ export class Group {
   public createdAt?: string;
   public updatedAt?: string;
 
+  private formatDateForDB(dateValue: string | Date | undefined): string {
+    if (!dateValue) {
+      return new Date().toISOString().slice(0, 19).replace('T', ' ');
+    }
+    const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+    if (isNaN(date.getTime())) {
+      return new Date().toISOString().slice(0, 19).replace('T', ' ');
+    }
+    return date.toISOString().slice(0, 19).replace('T', ' ');
+  }
+
   constructor(data: Partial<IGroup>) {
     this.id = data.id;
     this.eventId = data.eventId || 1;
@@ -39,8 +50,8 @@ export class Group {
       category: this.category,
       name: this.name,
       members: JSON.stringify(this.members),
-      created_at: this.createdAt,
-      updated_at: this.updatedAt
+      created_at: this.formatDateForDB(this.createdAt || new Date().toISOString()),
+      updated_at: this.formatDateForDB(this.updatedAt || new Date().toISOString())
     };
   }
 
