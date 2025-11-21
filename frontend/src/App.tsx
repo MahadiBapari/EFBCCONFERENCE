@@ -75,6 +75,7 @@ const AdminSecurity: React.FC = () => {
 const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [role, setRole] = useState<'admin' | 'user' | null>(null);
+  const [authInitializing, setAuthInitializing] = useState<boolean>(true);
   const [view, setView] = useState<string>('');
   const [events, setEvents] = useState<Event[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>(MOCK_REGISTRATIONS);
@@ -175,27 +176,40 @@ const App: React.FC = () => {
     }
   };
 
-// Load once on mount
+// Restore session and initial data once on mount
 useEffect(() => {
-  loadEventsFromApi();
-  loadRegistrationsFromApi();
-  // Restore session via token
-  const restore = async () => {
+  const init = async () => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      setAuthInitializing(false);
+      return;
+    }
+
     try {
       const res = await authApi.me();
       const me = (res as any).data || {};
       if (me.role) {
         setRole(me.role);
-        setUser({ id: me.id || 999, name: me.name || 'Current User', email: me.email || 'current.user@example.com', role: me.role });
+        setUser({
+          id: me.id || 999,
+          name: me.name || 'Current User',
+          email: me.email || 'current.user@example.com',
+          role: me.role,
+        });
         setView(me.role === 'admin' ? 'events' : 'dashboard');
+        await Promise.all([loadEventsFromApi(), loadRegistrationsFromApi()]);
+      } else {
+        // If token is invalid or user not found, clear it
+        localStorage.removeItem('token');
       }
     } catch (e) {
       localStorage.removeItem('token');
+    } finally {
+      setAuthInitializing(false);
     }
   };
-  restore();
+
+  init();
 }, []);
 
   // Load registrations from backend (persistence)
@@ -741,6 +755,15 @@ const handleLogout = () => {
     }
     return null;
   };
+
+  if (authInitializing) {
+    return (
+      <div className="app-loading-screen">
+        <div className="app-loading-spinner" />
+        <p className="app-loading-text">Loading your dashboard…</p>
+      </div>
+    );
+  }
 
   if (!role) {
     if (window.location.pathname === '/reset-password') {
