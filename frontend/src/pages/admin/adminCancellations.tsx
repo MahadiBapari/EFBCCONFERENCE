@@ -44,13 +44,12 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({ pendingR
     if (onChanged) await onChanged();
   };
 
-  if (loading) {
-    return <div className="container"><div className="page-header"><h1>Cancellation Requests</h1></div><p>Loading…</p></div>;
-  }
-
   return (
     <div className="container">
       <div className="page-header"><h1>Cancellation Requests</h1></div>
+      {loading && (
+        <p className="cancel-loading-text">Loading latest cancellation data…</p>
+      )}
       <div className="cancel-tabs">
         <button
           type="button"
