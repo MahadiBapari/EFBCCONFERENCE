@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Event } from '../../types';
 import { isEventExpired } from '../../types';
 import { formatDateShort } from '../../utils/dateUtils';
@@ -7,56 +7,28 @@ import { apiClient } from '../../services/apiClient';
 import '../../styles/AdminEvents.css';
 
 interface AdminEventsProps {
+  events: Event[];
   onViewEvent: (eventId: number) => void;
   onRefreshEvents?: () => Promise<void> | void;
   onOpenEventForm?: (ev?: Event | null) => void;
 }
 
 export const AdminEvents: React.FC<AdminEventsProps> = ({ 
+  events,
   onViewEvent,
   onRefreshEvents,
   onOpenEventForm
 }) => {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-  // Modal removed; navigation handled by parent view
-
-  // Load events from API
-  useEffect(() => {
-    loadEvents();
-  }, []);
-
-  const loadEvents = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.get<Event[]>('/events');
-      if (response.success && response.data) {
-        // Transform API data to match frontend Event interface
-        const transformedEvents = response.data.map(event => ({
-          ...event,
-          year: new Date(event.date).getFullYear()
-        }));
-        setEvents(transformedEvents);
-      }
-    } catch (error) {
-      console.error('Error loading events:', error);
-      alert('Failed to load events');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Debug log to see current events
-  console.log('AdminEvents - Current events:', events);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // Saving is handled in AdminEventForm page
 
   const handleDeleteEvent = async (eventId: number) => {
     if (window.confirm('Are you sure you want to delete this event?')) {
       try {
+        setDeletingId(eventId);
         const response = await apiClient.delete(`/events/${eventId}`);
         if (response.success) {
-          await loadEvents(); // Reload events from API
           if (onRefreshEvents) await onRefreshEvents();
           alert('Event deleted successfully!');
         } else {
@@ -65,6 +37,8 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
       } catch (error) {
         console.error('Error deleting event:', error);
         alert('Failed to delete event');
+      } finally {
+        setDeletingId(null);
       }
     }
   };
@@ -77,11 +51,7 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
           Create New Event
         </button>
       </div>
-      {loading ? (
-        <div className="loading-container">
-          <h2>Loading events...</h2>
-        </div>
-      ) : events.length > 0 ? (
+      {events.length > 0 ? (
         <div className="event-grid">
           {[...events].sort((a,b) => b.year - a.year).map(event => {
             const startDateStr = event.startDate ? formatDateShort(event.startDate) : null;
@@ -101,7 +71,13 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
               <div className="event-card-footer">
                 <button className="btn btn-secondary btn-sm" onClick={() => onViewEvent(event.id)}>Details</button>
                 <button className="btn btn-secondary btn-sm" onClick={() => onOpenEventForm && onOpenEventForm(event)}>Edit</button>
-                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteEvent(event.id)}>Delete</button>
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => handleDeleteEvent(event.id)}
+                  disabled={deletingId === event.id}
+                >
+                  {deletingId === event.id ? 'Deleting...' : 'Delete'}
+                </button>
               </div>
             </div>
             );

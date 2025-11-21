@@ -585,6 +585,7 @@ const handleLogout = () => {
       switch(view) {
         case 'events':
           return <AdminEvents 
+            events={events}
             onViewEvent={setViewingEventId}
             onRefreshEvents={loadEventsFromApi}
             onOpenEventForm={openAdminEventForm}
