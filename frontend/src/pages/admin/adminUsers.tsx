@@ -93,41 +93,50 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
     password: '',
   });
 
-  const loadUsers = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Build query parameters - search queries the entire database
-      const params = new URLSearchParams();
-      params.append('page', currentPage.toString());
-      params.append('limit', usersPerPage.toString());
-      // When search query is provided, backend searches entire database before pagination
-      if (debouncedSearchQuery.trim()) {
-        params.append('search', debouncedSearchQuery.trim());
-      }
-      
-      const response = await apiClient.get<User[]>(`/users?${params.toString()}`) as UsersApiResponse;
-      if (response.success && response.data) {
-        const newUsers = Array.isArray(response.data) ? response.data : [];
-        setUsers(newUsers);
-        const newPagination = response.pagination || pagination;
-        if (response.pagination) {
-          setPagination(response.pagination);
+  const loadUsers = useCallback(
+    async (overridePage?: number, overrideSearch?: string) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const pageToUse = overridePage ?? currentPage;
+        const searchToUse = overrideSearch ?? debouncedSearchQuery;
+
+        const params = new URLSearchParams();
+        params.append('page', pageToUse.toString());
+        params.append('limit', usersPerPage.toString());
+        if (searchToUse.trim()) {
+          params.append('search', searchToUse.trim());
         }
-        if (onCacheUpdate) {
-          onCacheUpdate(newUsers, newPagination);
+
+        const response = await apiClient.get<User[]>(`/users?${params.toString()}`) as UsersApiResponse;
+        if (response.success && response.data) {
+          const newUsers = Array.isArray(response.data) ? response.data : [];
+          setUsers(newUsers);
+          const newPagination: PaginationInfo = response.pagination
+            ? response.pagination
+            : {
+                page: pageToUse,
+                limit: usersPerPage,
+                total: newUsers.length,
+                totalPages: 1,
+              };
+          setPagination(newPagination);
+          if (onCacheUpdate) {
+            onCacheUpdate(newUsers, newPagination);
+          }
+        } else {
+          setError('Failed to load users');
         }
-      } else {
-        setError('Failed to load users');
+      } catch (err: any) {
+        setError(err?.response?.data?.error || 'Failed to load users');
+      } finally {
+        setLoading(false);
+        setInitialLoading(false);
       }
-    } catch (err: any) {
-      setError(err?.response?.data?.error || 'Failed to load users');
-    } finally {
-      setLoading(false);
-      setInitialLoading(false);
-    }
-  }, [currentPage, debouncedSearchQuery, usersPerPage, onCacheUpdate, pagination]);
+    },
+    [currentPage, debouncedSearchQuery, usersPerPage, onCacheUpdate]
+  );
 
   useEffect(() => {
     loadUsers();
@@ -142,6 +151,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
     searchTimeoutRef.current = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
       setCurrentPage(1); // Reset to first page when search changes
+      loadUsers(1, searchQuery);
     }, 300); // 300ms debounce delay
 
     return () => {
@@ -149,7 +159,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchQuery]);
+  }, [searchQuery, loadUsers]);
 
   // Split name into first and last name
   const splitName = (name: string): { firstName: string; lastName: string } => {
@@ -168,6 +178,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
       setCurrentPage(newPage);
+      loadUsers(newPage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -322,7 +333,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
           />
           <button 
             className="btn btn-secondary" 
-            onClick={loadUsers}
+            onClick={() => loadUsers()}
             disabled={loading || initialLoading}
           >
             Refresh
@@ -341,7 +352,10 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
       {error && (
         <div className="error-message">
           {error}
-          <button className="btn btn-primary btn-sm error-retry-btn" onClick={loadUsers}>
+          <button
+            className="btn btn-primary btn-sm error-retry-btn"
+            onClick={() => loadUsers()}
+          >
             Retry
           </button>
         </div>

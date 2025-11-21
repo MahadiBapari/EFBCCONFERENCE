@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MOCK_REGISTRATIONS, MOCK_GROUPS } from './data/mockData';
 import { LoginPage } from './pages/authentication/login';
 import { RegistrationPage } from './pages/authentication/registration';
@@ -105,6 +104,14 @@ const App: React.FC = () => {
   const [emailCustomizationCache, setEmailCustomizationCache] = useState<EmailCustomization | null>(null);
   const [adminUsersCache, setAdminUsersCache] = useState<User[]>([]);
   const [adminUsersPaginationCache, setAdminUsersPaginationCache] = useState<any | null>(null);
+
+  const handleAdminUsersCacheUpdate = useCallback(
+    (users: User[], pagination: any | null) => {
+      setAdminUsersCache(users);
+      setAdminUsersPaginationCache(pagination);
+    },
+    []
+  );
 
   useEffect(() => {
     document.body.className = `${theme}-theme`;
@@ -659,10 +666,7 @@ const handleLogout = () => {
             <AdminUsers
               initialUsers={adminUsersCache}
               initialPagination={adminUsersPaginationCache}
-              onCacheUpdate={(users, pagination) => {
-                setAdminUsersCache(users);
-                setAdminUsersPaginationCache(pagination);
-              }}
+              onCacheUpdate={handleAdminUsersCacheUpdate}
             />
           );
         case 'customization':
