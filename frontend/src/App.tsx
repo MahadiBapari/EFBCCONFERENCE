@@ -675,6 +675,7 @@ const handleLogout = () => {
           );
         default:
           return <AdminEvents 
+            events={events}
             onViewEvent={setViewingEventId}
             onRefreshEvents={loadEventsFromApi}
           />;
