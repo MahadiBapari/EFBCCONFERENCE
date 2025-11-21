@@ -556,7 +556,14 @@ const handleLogout = () => {
     setView(newView);
     setMobileSidebarOpen(false);
     if (role === 'admin' && newView === 'cancellations') {
-      loadCancellationRequestsFromApi();
+      // Only load from API if we don't already have data cached
+      if (
+        !cancellationsLoading &&
+        cancellationPendingRows.length === 0 &&
+        cancellationApprovedRows.length === 0
+      ) {
+        loadCancellationRequestsFromApi();
+      }
     }
   };
 
