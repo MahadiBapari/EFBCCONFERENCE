@@ -150,9 +150,9 @@ const createTables = async () => {
     await migrateEventStartDate();
     await migrateEmailCustomizations();
 
-    // Groups table (basic definition; columns may be extended by migrations)
+    // Activity Groups table (basic definition; columns may be extended by migrations)
     await databaseService.query(`
-      CREATE TABLE IF NOT EXISTS \`groups\` (
+      CREATE TABLE IF NOT EXISTS \`activity_groups\` (
         id INT PRIMARY KEY AUTO_INCREMENT,
         eventId INT NOT NULL,
         category VARCHAR(100) NOT NULL,
@@ -200,7 +200,7 @@ const migrateUsersEmailVerification = async (): Promise<void> => {
   }
 };
 
-// Ensure groups.members column exists
+// Ensure activity_groups.members column exists
 const migrateGroupsMembersColumn = async (): Promise<void> => {
   try {
     const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
@@ -209,15 +209,15 @@ const migrateGroupsMembersColumn = async (): Promise<void> => {
 
     const cols: any[] = await databaseService.query(
       'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
-      [dbName, 'groups']
+      [dbName, 'activity_groups']
     );
     const hasMembers = cols.some((c: any) => c.COLUMN_NAME === 'members');
     if (!hasMembers) {
-      await databaseService.query('ALTER TABLE `groups` ADD COLUMN `members` TEXT NULL AFTER `name`');
-      console.log('Added members column to groups table');
+      await databaseService.query('ALTER TABLE `activity_groups` ADD COLUMN `members` TEXT NULL AFTER `name`');
+      console.log('Added members column to activity_groups table');
     }
   } catch (error) {
-    console.error('Error migrating groups.members column:', error);
+    console.error('Error migrating activity_groups.members column:', error);
   }
 };
 
@@ -584,7 +584,7 @@ app.get('/api/demo/setup', async (req: Request, res: Response): Promise<void> =>
 
     for (const group of demoGroups) {
       await databaseService.query(
-        'INSERT IGNORE INTO `groups` (eventId, category, name) VALUES (?, ?, ?)',
+        'INSERT IGNORE INTO `activity_groups` (eventId, category, name) VALUES (?, ?, ?)',
         [group.eventId, group.category, group.name]
       );
     }

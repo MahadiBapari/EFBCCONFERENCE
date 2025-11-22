@@ -33,17 +33,17 @@ export class GroupController {
         }
 
         groups = await this.db.query(
-          `SELECT * FROM \`groups\` WHERE ${whereClause} LIMIT ? OFFSET ?`,
+          `SELECT * FROM \`activity_groups\` WHERE ${whereClause} LIMIT ? OFFSET ?`,
           [...Object.values(conditions), Number(limit), offset]
         );
         
         total = await this.db.query(
-          `SELECT COUNT(*) as count FROM \`groups\` WHERE ${whereClause}`,
+          `SELECT COUNT(*) as count FROM \`activity_groups\` WHERE ${whereClause}`,
           Object.values(conditions)
         );
       } else {
-        groups = await this.db.findAll('groups', conditions, Number(limit), offset);
-        total = await this.db.count('groups', conditions);
+        groups = await this.db.findAll('activity_groups', conditions, Number(limit), offset);
+        total = await this.db.count('activity_groups', conditions);
       }
 
       const response: ApiResponse = {
@@ -72,7 +72,7 @@ export class GroupController {
   async getGroupById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const group = await this.db.findById('groups', Number(id));
+      const group = await this.db.findById('activity_groups', Number(id));
 
       if (!group) {
         const response: ApiResponse = {
@@ -105,7 +105,7 @@ export class GroupController {
       const groupData: CreateGroupRequest = req.body;
       const group = new Group(groupData);
       
-      const result = await this.db.insert('groups', group.toDatabase());
+      const result = await this.db.insert('activity_groups', group.toDatabase());
       group.id = result.insertId;
 
       const response: ApiResponse = {
@@ -131,7 +131,7 @@ export class GroupController {
       const { id } = req.params;
       const updateData: UpdateGroupRequest = req.body;
       
-      const existingGroup = await this.db.findById('groups', Number(id));
+      const existingGroup = await this.db.findById('activity_groups', Number(id));
       if (!existingGroup) {
         const response: ApiResponse = {
           success: false,
@@ -144,7 +144,7 @@ export class GroupController {
       const group = new Group({ ...existingGroup, ...updateData });
       group.updatedAt = new Date().toISOString();
       
-      await this.db.update('groups', Number(id), group.toDatabase());
+      await this.db.update('activity_groups', Number(id), group.toDatabase());
 
       const response: ApiResponse = {
         success: true,
@@ -168,7 +168,7 @@ export class GroupController {
     try {
       const { id } = req.params;
       
-      const existingGroup = await this.db.findById('groups', Number(id));
+      const existingGroup = await this.db.findById('activity_groups', Number(id));
       if (!existingGroup) {
         const response: ApiResponse = {
           success: false,
@@ -178,7 +178,7 @@ export class GroupController {
         return;
       }
 
-      await this.db.delete('groups', Number(id));
+      await this.db.delete('activity_groups', Number(id));
 
       const response: ApiResponse = {
         success: true,
@@ -202,7 +202,7 @@ export class GroupController {
       const { id } = req.params;
       const { memberId } = req.body;
       
-      const group = await this.db.findById('groups', Number(id));
+      const group = await this.db.findById('activity_groups', Number(id));
       if (!group) {
         const response: ApiResponse = {
           success: false,
@@ -215,7 +215,7 @@ export class GroupController {
       const groupModel = Group.fromDatabase(group);
       groupModel.addMember(memberId);
       
-      await this.db.update('groups', Number(id), groupModel.toDatabase());
+      await this.db.update('activity_groups', Number(id), groupModel.toDatabase());
 
       const response: ApiResponse = {
         success: true,
@@ -240,7 +240,7 @@ export class GroupController {
       const { id } = req.params;
       const { memberId } = req.body;
       
-      const group = await this.db.findById('groups', Number(id));
+      const group = await this.db.findById('activity_groups', Number(id));
       if (!group) {
         const response: ApiResponse = {
           success: false,
@@ -253,7 +253,7 @@ export class GroupController {
       const groupModel = Group.fromDatabase(group);
       groupModel.removeMember(memberId);
       
-      await this.db.update('groups', Number(id), groupModel.toDatabase());
+      await this.db.update('activity_groups', Number(id), groupModel.toDatabase());
 
       const response: ApiResponse = {
         success: true,
