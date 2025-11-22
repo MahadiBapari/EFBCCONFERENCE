@@ -53,13 +53,61 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
     return res;
   };
 
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
     if (!registration || !event) return;
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 20;
     let yPos = margin;
+
+    // Load and add logo
+    try {
+      const logoImg = new Image();
+      logoImg.crossOrigin = 'anonymous';
+      
+      // Load image and convert to base64 for jsPDF
+      const logoDataUrl = await new Promise<string>((resolve, reject) => {
+        logoImg.onload = () => {
+          try {
+            // Create canvas to convert image to base64
+            const canvas = document.createElement('canvas');
+            canvas.width = logoImg.naturalWidth;
+            canvas.height = logoImg.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(logoImg, 0, 0);
+              const dataUrl = canvas.toDataURL('image/png');
+              resolve(dataUrl);
+            } else {
+              reject(new Error('Could not get canvas context'));
+            }
+          } catch (err) {
+            reject(err);
+          }
+        };
+        logoImg.onerror = () => {
+          console.warn('Failed to load logo, continuing without it');
+          resolve(''); // Return empty string to indicate no logo
+        };
+        logoImg.src = '/EFBClogo.png';
+      });
+
+      // Add logo at the top (centered, max width 50mm, maintain aspect ratio)
+      if (logoDataUrl && logoImg.complete && logoImg.naturalWidth > 0) {
+        const logoMaxWidth = 50; // mm
+        const logoAspectRatio = logoImg.naturalHeight / logoImg.naturalWidth;
+        const logoWidth = Math.min(logoMaxWidth, logoImg.naturalWidth * 0.264583); // Convert px to mm (1px = 0.264583mm at 96dpi)
+        const logoHeight = logoWidth * logoAspectRatio;
+        const logoX = (pageWidth - logoWidth) / 2; // Center horizontally
+        
+        doc.addImage(logoDataUrl, 'PNG', logoX, yPos, logoWidth, logoHeight);
+        yPos += logoHeight + 10; // Add spacing after logo
+      }
+    } catch (error) {
+      console.warn('Error loading logo for PDF:', error);
+      // Continue without logo
+    }
 
     // Title
     doc.setFontSize(18);
