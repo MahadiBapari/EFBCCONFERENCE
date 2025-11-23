@@ -225,6 +225,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       'Emergency Contact Name': reg.emergencyContactName,
       'Emergency Contact Phone': reg.emergencyContactPhone,
       'Activity': reg.wednesdayActivity,
+      'Group Assigned': getGroupForRegistration(reg.id),
       'Club Rentals': (reg as any).clubRentals,
       'Golf Handicap': reg.golfHandicap,
       'Massage Time Slot': (reg as any).massageTimeSlot,
@@ -243,7 +244,6 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       'Paid?': (reg as any).paid ? 'Yes' : 'No',
       'Payment ID': (reg as any).squarePaymentId || '',
       'Total Price': reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : '',
-      'Group Assigned': getGroupForRegistration(reg.id),
     }));
 
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -395,6 +395,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                   <th>Emergency Contact Name</th>
                   <th>Emergency Contact Phone</th>
                   <th>Activity</th>
+                  <th>Group Assigned</th>
                   <th>Club Rentals</th>
                   <th>Golf Handicap</th>
                   <th>Massage Time Slot</th>
@@ -413,7 +414,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                   <th>Paid?</th>
                   <th>Payment ID</th>
                   <th>Total Price</th>
-                  <th>Group Assigned</th>
+                  
                 </tr>
               </thead>
               <tbody>
@@ -435,6 +436,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                     <td>{reg.emergencyContactName}</td>
                     <td>{reg.emergencyContactPhone}</td>
                     <td>{reg.wednesdayActivity}</td>
+                    <td>{getGroupForRegistration(reg.id)}</td>
                     <td>{(reg as any).clubRentals}</td>
                     <td>{reg.golfHandicap}</td>
                     <td>{(reg as any).massageTimeSlot}</td>
@@ -453,7 +455,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                     <td>{(reg as any).paid ? 'Yes' : 'No'}</td>
                     <td>{(reg as any).squarePaymentId || ''}</td>
                     <td>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''}</td>
-                    <td>{getGroupForRegistration(reg.id)}</td>
+                    
                   </tr>
                 ))}
               </tbody>
