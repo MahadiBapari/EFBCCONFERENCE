@@ -200,6 +200,12 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     }, {});
   }, [groups]);
 
+  // Helper function to find which group a registration belongs to
+  const getGroupForRegistration = useCallback((regId: number): string => {
+    const group = groups.find(g => g.members.includes(regId));
+    return group ? group.name : '-';
+  }, [groups]);
+
   const handleExportXlsx = () => {
     // Build row objects matching the detailed table
     const rows = filteredRegistrations.map((reg) => ({
@@ -237,6 +243,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       'Paid?': (reg as any).paid ? 'Yes' : 'No',
       'Payment ID': (reg as any).squarePaymentId || '',
       'Total Price': reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : '',
+      'Group Assigned': getGroupForRegistration(reg.id),
     }));
 
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -406,6 +413,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                   <th>Paid?</th>
                   <th>Payment ID</th>
                   <th>Total Price</th>
+                  <th>Group Assigned</th>
                 </tr>
               </thead>
               <tbody>
@@ -445,6 +453,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                     <td>{(reg as any).paid ? 'Yes' : 'No'}</td>
                     <td>{(reg as any).squarePaymentId || ''}</td>
                     <td>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''}</td>
+                    <td>{getGroupForRegistration(reg.id)}</td>
                   </tr>
                 ))}
               </tbody>

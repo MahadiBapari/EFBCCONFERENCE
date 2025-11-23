@@ -147,7 +147,12 @@
 }
 
 .detailed-table th:nth-child(8),
-.detailed-table td:nth-child(8),
+.detailed-table td:nth-child(8) {
+  max-width: 500px;
+  min-width: 300px;
+  white-space: normal;
+}
+
 .detailed-table th:nth-child(9),
 .detailed-table td:nth-child(9) {
   max-width: 260px;
