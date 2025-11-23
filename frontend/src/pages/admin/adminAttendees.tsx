@@ -3,7 +3,7 @@ import { Registration, Event, Group } from '../../types';
 import { formatDateShort } from '../../utils/dateUtils';
 import '../../styles/AdminAttendees.css';
 import { RegistrationPreview } from '../../components/RegistrationPreview';
-import { apiClient } from '../../services/apiClient';
+import { apiClient, cancelApi } from '../../services/apiClient';
 import * as XLSX from 'xlsx';
 
 interface AdminAttendeesProps {
@@ -178,6 +178,73 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     if (window.confirm(`Are you sure you want to delete ${selectedRegIds.length} selected attendee(s)?`)) {
       handleDeleteRegistrations(selectedRegIds);
       setSelectedRegIds([]);
+    }
+  };
+
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelSelected = async () => {
+    if (selectedRegIds.length === 0) return;
+    
+    const confirmMsg = `Are you sure you want to cancel ${selectedRegIds.length} selected registration(s)?\n\nThis will cancel these registrations and they will appear in the cancellation list.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setCancelling(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      // Create cancellation requests and immediately approve them for admin-initiated cancellations
+      const reason = 'Admin-initiated bulk cancellation';
+      
+      for (const regId of selectedRegIds) {
+        try {
+          // Check if already cancelled
+          const reg = registrations.find(r => r.id === regId);
+          if (reg && (reg as any).status === 'cancelled') {
+            continue; // Skip already cancelled registrations
+          }
+
+          // Create cancellation request
+          await cancelApi.request(regId, reason);
+          
+          // Small delay to ensure request is created
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Find the cancellation request ID and approve it immediately
+          const pendingRequests: any = await cancelApi.list('pending');
+          const requestData = (pendingRequests as any).data || pendingRequests?.data || [];
+          const newRequest = Array.isArray(requestData)
+            ? requestData.find((r: any) => r.registration_id === regId && r.status === 'pending')
+            : null;
+          
+          if (newRequest && newRequest.id) {
+            // Immediately approve the cancellation request
+            await cancelApi.approve(newRequest.id, 'Admin bulk cancellation');
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (err: any) {
+          console.error(`Failed to cancel registration ${regId}:`, err);
+          failCount++;
+          // Continue with other registrations even if one fails
+        }
+      }
+
+      if (successCount > 0) {
+        alert(`Successfully cancelled ${successCount} registration(s).${failCount > 0 ? ` ${failCount} failed.` : ''}`);
+        setSelectedRegIds([]);
+        // Refresh the page to show updated status
+        window.location.reload();
+      } else {
+        alert(`Failed to cancel registrations. Please try again.`);
+      }
+    } catch (error: any) {
+      console.error('Error cancelling registrations:', error);
+      alert(`Failed to cancel registrations: ${error?.message || 'Unknown error'}`);
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -376,6 +443,13 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
               </optgroup>
             ))}
           </select>
+          <button 
+            className="btn btn-warning btn-sm" 
+            onClick={handleCancelSelected}
+            disabled={cancelling}
+          >
+            {cancelling ? 'Cancelling...' : 'Cancel Selected'}
+          </button>
           <button className="btn btn-danger btn-sm" onClick={handleDeleteSelected}>Delete Selected</button>
         </div>
       )}
