@@ -135,6 +135,11 @@
   overflow-x: auto;
 }
 
+.detailed-table-container {
+  margin-top: 1.5rem;
+  overflow-x: auto;
+}
+
 .detailed-table {
   min-width: 1200px;
   table-layout: auto;
@@ -309,6 +314,19 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.modal-helper-text {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.modal-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
   margin-top: 1rem;
 }
 

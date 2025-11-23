@@ -3,6 +3,7 @@ import { Registration, Event, Group } from '../../types';
 import { formatDateShort } from '../../utils/dateUtils';
 import '../../styles/AdminAttendees.css';
 import { RegistrationPreview } from '../../components/RegistrationPreview';
+import { Modal } from '../../components/Modal';
 import { apiClient, cancelApi } from '../../services/apiClient';
 import * as XLSX from 'xlsx';
 
@@ -53,6 +54,12 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   const [userList, setUserList] = useState<SimpleUser[]>([]);
   const [userLoading, setUserLoading] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
+
+  // State for confirmation modals
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageModalContent, setMessageModalContent] = useState<{ title: string; message: string; type: 'success' | 'error' } | null>(null);
 
   // Automatically select the most recent event on component mount
   useEffect(() => {
@@ -175,20 +182,25 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   };
   
   const handleDeleteSelected = () => {
-    if (window.confirm(`Are you sure you want to delete ${selectedRegIds.length} selected attendee(s)?`)) {
-      handleDeleteRegistrations(selectedRegIds);
-      setSelectedRegIds([]);
-    }
+    if (selectedRegIds.length === 0) return;
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    handleDeleteRegistrations(selectedRegIds);
+    setSelectedRegIds([]);
+    setShowDeleteConfirm(false);
   };
 
   const [cancelling, setCancelling] = useState(false);
 
-  const handleCancelSelected = async () => {
+  const handleCancelSelected = () => {
     if (selectedRegIds.length === 0) return;
-    
-    const confirmMsg = `Are you sure you want to cancel ${selectedRegIds.length} selected registration(s)?\n\nThis will cancel these registrations and they will appear in the cancellation list.`;
-    if (!window.confirm(confirmMsg)) return;
+    setShowCancelConfirm(true);
+  };
 
+  const confirmCancel = async () => {
+    setShowCancelConfirm(false);
     setCancelling(true);
     let successCount = 0;
     let failCount = 0;
@@ -233,16 +245,31 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       }
 
       if (successCount > 0) {
-        alert(`Successfully cancelled ${successCount} registration(s).${failCount > 0 ? ` ${failCount} failed.` : ''}`);
+        setMessageModalContent({
+          title: 'Success',
+          message: `Successfully cancelled ${successCount} registration(s).${failCount > 0 ? ` ${failCount} failed.` : ''}`,
+          type: 'success'
+        });
+        setShowMessageModal(true);
         setSelectedRegIds([]);
         // Refresh the page to show updated status
-        window.location.reload();
+        setTimeout(() => window.location.reload(), 1500);
       } else {
-        alert(`Failed to cancel registrations. Please try again.`);
+        setMessageModalContent({
+          title: 'Error',
+          message: 'Failed to cancel registrations. Please try again.',
+          type: 'error'
+        });
+        setShowMessageModal(true);
       }
     } catch (error: any) {
       console.error('Error cancelling registrations:', error);
-      alert(`Failed to cancel registrations: ${error?.message || 'Unknown error'}`);
+      setMessageModalContent({
+        title: 'Error',
+        message: `Failed to cancel registrations: ${error?.message || 'Unknown error'}`,
+        type: 'error'
+      });
+      setShowMessageModal(true);
     } finally {
       setCancelling(false);
     }
@@ -457,7 +484,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       {filteredRegistrations.length > 0 ? (
         showDetailTable ? (
           // Full-page detailed table, based on selected event
-          <div className="table-wrapper detailed-table-wrapper" style={{ marginTop: '1.5rem', overflowX: 'auto' }}>
+          <div className="table-wrapper detailed-table-wrapper detailed-table-container">
             <table className="table detailed-table">
               <thead>
                 <tr>
@@ -686,6 +713,97 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <Modal
+          title="Confirm Deletion"
+          onClose={() => setShowDeleteConfirm(false)}
+          footer={
+            <div className="modal-footer-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
+            </div>
+          }
+        >
+          <p>Are you sure you want to delete {selectedRegIds.length} selected attendee(s)?</p>
+          <p className="modal-helper-text">
+            This action cannot be undone.
+          </p>
+        </Modal>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <Modal
+          title="Confirm Cancellation"
+          onClose={() => !cancelling && setShowCancelConfirm(false)}
+          footer={
+            <div className="modal-footer-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowCancelConfirm(false)}
+                disabled={cancelling}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-warning"
+                onClick={confirmCancel}
+                disabled={cancelling}
+              >
+                {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+              </button>
+            </div>
+          }
+        >
+          <p>Are you sure you want to cancel {selectedRegIds.length} selected registration(s)?</p>
+          <p className="modal-helper-text">
+            This will cancel these registrations and they will appear in the cancellation list.
+          </p>
+        </Modal>
+      )}
+
+      {/* Success/Error Message Modal */}
+      {showMessageModal && messageModalContent && (
+        <Modal
+          title={messageModalContent.title}
+          onClose={() => {
+            setShowMessageModal(false);
+            setMessageModalContent(null);
+          }}
+          footer={
+            <div className="modal-footer-actions">
+              <button
+                type="button"
+                className={`btn ${messageModalContent.type === 'success' ? 'btn-primary' : 'btn-danger'}`}
+                onClick={() => {
+                  setShowMessageModal(false);
+                  setMessageModalContent(null);
+                }}
+              >
+                OK
+              </button>
+            </div>
+          }
+        >
+          <p>{messageModalContent.message}</p>
+        </Modal>
       )}
     </div>
   );
