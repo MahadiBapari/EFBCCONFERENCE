@@ -78,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { key: 'cancellations', label: 'Cancellations', icon: <CollectionIcon /> },
     { key: 'allUsers', label: 'All Users', icon: <UsersIcon /> },
     { key: 'customization', label: 'Customization', icon: <CollectionIcon /> },
-    { key: 'security', label: 'Security', icon: <UserIcon /> },
+    { key: 'profile', label: 'Profile', icon: <UserIcon /> },
   ];
   
   const userNav = [

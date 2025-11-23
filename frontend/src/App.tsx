@@ -16,61 +16,12 @@ import { AdminAttendees } from './pages/admin/adminAttendees';
 import { AdminGroups } from './pages/admin/adminGroups';
 import { AdminUsers } from './pages/admin/adminUsers';
 import { AdminCustomization, EmailCustomization } from './pages/admin/adminCustomization';
+import { AdminProfile } from './pages/admin/adminProfile';
 import { EventDetailsPage } from './pages/admin/eventsDetails';
 import { Event, Registration, Group, User, RegisterForm } from './types';
 import apiClient, { authApi } from './services/apiClient';
 import { cancelApi, groupsApi } from './services/apiClient';
 import { AdminCancellations } from './pages/admin/adminCancellations';
-
-const AdminSecurity: React.FC = () => {
-  const [currentPassword, setCurrentPassword] = React.useState('');
-  const [newPassword,   setNewPassword]   = React.useState('');
-  const [confirm,       setConfirm]       = React.useState('');
-  const [loading,       setLoading]       = React.useState(false);
-  const [msg,           setMsg]           = React.useState<string | null>(null);
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMsg(null);
-    if (!newPassword || newPassword !== confirm) {
-      setMsg('New password and confirmation must match');
-      return;
-    }
-    setLoading(true);
-    try {
-      await authApi.changePassword({ currentPassword, newPassword });
-      setMsg('Password updated successfully');
-      setCurrentPassword(''); setNewPassword(''); setConfirm('');
-    } catch (e: any) {
-      setMsg(e?.response?.data?.error || 'Failed to change password');
-    } finally { setLoading(false); }
-  };
-
-  return (
-    <div className="container">
-      <div className="page-header"><h1>Security</h1></div>
-      <div className="card" style={{ padding: '1rem', maxWidth: 520 }}>
-        <h3>Change Password</h3>
-        <form onSubmit={onSubmit}>
-          <div className="form-group">
-            <label htmlFor="cur">Current Password</label>
-            <input id="cur" type="password" className="form-control" value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label htmlFor="npw">New Password</label>
-            <input id="npw" type="password" className="form-control" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label htmlFor="cnf">Confirm New Password</label>
-            <input id="cnf" type="password" className="form-control" value={confirm} onChange={e=>setConfirm(e.target.value)} required />
-          </div>
-          {msg && <div style={{ margin: '0.5rem 0' }}>{msg}</div>}
-          <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Updating...' : 'Update Password'}</button>
-        </form>
-      </div>
-    </div>
-  );
-};
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -681,8 +632,8 @@ const handleLogout = () => {
             onCancel={()=>{ setAdminEditingEvent(null); setView('events'); }}
             onSave={handleSaveAdminEvent}
           />;
-        case 'security':
-          return <AdminSecurity />;
+        case 'profile':
+          return <AdminProfile user={user} onUpdateProfile={handleUpdateProfile} />;
         case 'attendees':
           return <AdminAttendees 
             registrations={registrations}
