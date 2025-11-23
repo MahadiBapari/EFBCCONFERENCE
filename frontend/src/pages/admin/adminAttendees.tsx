@@ -206,6 +206,14 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     return group ? group.name : '-';
   }, [groups]);
 
+  // Helper function to display N/A for empty values
+  const displayValue = (value: any): string => {
+    if (value === null || value === undefined || value === '') {
+      return 'N/A';
+    }
+    return String(value);
+  };
+
   const handleExportXlsx = () => {
     // Build row objects matching the detailed table
     const rows = filteredRegistrations.map((reg) => ({
@@ -420,41 +428,41 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
               <tbody>
                 {filteredRegistrations.map(reg => (
                   <tr key={`detail-${reg.id}`}>
-                    <td>{reg.badgeName}</td>
-                    <td>{reg.firstName}</td>
-                    <td>{reg.lastName}</td>
-                    <td>{reg.email}</td>
-                    <td>{reg.secondaryEmail}</td>
-                    <td>{reg.organization}</td>
-                    <td>{reg.jobTitle}</td>
-                    <td>{reg.address}</td>
-                    <td>{reg.mobile}</td>
-                    <td>{reg.officePhone}</td>
+                    <td>{displayValue(reg.badgeName)}</td>
+                    <td>{displayValue(reg.firstName)}</td>
+                    <td>{displayValue(reg.lastName)}</td>
+                    <td>{displayValue(reg.email)}</td>
+                    <td>{displayValue(reg.secondaryEmail)}</td>
+                    <td>{displayValue(reg.organization)}</td>
+                    <td>{displayValue(reg.jobTitle)}</td>
+                    <td>{displayValue(reg.address)}</td>
+                    <td>{displayValue(reg.mobile)}</td>
+                    <td>{displayValue(reg.officePhone)}</td>
                     <td>{reg.isFirstTimeAttending ? 'Yes' : 'No'}</td>
-                    <td>{reg.companyType}</td>
-                    <td>{reg.companyTypeOther}</td>
-                    <td>{reg.emergencyContactName}</td>
-                    <td>{reg.emergencyContactPhone}</td>
-                    <td>{reg.wednesdayActivity}</td>
-                    <td>{getGroupForRegistration(reg.id)}</td>
-                    <td>{(reg as any).clubRentals}</td>
-                    <td>{reg.golfHandicap}</td>
-                    <td>{(reg as any).massageTimeSlot}</td>
-                    <td>{(reg as any).tuesdayEarlyReception}</td>
-                    <td>{reg.wednesdayReception}</td>
-                    <td>{reg.thursdayBreakfast}</td>
-                    <td>{reg.thursdayLuncheon}</td>
-                    <td>{reg.thursdayDinner}</td>
-                    <td>{reg.fridayBreakfast}</td>
-                    <td>{reg.dietaryRestrictions}</td>
-                    <td>{(reg as any).specialRequests}</td>
-                    <td>{reg.spouseFirstName}</td>
-                    <td>{reg.spouseLastName}</td>
+                    <td>{displayValue(reg.companyType)}</td>
+                    <td>{displayValue(reg.companyTypeOther)}</td>
+                    <td>{displayValue(reg.emergencyContactName)}</td>
+                    <td>{displayValue(reg.emergencyContactPhone)}</td>
+                    <td>{displayValue(reg.wednesdayActivity)}</td>
+                    <td>{getGroupForRegistration(reg.id) === '-' ? 'N/A' : getGroupForRegistration(reg.id)}</td>
+                    <td>{displayValue((reg as any).clubRentals)}</td>
+                    <td>{displayValue(reg.golfHandicap)}</td>
+                    <td>{displayValue((reg as any).massageTimeSlot)}</td>
+                    <td>{displayValue((reg as any).tuesdayEarlyReception)}</td>
+                    <td>{displayValue(reg.wednesdayReception)}</td>
+                    <td>{displayValue(reg.thursdayBreakfast)}</td>
+                    <td>{displayValue(reg.thursdayLuncheon)}</td>
+                    <td>{displayValue(reg.thursdayDinner)}</td>
+                    <td>{displayValue(reg.fridayBreakfast)}</td>
+                    <td>{displayValue(reg.dietaryRestrictions)}</td>
+                    <td>{displayValue((reg as any).specialRequests)}</td>
+                    <td>{displayValue(reg.spouseFirstName)}</td>
+                    <td>{displayValue(reg.spouseLastName)}</td>
                     <td>{reg.spouseDinnerTicket ? 'Yes' : 'No'}</td>
-                    <td>{reg.paymentMethod}</td>
+                    <td>{displayValue(reg.paymentMethod)}</td>
                     <td>{(reg as any).paid ? 'Yes' : 'No'}</td>
-                    <td>{(reg as any).squarePaymentId || ''}</td>
-                    <td>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''}</td>
+                    <td>{displayValue((reg as any).squarePaymentId)}</td>
+                    <td>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : 'N/A'}</td>
                     
                   </tr>
                 ))}
