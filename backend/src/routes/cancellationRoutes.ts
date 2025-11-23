@@ -28,7 +28,8 @@ router.post('/registrations/:id/cancel-request', async (req: Request, res: Respo
     const rows = await db.query('SELECT id, user_id, event_id, status FROM registrations WHERE id=?', [id]);
     if (!rows.length) return res.status(404).json({ success: false, error: 'Registration not found' });
     const reg = rows[0];
-    if (auth.id && reg.user_id && Number(auth.id) !== Number(reg.user_id)) {
+    // Allow admins to create cancellation requests for any registration, but regular users can only cancel their own
+    if (auth.role !== 'admin' && auth.id && reg.user_id && Number(auth.id) !== Number(reg.user_id)) {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
     if (reg.status === 'cancelled') return res.status(400).json({ success: false, error: 'Already cancelled' });

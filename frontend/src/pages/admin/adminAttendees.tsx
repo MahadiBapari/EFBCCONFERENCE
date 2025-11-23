@@ -218,27 +218,42 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
           }
 
           // Create cancellation request
-          await cancelApi.request(regId, reason);
+          const requestResponse = await cancelApi.request(regId, reason);
+          if (!requestResponse.success) {
+            throw new Error(requestResponse.error || 'Failed to create cancellation request');
+          }
           
-          // Small delay to ensure request is created
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // Find the cancellation request ID and approve it immediately
-          const pendingRequests: any = await cancelApi.list('pending');
-          const requestData = (pendingRequests as any).data || pendingRequests?.data || [];
-          const newRequest = Array.isArray(requestData)
-            ? requestData.find((r: any) => r.registration_id === regId && r.status === 'pending')
-            : null;
+          // Wait a bit longer and retry fetching the request if needed
+          let newRequest = null;
+          let retries = 3;
+          while (retries > 0 && !newRequest) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Find the cancellation request ID and approve it immediately
+            const pendingRequests: any = await cancelApi.list('pending');
+            const requestData = (pendingRequests as any).data || pendingRequests?.data || [];
+            newRequest = Array.isArray(requestData)
+              ? requestData.find((r: any) => r.registration_id === regId && r.status === 'pending')
+              : null;
+            
+            retries--;
+          }
           
           if (newRequest && newRequest.id) {
             // Immediately approve the cancellation request
-            await cancelApi.approve(newRequest.id, 'Admin bulk cancellation');
-            successCount++;
+            const approveResponse = await cancelApi.approve(newRequest.id, 'Admin bulk cancellation');
+            if (approveResponse.success) {
+              successCount++;
+            } else {
+              throw new Error(approveResponse.error || 'Failed to approve cancellation');
+            }
           } else {
-            failCount++;
+            throw new Error('Cancellation request not found after creation');
           }
         } catch (err: any) {
           console.error(`Failed to cancel registration ${regId}:`, err);
+          const errorMsg = err?.response?.data?.error || err?.message || 'Unknown error';
+          console.error(`Error details for registration ${regId}:`, errorMsg);
           failCount++;
           // Continue with other registrations even if one fails
         }
