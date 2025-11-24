@@ -75,6 +75,10 @@ export interface Registration {
   fridayDinner: 'I will attend' | 'I will NOT attend';
   dietaryRestrictions?: string;
   specialRequests?: string;
+  clubRentals?: string;
+  golfHandicap?: string;
+  massageTimeSlot?: string;
+  pickleballEquipment?: boolean;
   
   // Spouse Information
   spouseFirstName?: string;

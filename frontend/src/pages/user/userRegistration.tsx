@@ -68,6 +68,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     wednesdayActivity: registration?.wednesdayActivity || '',
     golfHandicap: registration?.golfHandicap || '',
     massageTimeSlot: registration?.massageTimeSlot || '8:00 AM- 10:00 AM',
+    pickleballEquipment: (registration as any)?.pickleballEquipment || false,
 
     // Conference Meals
     wednesdayReception: (registration?.wednesdayReception || '') as any,
@@ -269,6 +270,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       // Determine clubRentals value based on user selection
       const isGolf = (formData.wednesdayActivity || '').toLowerCase().includes('golf');
       const isMassage = (formData.wednesdayActivity || '').toLowerCase().includes('massage');
+      const isPickleball = (formData.wednesdayActivity || '').toLowerCase().includes('pickleball');
       
       const clubRentalsValue = isGolf 
         ? (needsClubRentals && golfClubPreference 
@@ -278,6 +280,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       
       const golfHandicapValue = isGolf ? formData.golfHandicap : undefined; // Clear if not golf
       const massageTimeSlotValue = isMassage ? (formData as any).massageTimeSlot : undefined; // Clear if not massage
+      const pickleballEquipmentValue = isPickleball ? (formData as any).pickleballEquipment : undefined; // Clear if not pickleball
 
       const registrationData: Registration = {
         ...(registration?.id ? { id: registration.id } : {} as any),
@@ -288,6 +291,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         clubRentals: clubRentalsValue,
         golfHandicap: golfHandicapValue,
         massageTimeSlot: massageTimeSlotValue,
+        pickleballEquipment: pickleballEquipmentValue,
         address: composedAddress, // Legacy field for backward compatibility
         addressStreet: addrStreet.trim(),
         city: addrCity.trim(),
@@ -383,6 +387,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       // Determine clubRentals value based on user selection
       const isGolf = (formData.wednesdayActivity || '').toLowerCase().includes('golf');
       const isMassage = (formData.wednesdayActivity || '').toLowerCase().includes('massage');
+      const isPickleball = (formData.wednesdayActivity || '').toLowerCase().includes('pickleball');
       
       const clubRentalsValue = isGolf 
         ? (needsClubRentals && golfClubPreference 
@@ -392,6 +397,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       
       const golfHandicapValue = isGolf ? formData.golfHandicap : undefined; // Clear if not golf
       const massageTimeSlotValue = isMassage ? (formData as any).massageTimeSlot : undefined; // Clear if not massage
+      const pickleballEquipmentValue = isPickleball ? (formData as any).pickleballEquipment : undefined; // Clear if not pickleball
 
       // Compose address string for backward compatibility (legacy field)
       const composedAddress = [
@@ -410,6 +416,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         clubRentals: clubRentalsValue,
         golfHandicap: golfHandicapValue,
         massageTimeSlot: massageTimeSlotValue,
+        pickleballEquipment: pickleballEquipmentValue,
         paid: true,
         squarePaymentId: payload.paymentId,
         address: composedAddress, // Legacy field for backward compatibility
@@ -509,6 +516,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         if (!isMassage) {
           // Clear massage field when not massage
           (updated as any).massageTimeSlot = '';
+        }
+        
+        const isPickleball = (updated.wednesdayActivity || '').toLowerCase().includes('pickleball');
+        if (!isPickleball) {
+          // Clear pickleball field when not pickleball
+          (updated as any).pickleballEquipment = false;
         }
       }
       
@@ -822,6 +835,31 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   ))}
                 </select>
                 {errors.massageTimeSlot && <div className="error-message">{errors.massageTimeSlot}</div>}
+              </div>
+            )}
+            {((event.activities || []).some(a => a.toLowerCase().includes('pickleball')) && (formData.wednesdayActivity || '').toLowerCase().includes('pickleball')) && (
+              <div className="form-group">
+                <label className="form-label">Will you bring your own equipment? <span className="required-asterisk">*</span></label>
+                <div className="radio-group">
+                  <label className="radio-label">
+                    <input 
+                      type="radio" 
+                      name="pickleballEquipment" 
+                      checked={!!(formData as any).pickleballEquipment} 
+                      onChange={() => handleInputChange('pickleballEquipment', true)} 
+                    />
+                    Yes
+                  </label>
+                  <label className="radio-label">
+                    <input 
+                      type="radio" 
+                      name="pickleballEquipment" 
+                      checked={!(formData as any).pickleballEquipment} 
+                      onChange={() => handleInputChange('pickleballEquipment', false)} 
+                    />
+                    No
+                  </label>
+                </div>
               </div>
             )}
           </div>

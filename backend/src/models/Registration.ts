@@ -36,6 +36,7 @@ export class Registration {
   public clubRentals?: string;
   public golfHandicap?: string;
   public massageTimeSlot?: string;
+  public pickleballEquipment?: boolean;
   public spouseBreakfast?: boolean;
   public tuesdayEarlyReception?: 'I will attend' | 'I will NOT attend';
   public spouseFirstName?: string;
@@ -116,6 +117,8 @@ export class Registration {
     this.tuesdayEarlyReception = (data as any).tuesdayEarlyReception ?? 'I will attend';
     this.golfHandicap = (data as any).golfHandicap;
     this.massageTimeSlot = (data as any).massageTimeSlot;
+    const pbe: any = (data as any).pickleballEquipment;
+    this.pickleballEquipment = pbe === true || pbe === 'Yes' || pbe === 'yes' || pbe === 1 || false;
     this.spouseFirstName = data.spouseFirstName;
     this.spouseLastName = data.spouseLastName;
     // Accept boolean or "Yes"/"No" and normalize to boolean
@@ -179,6 +182,7 @@ export class Registration {
       clubRentals: this.clubRentals,
       golfHandicap: this.golfHandicap,
       massageTimeSlot: this.massageTimeSlot,
+      pickleballEquipment: this.pickleballEquipment,
       spouseFirstName: this.spouseFirstName,
       spouseLastName: this.spouseLastName,
       spouseDinnerTicket: this.spouseDinnerTicket,
@@ -244,6 +248,7 @@ export class Registration {
       club_rentals: this.nullIfUndefined(this.clubRentals),
       golf_handicap: this.nullIfUndefined(this.golfHandicap),
       massage_time_slot: this.nullIfUndefined(this.massageTimeSlot),
+      pickleball_equipment: this.pickleballEquipment ?? null,
       spouse_dinner_ticket: !!this.spouseDinnerTicket,
       spouse_breakfast: !!this.spouseBreakfast,
       tuesday_early_reception: this.nullIfUndefined(this.tuesdayEarlyReception),
@@ -305,6 +310,7 @@ export class Registration {
       clubRentals: row.club_rentals || undefined,
       golfHandicap: row.golf_handicap,
       massageTimeSlot: row.massage_time_slot,
+      pickleballEquipment: !!row.pickleball_equipment,
       spouseDinnerTicket: !!row.spouse_dinner_ticket,
       spouseBreakfast: !!row.spouse_breakfast,
       spouseFirstName: row.spouse_first_name,

@@ -236,6 +236,7 @@ export class RegistrationController {
         clubRentals: 'club_rentals',
         golfHandicap: 'golf_handicap',
         massageTimeSlot: 'massage_time_slot',
+        pickleballEquipment: 'pickleball_equipment',
         spouseDinnerTicket: 'spouse_dinner_ticket',
         spouseBreakfast: 'spouse_breakfast',
         tuesdayEarlyReception: 'tuesday_early_reception',

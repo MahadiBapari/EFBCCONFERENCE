@@ -151,6 +151,7 @@ const createTables = async () => {
     await migrateEmailCustomizations();
     await migrateAddressFields();
     await migrateChildLunchFeature();
+    await migratePickleballEquipment();
 
     // Activity Groups table (basic definition; columns may be extended by migrations)
     await databaseService.query(`
@@ -443,6 +444,27 @@ const migrateEventStartDate = async (): Promise<void> => {
     }
   } catch (error: any) {
     console.error('Error migrating event start_date:', error?.message || error);
+  }
+};
+
+// Migration helper to add pickleball equipment field
+const migratePickleballEquipment = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    // Add pickleball_equipment to registrations table
+    const regCols = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+      [dbName, 'registrations']
+    );
+    if (!regCols.some((c: any) => c.COLUMN_NAME === 'pickleball_equipment')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `pickleball_equipment` BOOLEAN NULL AFTER `massage_time_slot`');
+      console.log('🛠️ Added registrations.pickleball_equipment column');
+    }
+  } catch (error: any) {
+    console.error('Error migrating pickleball equipment feature:', error?.message || error);
   }
 };
 

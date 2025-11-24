@@ -62,6 +62,7 @@ export interface Registration {
   golfHandicap?: string;
   clubRentals?: string;
   massageTimeSlot?: '8:00 AM- 10:00 AM' | '10:00 AM - 12:00 PM' | '12:00 PM - 2:00 PM' | '2:00 PM - 4:00 PM';
+  pickleballEquipment?: boolean;
   
   // Conference Meals
   wednesdayReception: 'I will attend' | 'I will NOT attend';
