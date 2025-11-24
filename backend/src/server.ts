@@ -150,6 +150,7 @@ const createTables = async () => {
     await migrateEventStartDate();
     await migrateEmailCustomizations();
     await migrateAddressFields();
+    await migrateChildLunchFeature();
 
     // Activity Groups table (basic definition; columns may be extended by migrations)
     await databaseService.query(`
@@ -442,6 +443,45 @@ const migrateEventStartDate = async (): Promise<void> => {
     }
   } catch (error: any) {
     console.error('Error migrating event start_date:', error?.message || error);
+  }
+};
+
+// Migration helper to add child lunch feature
+const migrateChildLunchFeature = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    // Add child_lunch_price to events table
+    const eventCols = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+      [dbName, 'events']
+    );
+    if (!eventCols.some((c: any) => c.COLUMN_NAME === 'child_lunch_price')) {
+      await databaseService.query('ALTER TABLE `events` ADD COLUMN `child_lunch_price` DECIMAL(10,2) NULL AFTER `breakfast_price`');
+      console.log('🛠️ Added events.child_lunch_price column');
+    }
+
+    // Add child fields to registrations table
+    const regCols = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+      [dbName, 'registrations']
+    );
+    if (!regCols.some((c: any) => c.COLUMN_NAME === 'child_first_name')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `child_first_name` VARCHAR(255) NULL AFTER `spouse_last_name`');
+      console.log('🛠️ Added registrations.child_first_name column');
+    }
+    if (!regCols.some((c: any) => c.COLUMN_NAME === 'child_last_name')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `child_last_name` VARCHAR(255) NULL AFTER `child_first_name`');
+      console.log('🛠️ Added registrations.child_last_name column');
+    }
+    if (!regCols.some((c: any) => c.COLUMN_NAME === 'child_lunch_ticket')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `child_lunch_ticket` BOOLEAN DEFAULT FALSE AFTER `child_last_name`');
+      console.log('🛠️ Added registrations.child_lunch_ticket column');
+    }
+  } catch (error: any) {
+    console.error('Error migrating child lunch feature:', error?.message || error);
   }
 };
 

@@ -15,6 +15,7 @@ export class Event {
   public registrationPricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
   public breakfastPrice?: number;
   public breakfastEndDate?: string;
+  public childLunchPrice?: number;
 
   constructor(data: Partial<IEvent> & { spousePricing?: any }) {
     this.id = data.id;
@@ -32,6 +33,7 @@ export class Event {
     this.registrationPricing = (data as any).registrationPricing || [];
     this.breakfastPrice = (data as any).breakfastPrice ?? undefined;
     this.breakfastEndDate = (data as any).breakfastEndDate || undefined;
+    this.childLunchPrice = (data as any).childLunchPrice ?? undefined;
   }
 
   // Convert to JSON
@@ -51,7 +53,8 @@ export class Event {
       spousePricing: this.spousePricing,
       registrationPricing: this.registrationPricing,
       breakfastPrice: this.breakfastPrice,
-      breakfastEndDate: this.breakfastEndDate
+      breakfastEndDate: this.breakfastEndDate,
+      childLunchPrice: this.childLunchPrice
     };
   }
 
@@ -69,7 +72,8 @@ export class Event {
       spouse_pricing: this.spousePricing ? JSON.stringify(this.spousePricing) : null,
       registration_pricing: this.registrationPricing ? JSON.stringify(this.registrationPricing) : null,
       breakfast_price: this.breakfastPrice ?? null,
-      breakfast_end_date: this.breakfastEndDate || null
+      breakfast_end_date: this.breakfastEndDate || null,
+      child_lunch_price: this.childLunchPrice ?? null
     };
   }
 
@@ -130,7 +134,8 @@ export class Event {
       spousePricing,
       registrationPricing,
       breakfastPrice: row.breakfast_price,
-      breakfastEndDate: row.breakfast_end_date
+      breakfastEndDate: row.breakfast_end_date,
+      childLunchPrice: row.child_lunch_price
     } as any);
   }
 }

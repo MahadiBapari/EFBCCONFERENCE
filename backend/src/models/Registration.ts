@@ -41,6 +41,9 @@ export class Registration {
   public spouseFirstName?: string;
   public spouseLastName?: string;
   public spouseDinnerTicket: boolean;
+  public childFirstName?: string;
+  public childLastName?: string;
+  public childLunchTicket?: boolean;
   public totalPrice: number;
   public paymentMethod: 'Card' | 'Check';
   public name: string;
@@ -118,6 +121,10 @@ export class Registration {
     // Accept boolean or "Yes"/"No" and normalize to boolean
     const sdt: any = (data as any).spouseDinnerTicket;
     this.spouseDinnerTicket = sdt === true || sdt === 'Yes' || sdt === 'yes' || sdt === 1;
+    this.childFirstName = (data as any).childFirstName;
+    this.childLastName = (data as any).childLastName;
+    const clt: any = (data as any).childLunchTicket;
+    this.childLunchTicket = clt === true || clt === 'Yes' || clt === 'yes' || clt === 1 || false;
     this.totalPrice = data.totalPrice || 0;
     this.paymentMethod = data.paymentMethod || 'Card';
     this.name = data.name || `${this.firstName} ${this.lastName}`;
@@ -175,6 +182,9 @@ export class Registration {
       spouseFirstName: this.spouseFirstName,
       spouseLastName: this.spouseLastName,
       spouseDinnerTicket: this.spouseDinnerTicket,
+      childFirstName: this.childFirstName,
+      childLastName: this.childLastName,
+      childLunchTicket: this.childLunchTicket,
       totalPrice: this.totalPrice,
       paymentMethod: this.paymentMethod,
       name: this.name,
@@ -239,6 +249,9 @@ export class Registration {
       tuesday_early_reception: this.nullIfUndefined(this.tuesdayEarlyReception),
       spouse_first_name: this.nullIfUndefined(this.spouseFirstName),
       spouse_last_name: this.nullIfUndefined(this.spouseLastName),
+      child_first_name: this.nullIfUndefined(this.childFirstName),
+      child_last_name: this.nullIfUndefined(this.childLastName),
+      child_lunch_ticket: this.childLunchTicket ?? false,
       total_price: this.totalPrice || 0,
       payment_method: this.paymentMethod || null,
       paid: this.paid ?? false,
@@ -296,6 +309,9 @@ export class Registration {
       spouseBreakfast: !!row.spouse_breakfast,
       spouseFirstName: row.spouse_first_name,
       spouseLastName: row.spouse_last_name,
+      childFirstName: row.child_first_name,
+      childLastName: row.child_last_name,
+      childLunchTicket: !!row.child_lunch_ticket,
       totalPrice: row.total_price,
       paymentMethod: row.payment_method,
       createdAt: row.created_at,

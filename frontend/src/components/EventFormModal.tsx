@@ -38,6 +38,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
   ]);
   const [breakfastPrice, setBreakfastPrice] = useState<number | undefined>(event?.breakfastPrice);
   const [breakfastEndDate, setBreakfastEndDate] = useState<string | undefined>(event?.breakfastEndDate);
+  const [childLunchPrice, setChildLunchPrice] = useState<number | undefined>(event?.childLunchPrice);
   const [errors, setErrors] = useState<{name?: string; startDate?: string; endDate?: string; location?: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -137,7 +138,8 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
         spousePricing,
         registrationPricing,
         breakfastPrice,
-        breakfastEndDate
+        breakfastEndDate,
+        childLunchPrice
       });
     } catch (error) {
       console.error('Error saving event:', error);
@@ -473,6 +475,21 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
                 ))}
                 <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setSpousePricing([...spousePricing,{label:'',price:0}])} disabled={isSubmitting}>Add Tier</button>
               </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="childLunchPrice">Child Lunch Price</label>
+              <input
+                id="childLunchPrice"
+                type="number"
+                className="form-control"
+                placeholder="Enter child lunch price"
+                min={0}
+                step="0.01"
+                value={childLunchPrice ?? ''}
+                onChange={(e) => setChildLunchPrice(e.target.value === '' ? undefined : Number(e.target.value))}
+                disabled={isSubmitting}
+              />
             </div>
 
             <div className="form-group">

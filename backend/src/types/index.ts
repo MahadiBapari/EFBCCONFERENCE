@@ -81,6 +81,11 @@ export interface Registration {
   spouseLastName?: string;
   spouseDinnerTicket: boolean;
   
+  // Child Information
+  childFirstName?: string;
+  childLastName?: string;
+  childLunchTicket?: boolean;
+  
   // Payment Information
   totalPrice: number;
   paymentMethod: 'Card' | 'Check';

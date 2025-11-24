@@ -27,6 +27,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     { label: 'Dinner Ticket', price: undefined },
     { label: 'On-Site Dinner Ticket', price: undefined },
   ]);
+  const [childLunchPrice, setChildLunchPrice] = useState<number | undefined>(undefined);
   const [errors, setErrors] = useState<{ name?: string; startDate?: string; endDate?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,6 +45,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     setActivities(event.activities || []);
     setRegistrationPricing(event.registrationPricing || registrationPricing);
     setSpousePricing(event.spousePricing && event.spousePricing.length ? event.spousePricing : spousePricing);
+    setChildLunchPrice(event.childLunchPrice);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -94,6 +96,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
         activities,
         registrationPricing,
         spousePricing,
+        childLunchPrice,
       } as Event);
     } finally {
       setIsSubmitting(false);
@@ -196,6 +199,21 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="childLunchPrice">Child Lunch Price</label>
+              <input
+                id="childLunchPrice"
+                type="number"
+                className="form-control"
+                placeholder="Enter child lunch price"
+                min={0}
+                step="0.01"
+                value={childLunchPrice ?? ''}
+                onChange={(e) => setChildLunchPrice(e.target.value === '' ? undefined : Number(e.target.value))}
+                disabled={isSubmitting}
+              />
             </div>
 
             <div className="form-group">

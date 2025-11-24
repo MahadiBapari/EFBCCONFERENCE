@@ -23,6 +23,7 @@ export interface Event {
   registrationPricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
   breakfastPrice?: number;
   breakfastEndDate?: string;
+  childLunchPrice?: number;
 }
 
 export interface Registration {
@@ -76,6 +77,11 @@ export interface Registration {
   spouseFirstName?: string;
   spouseLastName?: string;
   spouseBreakfast?: boolean;
+  
+  // Child Information
+  childFirstName?: string;
+  childLastName?: string;
+  childLunchTicket?: boolean;
   
   // Payment Information
   totalPrice: number;

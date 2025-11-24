@@ -262,6 +262,40 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       }
     }
 
+    // Child Information
+    if ((registration as any).childLunchTicket) {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = margin;
+      }
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Child Information', margin, yPos);
+      yPos += 8;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setFont('helvetica', 'bold');
+      doc.text('Lunch Ticket:', margin, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Yes', margin + 60, yPos);
+      yPos += 6;
+      if ((registration as any).childFirstName) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Child First Name:', margin, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.text((registration as any).childFirstName, margin + 60, yPos);
+        yPos += 6;
+      }
+      if ((registration as any).childLastName) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Child Last Name:', margin, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.text((registration as any).childLastName, margin + 60, yPos);
+        yPos += 6;
+      }
+    }
+
     // Payment
     if (yPos > 250) {
       doc.addPage();
@@ -400,6 +434,28 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
           {registration.dietaryRestrictions && <Line label="Dietary Restrictions" value={registration.dietaryRestrictions} />}
           {(registration as any).specialRequests && <Line label="Special Requests" value={(registration as any).specialRequests} />}
         </div>
+
+        {(registration as any).childLunchTicket && (
+          <div className="preview-section">
+            <h3 className="section-title">Child Information</h3>
+            <div className="preview-item">
+              <span className="preview-label">Lunch Ticket:</span>
+              <span className="preview-value">Yes</span>
+            </div>
+            {(registration as any).childFirstName && (
+              <div className="preview-item">
+                <span className="preview-label">Child First Name:</span>
+                <span className="preview-value">{(registration as any).childFirstName}</span>
+              </div>
+            )}
+            {(registration as any).childLastName && (
+              <div className="preview-item">
+                <span className="preview-label">Child Last Name:</span>
+                <span className="preview-value">{(registration as any).childLastName}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {registration.spouseDinnerTicket && (
           <div className="preview-section">
