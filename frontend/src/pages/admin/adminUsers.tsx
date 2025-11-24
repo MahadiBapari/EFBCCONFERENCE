@@ -82,14 +82,12 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
     lastName: string;
     email: string;
     role: 'admin' | 'user';
-    isActive: boolean;
     password: string;
   }>({
     firstName: '',
     lastName: '',
     email: '',
     role: 'user',
-    isActive: true,
     password: '',
   });
 
@@ -239,7 +237,6 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
       lastName,
       email: user.email,
       role: (user.role as 'admin' | 'user') || 'user',
-      isActive: user.isActive !== false,
       password: '',
     });
   };
@@ -279,7 +276,6 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         name,
         email: editForm.email.trim(),
         role: editForm.role,
-        isActive: editForm.isActive,
       };
       if (editForm.password) {
         payload.password = editForm.password;
@@ -378,7 +374,6 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
                 <th>Last Name</th>
                 <th>Email</th>
                 <th>Role</th>
-                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -394,11 +389,6 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
                     <td>
                       <span className={`role-badge role-${user.role || 'user'}`}>
                         {user.role || 'user'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`status-badge status-${user.isActive !== false ? 'active' : 'inactive'}`}>
-                        {user.isActive !== false ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td>
@@ -585,29 +575,16 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
                   required
                 />
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="editRole">Role</label>
-                  <select
-                    id="editRole"
-                    value={editForm.role}
-                    onChange={(e) => handleEditChange('role', e.target.value === 'admin' ? 'admin' : 'user')}
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="editStatus">Status</label>
-                  <select
-                    id="editStatus"
-                    value={editForm.isActive ? 'active' : 'inactive'}
-                    onChange={(e) => handleEditChange('isActive', e.target.value === 'active')}
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
+              <div className="form-group">
+                <label htmlFor="editRole">Role</label>
+                <select
+                  id="editRole"
+                  value={editForm.role}
+                  onChange={(e) => handleEditChange('role', e.target.value === 'admin' ? 'admin' : 'user')}
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
               </div>
               <div className="form-group">
                 <label htmlFor="editPassword">New Password (optional)</label>

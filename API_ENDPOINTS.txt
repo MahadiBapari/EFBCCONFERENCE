@@ -1,0 +1,347 @@
+================================================================================
+                    EFBC CONFERENCE - API ENDPOINTS
+================================================================================
+Domain: https://server.efbcconference.org
+Base URL: /api
+All endpoints require Bearer token authentication unless otherwise specified.
+
+================================================================================
+AUTHENTICATION ENDPOINTS (/api/auth)
+================================================================================
+
+POST   /api/auth/login
+       Description: User login
+       Body: { email: string, password: string }
+       Response: { success: boolean, data: { user: User, token: string } }
+       Auth: None (public)
+
+GET    /api/auth/me
+       Description: Get current authenticated user information
+       Response: { success: boolean, data: { id: number, email: string, name: string, role: string } }
+       Auth: Required
+
+PUT    /api/auth/profile
+       Description: Update user profile (name and email)
+       Body: { name: string, email: string }
+       Response: { success: boolean, data: { user: User, token: string } }
+       Auth: Required
+
+PUT    /api/auth/password
+       Description: Change user password
+       Body: { currentPassword: string, newPassword: string }
+       Response: { success: boolean, message: string }
+       Auth: Required
+
+POST   /api/auth/forgot-password
+       Description: Request password reset email
+       Body: { email: string }
+       Response: { success: boolean, message: string }
+       Auth: None (public)
+
+POST   /api/auth/reset-password
+       Description: Reset password using token
+       Body: { token: string, newPassword: string }
+       Response: { success: boolean, message: string }
+       Auth: None (public)
+
+GET    /api/auth/verify-email
+       Description: Verify email address using token
+       Query: ?token=string
+       Response: Redirects to EMAIL_VERIFY_REDIRECT or JSON response
+       Auth: None (public)
+
+POST   /api/auth/resend-verification
+       Description: Resend email verification link
+       Body: { email: string }
+       Response: { success: boolean, message: string }
+       Auth: None (public)
+
+
+================================================================================
+USER MANAGEMENT ENDPOINTS (/api/users)
+================================================================================
+
+POST   /api/users/register
+       Description: Register a new user account
+       Body: { name: string, email: string, password: string }
+       Response: { success: boolean, data: { user: User, token: string } }
+       Auth: None (public)
+
+GET    /api/users
+       Description: Get list of users (with pagination and search)
+       Query: ?page=number&limit=number&search=string
+       Response: { success: boolean, data: User[], pagination: PaginationInfo }
+       Auth: Required (Admin only)
+
+GET    /api/users/:id
+       Description: Get user by ID
+       Response: { success: boolean, data: User }
+       Auth: Required
+
+POST   /api/users
+       Description: Create a new user (generic)
+       Body: { name: string, email: string, password: string, role?: string }
+       Response: { success: boolean, data: User }
+       Auth: Required (Admin only)
+
+POST   /api/users/admin-create
+       Description: Admin creates user with auto-verification and temporary password
+       Body: { firstName: string, lastName: string, email: string, role: 'admin' | 'user' }
+       Response: { success: boolean, data: User }
+       Auth: Required (Admin only)
+
+PUT    /api/users/:id
+       Description: Update user information
+       Body: { name?: string, email?: string, role?: string, password?: string, isActive?: boolean }
+       Response: { success: boolean, data: User }
+       Auth: Required (Admin only)
+
+DELETE /api/users/:id
+       Description: Delete a user
+       Response: { success: boolean, message: string }
+       Auth: Required (Admin only)
+
+
+================================================================================
+EVENT MANAGEMENT ENDPOINTS (/api/events)
+================================================================================
+
+GET    /api/events
+       Description: Get list of all events
+       Response: { success: boolean, data: Event[] }
+       Auth: Required
+
+GET    /api/events/:id
+       Description: Get event by ID
+       Response: { success: boolean, data: Event }
+       Auth: Required
+
+POST   /api/events
+       Description: Create a new event
+       Body: { name: string, date: string, startDate?: string, activities?: JSON, location?: string, description?: string[], pricingTiers?: PricingTier[] }
+       Response: { success: boolean, data: Event }
+       Auth: Required (Admin only)
+
+PUT    /api/events/:id
+       Description: Update an existing event
+       Body: { name?: string, date?: string, startDate?: string, activities?: JSON, location?: string, description?: string[], pricingTiers?: PricingTier[] }
+       Response: { success: boolean, data: Event }
+       Auth: Required (Admin only)
+
+DELETE /api/events/:id
+       Description: Delete an event
+       Response: { success: boolean, message: string }
+       Auth: Required (Admin only)
+
+
+================================================================================
+REGISTRATION ENDPOINTS (/api/registrations)
+================================================================================
+
+GET    /api/registrations
+       Description: Get list of registrations (filtered by user if not admin)
+       Query: ?eventId=number&userId=number&page=number&limit=number
+       Response: { success: boolean, data: Registration[], pagination?: PaginationInfo }
+       Auth: Required
+
+GET    /api/registrations/:id
+       Description: Get registration by ID
+       Response: { success: boolean, data: Registration }
+       Auth: Required
+
+POST   /api/registrations
+       Description: Create a new registration
+       Body: Registration object with all fields
+       Response: { success: boolean, data: Registration }
+       Auth: Required
+
+PUT    /api/registrations/:id
+       Description: Update an existing registration
+       Body: Partial Registration object
+       Response: { success: boolean, data: Registration }
+       Auth: Required
+
+DELETE /api/registrations/:id
+       Description: Delete a registration
+       Response: { success: boolean, message: string }
+       Auth: Required (Admin only)
+
+DELETE /api/registrations/bulk
+       Description: Delete multiple registrations
+       Body: { ids: number[] }
+       Response: { success: boolean, message: string }
+       Auth: Required (Admin only)
+
+
+================================================================================
+GROUP MANAGEMENT ENDPOINTS (/api/groups)
+================================================================================
+
+GET    /api/groups
+       Description: Get list of groups
+       Query: ?eventId=number&category=string&page=number&limit=number
+       Response: { success: boolean, data: Group[] }
+       Auth: Required
+
+GET    /api/groups/:id
+       Description: Get group by ID
+       Response: { success: boolean, data: Group }
+       Auth: Required
+
+POST   /api/groups
+       Description: Create a new group
+       Body: { eventId: number, category: string, name: string, members?: number[] }
+       Response: { success: boolean, data: Group }
+       Auth: Required (Admin only)
+
+PUT    /api/groups/:id
+       Description: Update a group
+       Body: { eventId?: number, category?: string, name?: string, members?: number[] }
+       Response: { success: boolean, data: Group }
+       Auth: Required (Admin only)
+
+DELETE /api/groups/:id
+       Description: Delete a group
+       Response: { success: boolean, message: string }
+       Auth: Required (Admin only)
+
+POST   /api/groups/:id/members
+       Description: Add member(s) to a group
+       Body: { memberIds: number[] }
+       Response: { success: boolean, data: Group }
+       Auth: Required (Admin only)
+
+DELETE /api/groups/:id/members
+       Description: Remove member(s) from a group
+       Body: { memberIds: number[] }
+       Response: { success: boolean, data: Group }
+       Auth: Required (Admin only)
+
+
+================================================================================
+CANCELLATION REQUEST ENDPOINTS (/api)
+================================================================================
+
+POST   /api/registrations/:id/cancel-request
+       Description: Submit a cancellation request for a registration
+       Body: { reason?: string }
+       Response: { success: boolean, message: string }
+       Auth: Required (User can cancel own, Admin can cancel any)
+
+GET    /api/cancel-requests
+       Description: List cancellation requests (admin only)
+       Query: ?status=pending|approved|rejected&page=number&limit=number
+       Response: { success: boolean, data: CancellationRequest[] }
+       Auth: Required (Admin only)
+
+PUT    /api/cancel-requests/:id/approve
+       Description: Approve a cancellation request
+       Body: { adminNote?: string }
+       Response: { success: boolean, message: string }
+       Auth: Required (Admin only)
+
+PUT    /api/cancel-requests/:id/reject
+       Description: Reject a cancellation request
+       Body: { adminNote?: string }
+       Response: { success: boolean, message: string }
+       Auth: Required (Admin only)
+
+PUT    /api/cancel-requests/:id/restore
+       Description: Restore a cancelled registration
+       Response: { success: boolean, message: string }
+       Auth: Required (Admin only)
+
+GET    /api/my-cancel-requests
+       Description: Get current user's pending cancellation requests
+       Response: { success: boolean, data: CancellationRequest[] }
+       Auth: Required
+
+
+================================================================================
+PAYMENT ENDPOINTS (/api/payments)
+================================================================================
+
+POST   /api/payments/charge
+       Description: Process a Square payment
+       Body: { 
+         amountCents: number, 
+         baseAmountCents: number, 
+         applyCardFee: boolean, 
+         currency: string (default: 'USD'),
+         nonce: string,
+         billingAddress?: Address,
+         buyerEmail?: string
+       }
+       Response: { success: boolean, paymentId: string, status: string, chargedAmountCents: number }
+       Auth: Required
+
+
+================================================================================
+EMAIL CUSTOMIZATION ENDPOINTS (/api/customization)
+================================================================================
+
+GET    /api/customization/email
+       Description: Get email customization settings (header and footer text)
+       Response: { success: boolean, data: { headerText: string, footerText: string } }
+       Auth: Required (Admin only)
+
+PUT    /api/customization/email
+       Description: Update email customization settings
+       Body: { headerText?: string, footerText?: string }
+       Response: { success: boolean, data: { headerText: string, footerText: string } }
+       Auth: Required (Admin only)
+
+
+================================================================================
+AUTHENTICATION NOTES
+================================================================================
+
+- Most endpoints require Bearer token authentication in the Authorization header:
+  Authorization: Bearer <token>
+
+- Public endpoints (no auth required):
+  - POST /api/auth/login
+  - POST /api/auth/forgot-password
+  - POST /api/auth/reset-password
+  - GET  /api/auth/verify-email
+  - POST /api/auth/resend-verification
+  - POST /api/users/register
+
+- Admin-only endpoints require role: 'admin' in the JWT token
+
+- User endpoints automatically filter data based on the authenticated user's ID
+  unless the user is an admin
+
+
+================================================================================
+RESPONSE FORMAT
+================================================================================
+
+Success Response:
+{
+  "success": true,
+  "data": <response_data>,
+  "message": "<optional_message>",
+  "pagination": { "page": number, "limit": number, "total": number, "totalPages": number }
+}
+
+Error Response:
+{
+  "success": false,
+  "error": "<error_message>"
+}
+
+
+================================================================================
+COMMON QUERY PARAMETERS
+================================================================================
+
+- page: Page number for pagination (default: 1)
+- limit: Number of items per page (default: 20)
+- search: Search query string
+- status: Filter by status (for cancellations: 'pending', 'approved', 'rejected')
+- eventId: Filter by event ID
+- userId: Filter by user ID
+- category: Filter by category (for groups)
+
+
