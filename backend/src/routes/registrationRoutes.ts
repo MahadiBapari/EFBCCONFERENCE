@@ -39,6 +39,14 @@ router.get('/', async (req: any, res: any) => {
   await req.registrationController.getRegistrations(req, res);
 });
 
+// Get registrations by event ID (public endpoint, no authentication required)
+// This route must come before /:id to avoid route conflicts
+router.get('/event/:eventId', async (req: any, res: any) => {
+  // Set eventId from params to query for the getRegistrations method
+  req.query = { ...req.query, eventId: req.params.eventId };
+  await req.registrationController.getRegistrations(req, res);
+});
+
 router.get('/:id', async (req: any, res: any) => {
   await req.registrationController.getRegistrationById(req, res);
 });

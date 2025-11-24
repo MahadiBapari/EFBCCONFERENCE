@@ -140,9 +140,16 @@ REGISTRATION ENDPOINTS (/api/registrations)
 
 GET    /api/registrations
        Description: Get list of registrations (filtered by user if not admin)
-       Query: ?eventId=number&userId=number&page=number&limit=number
+       Query: ?eventId=number&userId=number&page=number&limit=number&search=string
        Response: { success: boolean, data: Registration[], pagination?: PaginationInfo }
        Auth: Required
+
+GET    /api/registrations/event/:eventId
+       Description: Get all registrations for a specific event by event ID (public endpoint)
+       Query: ?page=number&limit=number&search=string
+       Response: { success: boolean, data: Registration[], pagination?: PaginationInfo }
+       Auth: None (public)
+       Example: GET /api/registrations/event/1?page=1&limit=20
 
 GET    /api/registrations/:id
        Description: Get registration by ID
