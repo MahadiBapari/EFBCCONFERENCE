@@ -249,8 +249,14 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     e.preventDefault();
     if (!event) return;
     if (!validateForm()) return;
-    // Skip payment validation in admin edit mode
-    if (!isAdminEdit && (formData.paymentMethod || 'Card') === 'Card' && !isAlreadyPaid) return; // handled by Pay & Complete button when not already paid
+    
+    // For card payments, ensure payment is completed before allowing submission
+    const paymentMethod = formData.paymentMethod || 'Card';
+    if (!isAdminEdit && paymentMethod === 'Card' && !isAlreadyPaid) {
+      alert('Please complete the payment using the "Pay & Complete Registration" button.');
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       // Compose address string for backward compatibility (legacy field)
@@ -295,6 +301,14 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
       } as Registration;
+      
+      // For card payments, ensure payment was completed (has payment ID)
+      if (!isAdminEdit && (formData.paymentMethod || 'Card') === 'Card' && !registrationData.paid && !(registrationData as any).squarePaymentId) {
+        alert('Payment must be completed before registration can be submitted. Please use the "Pay & Complete Registration" button.');
+        setIsSubmitting(false);
+        return;
+      }
+      
       onSave(registrationData);
       // Show success popup to the user
       alert('Registration updated successfully');
@@ -392,6 +406,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
       } as Registration;
+      
+      // Verify payment was completed for card payments
+      const paymentMethod = formData.paymentMethod || 'Card';
+      if (!isAdminEdit && paymentMethod === 'Card' && !isAlreadyPaid) {
+        // Check if payment info exists in registrationData or existing registration
+        const hasPaymentInfo = registrationData.paid || (registrationData as any).squarePaymentId || (registration as any)?.paid || (registration as any)?.squarePaymentId;
+        if (!hasPaymentInfo) {
+          alert('Payment must be completed before registration can be submitted. Please use the "Pay & Complete Registration" button.');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      
       onSave(registrationData);
       alert('Thank you. Your Registration has been successfully submitted! A copy will be emailed to you.');
       onBack();
@@ -1051,16 +1078,28 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
 
           <div className="modal-footer-actions" style={{ marginTop: '1rem' }}>
             <button type="button" className="btn btn-secondary" onClick={onBack} disabled={isSubmitting}>Cancel</button>
-            {/* In admin edit mode, always allow saving without payment */}
-            {isAdminEdit || isAlreadyPaid || (formData.paymentMethod || 'Card') === 'Check' ? (
-              <button className="btn btn-primary btn-save" type="submit" form="registration-form" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : (registration ? 'Update Registration' : 'Complete Registration')}
-              </button>
-            ) : (
-              <button type="button" className="btn btn-primary btn-save" onClick={handleCardPay} disabled={isSubmitting}>
-                {isSubmitting ? 'Processing...' : 'Pay & Complete Registration'}
-              </button>
-            )}
+            {/* Show submit button only for Check payment, admin edit, or already paid registrations */}
+            {/* For Card payment (not already paid), show Pay & Complete button instead */}
+            {(() => {
+              const paymentMethod = formData.paymentMethod || 'Card';
+              const showSubmitButton = isAdminEdit || isAlreadyPaid || paymentMethod === 'Check';
+              const showPayButton = !isAdminEdit && !isAlreadyPaid && paymentMethod === 'Card';
+              
+              if (showSubmitButton) {
+                return (
+                  <button className="btn btn-primary btn-save" type="submit" form="registration-form" disabled={isSubmitting}>
+                    {isSubmitting ? 'Saving...' : (registration ? 'Update Registration' : 'Complete Registration')}
+                  </button>
+                );
+              } else if (showPayButton) {
+                return (
+                  <button type="button" className="btn btn-primary btn-save" onClick={handleCardPay} disabled={isSubmitting}>
+                    {isSubmitting ? 'Processing...' : 'Pay & Complete Registration'}
+                  </button>
+                );
+              }
+              return null;
+            })()}
           </div>
         </form>
       </div>
