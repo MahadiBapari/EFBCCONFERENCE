@@ -54,12 +54,42 @@ router.post('/charge', async (req: Request, res: Response) => {
 
     const resultData: any = respRaw?.data;
     const payment = resultData?.payment;
+    
+    // Check for Square API errors first
+    if (resultData?.errors && Array.isArray(resultData.errors) && resultData.errors.length > 0) {
+      const errorMessages = resultData.errors.map((e: any) => e.detail || e.code || 'Unknown error').join(', ');
+      return res.status(400).json({
+        success: false,
+        error: `Payment failed: ${errorMessages}`,
+        details: resultData.errors
+      });
+    }
+    
     if (!payment) {
       // Include minimal diagnostics to help debug response shape differences
       return res.status(502).json({
         success: false,
-        error: 'No payment response',
-        hint: resultData?.errors || 'no-errors'
+        error: 'No payment response from Square',
+        hint: resultData?.errors || 'no-errors',
+        rawResponse: resultData
+      });
+    }
+    
+    // Check if payment was declined or not completed
+    if (payment.status === 'FAILED' || payment.status === 'CANCELED') {
+      return res.status(400).json({
+        success: false,
+        error: `Payment ${payment.status.toLowerCase()}. Please check your card details and try again.`,
+        paymentStatus: payment.status
+      });
+    }
+    
+    // Only accept COMPLETED payments
+    if (payment.status !== 'COMPLETED' && payment.status !== 'APPROVED') {
+      return res.status(400).json({
+        success: false,
+        error: `Payment status is ${payment.status}. Payment must be completed before registration can be saved.`,
+        paymentStatus: payment.status
       });
     }
 

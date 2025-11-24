@@ -358,8 +358,27 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           }
         })
       });
+      
+      if (!payRes.ok) {
+        const errorData = await payRes.json().catch(() => ({ error: 'Network error or invalid response' }));
+        const errorMessage = errorData?.error || errorData?.message || `Payment failed with status ${payRes.status}`;
+        throw new Error(errorMessage);
+      }
+      
       const payload = await payRes.json();
-      if (!payload?.success) throw new Error(payload?.error || 'Charge failed');
+      if (!payload?.success) {
+        const errorMessage = payload?.error || payload?.message || 'Payment charge failed';
+        throw new Error(errorMessage);
+      }
+      
+      if (!payload?.paymentId) {
+        throw new Error('Payment was processed but no payment ID was returned. Please contact support.');
+      }
+      
+      // Verify payment status is COMPLETED
+      if (payload?.status && payload.status !== 'COMPLETED') {
+        throw new Error(`Payment status is ${payload.status}. Payment may not have been completed successfully.`);
+      }
       
       // Determine clubRentals value based on user selection
       const isGolf = (formData.wednesdayActivity || '').toLowerCase().includes('golf');
@@ -407,24 +426,14 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         category: formData.wednesdayActivity || 'Networking',
       } as Registration;
       
-      // Verify payment was completed for card payments
-      const paymentMethod = formData.paymentMethod || 'Card';
-      if (!isAdminEdit && paymentMethod === 'Card' && !isAlreadyPaid) {
-        // Check if payment info exists in registrationData or existing registration
-        const hasPaymentInfo = registrationData.paid || (registrationData as any).squarePaymentId || (registration as any)?.paid || (registration as any)?.squarePaymentId;
-        if (!hasPaymentInfo) {
-          alert('Payment must be completed before registration can be submitted. Please use the "Pay & Complete Registration" button.');
-          setIsSubmitting(false);
-          return;
-        }
-      }
-      
+      // Payment has been verified above, now save the registration
       onSave(registrationData);
       alert('Thank you. Your Registration has been successfully submitted! A copy will be emailed to you.');
       onBack();
-    } catch (err:any) {
-      alert(err?.message || 'Payment failed');
-    } finally {
+    } catch (err: any) {
+      console.error('Payment error:', err);
+      const errorMessage = err?.message || err?.response?.data?.error || 'Payment failed. Please check your card details and try again.';
+      alert(`Payment Error: ${errorMessage}`);
       setIsSubmitting(false);
     }
   };
