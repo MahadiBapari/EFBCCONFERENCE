@@ -17,15 +17,16 @@ export class RegistrationController {
       const { page = 1, limit = 10, eventId, category, search } = req.query as RegistrationQuery;
       const offset = (Number(page) - 1) * Number(limit);
 
+      // Map camelCase to snake_case for database columns
       let conditions: Record<string, any> = {};
-      if (eventId) conditions.eventId = eventId;
+      if (eventId) conditions.event_id = eventId;
       if (category) conditions.category = category;
 
       let registrations;
       let total;
 
       if (search) {
-        const searchCondition = `firstName LIKE '%${search}%' OR lastName LIKE '%${search}%' OR email LIKE '%${search}%' OR organization LIKE '%${search}%'`;
+        const searchCondition = `first_name LIKE '%${search}%' OR last_name LIKE '%${search}%' OR email LIKE '%${search}%' OR organization LIKE '%${search}%'`;
         let whereClause = searchCondition;
         
         if (Object.keys(conditions).length > 0) {
