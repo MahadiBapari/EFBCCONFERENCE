@@ -149,6 +149,7 @@ const createTables = async () => {
     await migrateEventDescriptionToArray();
     await migrateEventStartDate();
     await migrateEmailCustomizations();
+    await migrateAddressFields();
 
     // Activity Groups table (basic definition; columns may be extended by migrations)
     await databaseService.query(`
@@ -441,6 +442,45 @@ const migrateEventStartDate = async (): Promise<void> => {
     }
   } catch (error: any) {
     console.error('Error migrating event start_date:', error?.message || error);
+  }
+};
+
+// Migration helper to split address into separate columns
+const migrateAddressFields = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    const cols = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+      [dbName, 'registrations']
+    );
+    const columnNames = cols.map((c: any) => c.COLUMN_NAME);
+
+    // Add new address columns if they don't exist
+    if (!columnNames.includes('address_street')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `address_street` VARCHAR(500) NULL AFTER `address`');
+      console.log('🛠️ Added registrations.address_street column');
+    }
+    if (!columnNames.includes('city')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `city` VARCHAR(255) NULL AFTER `address_street`');
+      console.log('🛠️ Added registrations.city column');
+    }
+    if (!columnNames.includes('state')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `state` VARCHAR(100) NULL AFTER `city`');
+      console.log('🛠️ Added registrations.state column');
+    }
+    if (!columnNames.includes('zip_code')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `zip_code` VARCHAR(20) NULL AFTER `state`');
+      console.log('🛠️ Added registrations.zip_code column');
+    }
+    if (!columnNames.includes('country')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `country` VARCHAR(100) NULL AFTER `zip_code`');
+      console.log('🛠️ Added registrations.country column');
+    }
+  } catch (error: any) {
+    console.error('Error migrating address fields:', error?.message || error);
   }
 };
 

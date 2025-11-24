@@ -11,7 +11,12 @@ export class Registration {
   public secondaryEmail?: string;
   public organization: string;
   public jobTitle: string;
-  public address: string;
+  public address: string; // Legacy field, kept for backward compatibility
+  public addressStreet?: string;
+  public city?: string;
+  public state?: string;
+  public zipCode?: string;
+  public country?: string;
   public mobile: string;
   public officePhone?: string;
   public isFirstTimeAttending: boolean;
@@ -72,6 +77,11 @@ export class Registration {
     this.organization = data.organization || '';
     this.jobTitle = data.jobTitle || '';
     this.address = data.address || '';
+    this.addressStreet = (data as any).addressStreet;
+    this.city = (data as any).city;
+    this.state = (data as any).state;
+    this.zipCode = (data as any).zipCode;
+    this.country = (data as any).country;
     this.mobile = data.mobile || '';
     this.officePhone = data.officePhone;
     this.isFirstTimeAttending = data.isFirstTimeAttending || false;
@@ -136,6 +146,11 @@ export class Registration {
       organization: this.organization,
       jobTitle: this.jobTitle,
       address: this.address,
+      addressStreet: this.addressStreet,
+      city: this.city,
+      state: this.state,
+      zipCode: this.zipCode,
+      country: this.country,
       mobile: this.mobile,
       officePhone: this.officePhone,
       isFirstTimeAttending: this.isFirstTimeAttending,
@@ -196,6 +211,11 @@ export class Registration {
       organization: this.organization || null,
       job_title: this.jobTitle || null,
       address: this.address || null,
+      address_street: this.nullIfUndefined(this.addressStreet),
+      city: this.nullIfUndefined(this.city),
+      state: this.nullIfUndefined(this.state),
+      zip_code: this.nullIfUndefined(this.zipCode),
+      country: this.nullIfUndefined(this.country),
       mobile: this.mobile || null,
       office_phone: this.nullIfUndefined(this.officePhone),
       is_first_time_attending: this.isFirstTimeAttending ?? false,
@@ -248,6 +268,11 @@ export class Registration {
       organization: row.organization,
       jobTitle: row.job_title,
       address: row.address,
+      addressStreet: row.address_street,
+      city: row.city,
+      state: row.state,
+      zipCode: row.zip_code,
+      country: row.country,
       mobile: row.mobile,
       officePhone: row.office_phone,
       isFirstTimeAttending: !!row.is_first_time_attending,

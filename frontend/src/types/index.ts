@@ -42,7 +42,12 @@ export interface Registration {
   secondaryEmail?: string;
   organization: string;
   jobTitle: string;
-  address: string;
+  address: string; // Legacy field, kept for backward compatibility
+  addressStreet?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
   mobile: string;
   officePhone?: string;
   isFirstTimeAttending: boolean;

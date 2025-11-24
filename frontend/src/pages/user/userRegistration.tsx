@@ -94,7 +94,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // Address fields (split)
+  // Address fields (split) - prefer new separate fields, fallback to parsing legacy address field
   const parseAddress = (addr?: string) => {
     const res = { street:'', city:'', state:'', zip:'', country:'' };
     if (!addr) return res;
@@ -108,7 +108,16 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (lines[2]) res.country = lines[2];
     return res;
   };
-  const initialAddr = parseAddress(registration?.address);
+  // Use new separate fields if available, otherwise parse legacy address field
+  const initialAddr = registration?.addressStreet 
+    ? {
+        street: registration.addressStreet || '',
+        city: registration.city || '',
+        state: registration.state || '',
+        zip: registration.zipCode || '',
+        country: registration.country || ''
+      }
+    : parseAddress(registration?.address);
   const [addrStreet, setAddrStreet] = useState<string>(initialAddr.street);
   const [addrCity, setAddrCity] = useState<string>(initialAddr.city);
   const [addrState, setAddrState] = useState<string>(initialAddr.state);
@@ -233,7 +242,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (!isAdminEdit && (formData.paymentMethod || 'Card') === 'Card' && !isAlreadyPaid) return; // handled by Pay & Complete button when not already paid
     setIsSubmitting(true);
     try {
-      // Compose address string for persistence
+      // Compose address string for backward compatibility (legacy field)
       const composedAddress = [
         addrStreet.trim(),
         `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
@@ -262,7 +271,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         clubRentals: clubRentalsValue,
         golfHandicap: golfHandicapValue,
         massageTimeSlot: massageTimeSlotValue,
-        address: composedAddress,
+        address: composedAddress, // Legacy field for backward compatibility
+        addressStreet: addrStreet.trim(),
+        city: addrCity.trim(),
+        state: addrState.trim(),
+        zipCode: addrZip.trim(),
+        country: addrCountry.trim(),
         tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
@@ -332,6 +346,13 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const golfHandicapValue = isGolf ? formData.golfHandicap : undefined; // Clear if not golf
       const massageTimeSlotValue = isMassage ? (formData as any).massageTimeSlot : undefined; // Clear if not massage
 
+      // Compose address string for backward compatibility (legacy field)
+      const composedAddress = [
+        addrStreet.trim(),
+        `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
+        addrCountry.trim()
+      ].filter(Boolean).join('\n');
+
       // Now save registration including payment markers
       const registrationData: Registration = {
         ...(registration?.id ? { id: registration.id } : {} as any),
@@ -344,11 +365,13 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         massageTimeSlot: massageTimeSlotValue,
         paid: true,
         squarePaymentId: payload.paymentId,
-        address: [
-          addrStreet.trim(),
-          `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
-          addrCountry.trim()
-        ].filter(Boolean).join('\n'),
+        address: composedAddress, // Legacy field for backward compatibility
+        addressStreet: addrStreet.trim(),
+        city: addrCity.trim(),
+        state: addrState.trim(),
+        zipCode: addrZip.trim(),
+        country: addrCountry.trim(),
+        tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
       } as Registration;
