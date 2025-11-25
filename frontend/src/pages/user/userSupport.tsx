@@ -126,7 +126,7 @@ export const UserSupport: React.FC = () => {
             )}
             <div className="contact-item">
               
-              <div className="contact-details">
+              {/* <div className="contact-details">
                 <h3>Address</h3>
                 <p>
                   EFBC Conference Inc<br />
@@ -137,7 +137,7 @@ export const UserSupport: React.FC = () => {
               </div>
             </div>
             <div className="contact-item">
-             
+              */}
               <div className="contact-details">
                 <h3>Response Time</h3>
                 <p>We typically respond within 24-48 hours during business days.</p>
