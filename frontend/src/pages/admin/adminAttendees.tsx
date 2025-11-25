@@ -660,19 +660,7 @@ const confirmSingleDelete = async () => {
                     <td>{displayValue(reg.emergencyContactName)}</td>
                     <td>{displayValue(reg.emergencyContactPhone)}</td>
                     <td>{displayValue(reg.wednesdayActivity)}</td>
-                    <td>
-                      {(() => {
-                        const assignedGroup = getGroupForRegistration(reg);
-                        const groupInfo = assignedGroup !== '-' ? groups.find(g => g.name === assignedGroup) : null;
-                        return assignedGroup !== '-' ? (
-                          <span className="group-badge" title={`Category: ${groupInfo?.category || 'N/A'}`}>
-                            {assignedGroup}
-                          </span>
-                        ) : (
-                          <span className="group-badge unassigned">Not Assigned</span>
-                        );
-                      })()}
-                    </td>
+                    <td>{displayValue(getGroupForRegistration(reg) === '-' ? 'N/A' : getGroupForRegistration(reg))}</td>
                     <td>{displayValue((reg as any).clubRentals)}</td>
                     <td>{displayValue(reg.golfHandicap)}</td>
                     <td>{displayValue((reg as any).massageTimeSlot)}</td>
@@ -710,14 +698,11 @@ const confirmSingleDelete = async () => {
                     aria-label="Select all attendees"
                   />
                 </th>
-                <th>Name</th><th>Email</th><th>Category</th><th>Group Assigned</th><th className="no-print">Actions</th>
+                <th>Name</th><th>Email</th><th>Category</th><th className="no-print">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredRegistrations.map(reg => {
-                const assignedGroup = getGroupForRegistration(reg);
-                const groupInfo = assignedGroup !== '-' ? groups.find(g => g.name === assignedGroup) : null;
-                return (
+              {filteredRegistrations.map(reg => (
                 <tr key={reg.id}>
                   <td className="td-checkbox no-print">
                     <input 
@@ -730,15 +715,6 @@ const confirmSingleDelete = async () => {
                   <td>{reg.name}</td>
                   <td>{reg.email}</td>
                   <td>{reg.category}</td>
-                  <td>
-                    {assignedGroup !== '-' ? (
-                      <span className="group-badge" title={`Category: ${groupInfo?.category || 'N/A'}`}>
-                        {assignedGroup}
-                      </span>
-                    ) : (
-                      <span className="group-badge unassigned">Not Assigned</span>
-                    )}
-                  </td>
                   <td className="no-print">
                       <div className="action-buttons">
                     <button 
@@ -778,8 +754,7 @@ const confirmSingleDelete = async () => {
                       )}
                   </td>
                 </tr>
-                );
-              })}
+              ))}
             </tbody>
           </table>
         </div>
