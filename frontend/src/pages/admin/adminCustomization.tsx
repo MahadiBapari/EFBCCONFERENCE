@@ -165,10 +165,10 @@ export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
     return (
       <div className="container">
         <div className="page-header">
-          <h1>Email Customization</h1>
+          <h1>Customization</h1>
         </div>
         <div className="card">
-            <span>Loading email customization…</span>
+            <span>Loading customization…</span>
         </div>
       </div>
     );
