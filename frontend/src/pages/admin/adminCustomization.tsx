@@ -9,15 +9,27 @@ export interface EmailCustomization {
   updatedAt: string | null;
 }
 
+export interface ContactCustomization {
+  id: number | null;
+  contactEmail: string;
+  contactPhone: string;
+  updatedAt: string | null;
+}
+
 interface AdminCustomizationProps {
   initialCustomization?: EmailCustomization | null;
+  initialContactCustomization?: ContactCustomization | null;
   onCacheUpdate?: (customization: EmailCustomization) => void;
+  onContactCacheUpdate?: (customization: ContactCustomization) => void;
 }
 
 export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
   initialCustomization,
+  initialContactCustomization,
   onCacheUpdate,
+  onContactCacheUpdate,
 }) => {
+  const [activeTab, setActiveTab] = useState<'email' | 'contact'>('email');
   const [customization, setCustomization] = useState<EmailCustomization>(
     initialCustomization || {
       id: null,
@@ -26,14 +38,21 @@ export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
       updatedAt: null,
     }
   );
-  const [loading, setLoading] = useState(!initialCustomization);
+  const [contactCustomization, setContactCustomization] = useState<ContactCustomization>(
+    initialContactCustomization || {
+      id: null,
+      contactEmail: '',
+      contactPhone: '',
+      updatedAt: null,
+    }
+  );
+  const [loading, setLoading] = useState(!initialCustomization || !initialContactCustomization);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const loadCustomization = useCallback(async () => {
     try {
-      setLoading(true);
       setError(null);
       const response = await apiClient.get('/customization/email') as any;
       if (response.success && response.data) {
@@ -48,21 +67,47 @@ export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to load email customization');
-    } finally {
-      setLoading(false);
     }
   }, [onCacheUpdate]);
 
-  useEffect(() => {
-    if (initialCustomization) {
-      setCustomization(initialCustomization);
-      setLoading(false);
-    } else {
-      loadCustomization();
+  const loadContactCustomization = useCallback(async () => {
+    try {
+      setError(null);
+      const response = await apiClient.get('/customization/contact') as any;
+      if (response.success && response.data) {
+        const next: ContactCustomization = {
+          id: response.data.id,
+          contactEmail: response.data.contactEmail || '',
+          contactPhone: response.data.contactPhone || '',
+          updatedAt: response.data.updatedAt,
+        };
+        setContactCustomization(next);
+        if (onContactCacheUpdate) onContactCacheUpdate(next);
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to load contact customization');
     }
-  }, [initialCustomization, loadCustomization]);
+  }, [onContactCacheUpdate]);
 
-  const handleSave = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const loadData = async () => {
+      if (initialCustomization && initialContactCustomization) {
+        setCustomization(initialCustomization);
+        setContactCustomization(initialContactCustomization);
+        setLoading(false);
+      } else {
+        setLoading(true);
+        await Promise.all([
+          initialCustomization ? Promise.resolve() : loadCustomization(),
+          initialContactCustomization ? Promise.resolve() : loadContactCustomization(),
+        ]);
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [initialCustomization, initialContactCustomization, loadCustomization, loadContactCustomization]);
+
+  const handleSaveEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setSaving(true);
@@ -89,6 +134,33 @@ export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
     }
   };
 
+  const handleSaveContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+      
+      const response = await apiClient.put('/customization/contact', {
+        contactEmail: contactCustomization.contactEmail,
+        contactPhone: contactCustomization.contactPhone,
+      }) as any;
+
+      if (response.success) {
+        setSuccess('Contact customization saved successfully!');
+        await loadContactCustomization();
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(response.error || 'Failed to save contact customization');
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to save contact customization');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container">
@@ -105,13 +177,31 @@ export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
   return (
     <div className="container">
       <div className="page-header">
-        <h1>Email Customization</h1>
+        <h1>Customization</h1>
         <p className="page-description">
-          Customize the header and footer text that will appear in all email templates.
+          Customize email templates and contact information.
         </p>
       </div>
 
-      <form onSubmit={handleSave} className="customization-form">
+      <div className="customization-tabs">
+        <button
+          type="button"
+          className={`customization-tab-btn ${activeTab === 'email' ? 'active' : ''}`}
+          onClick={() => setActiveTab('email')}
+        >
+          Email
+        </button>
+        <button
+          type="button"
+          className={`customization-tab-btn ${activeTab === 'contact' ? 'active' : ''}`}
+          onClick={() => setActiveTab('contact')}
+        >
+          Contact
+        </button>
+      </div>
+
+      {activeTab === 'email' && (
+        <form onSubmit={handleSaveEmail} className="customization-form">
         <div className="card">
           <h2>Email Header</h2>
           <p className="field-description">
@@ -170,10 +260,66 @@ export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
             className="btn btn-primary"
             disabled={saving}
           >
-            {saving ? 'Saving...' : 'Save Customization'}
+            {saving ? 'Saving...' : 'Save Email Customization'}
           </button>
         </div>
       </form>
+      )}
+
+      {activeTab === 'contact' && (
+        <form onSubmit={handleSaveContact} className="customization-form">
+          <div className="card">
+            <h2>Contact Information</h2>
+            <p className="field-description">
+              Customize the contact email and phone number displayed on the Support & Contact page.
+            </p>
+            <div className="form-group">
+              <label htmlFor="contactEmail">Contact Email</label>
+              <input
+                id="contactEmail"
+                type="email"
+                className="form-control"
+                value={contactCustomization.contactEmail}
+                onChange={(e) => setContactCustomization({ ...contactCustomization, contactEmail: e.target.value })}
+                placeholder="e.g., info@efbcconference.org"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="contactPhone">Contact Phone</label>
+              <input
+                id="contactPhone"
+                type="tel"
+                className="form-control"
+                value={contactCustomization.contactPhone}
+                onChange={(e) => setContactCustomization({ ...contactCustomization, contactPhone: e.target.value })}
+                placeholder="e.g., +1 (555) 123-4567"
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className="alert alert-error">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="alert alert-success">
+              {success}
+            </div>
+          )}
+
+          <div className="form-actions">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save Contact Customization'}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 };

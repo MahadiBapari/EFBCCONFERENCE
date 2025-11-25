@@ -1,7 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../styles/UserSupport.css';
+import apiClient from '../../services/apiClient';
 
 export const UserSupport: React.FC = () => {
+  const [contactInfo, setContactInfo] = useState<{ contactEmail: string; contactPhone: string }>({
+    contactEmail: 'info@efbcconference.org',
+    contactPhone: '',
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadContactInfo = async () => {
+      try {
+        const response = await apiClient.get('/customization/contact/public') as any;
+        if (response.success && response.data) {
+          setContactInfo({
+            contactEmail: response.data.contactEmail || 'info@efbcconference.org',
+            contactPhone: response.data.contactPhone || '',
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to load contact customization, using defaults:', err);
+        // Keep default values
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadContactInfo();
+  }, []);
 //   const [formData, setFormData] = useState({
 //     name: '',
 //     email: '',
@@ -73,10 +99,31 @@ export const UserSupport: React.FC = () => {
               <div className="contact-details">
                 <h3>Email</h3>
                 <p>
-                  <a href="mailto:info@efbcconference.org">info@efbcconference.org</a>
+                  {loading ? (
+                    <span>Loading...</span>
+                  ) : contactInfo.contactEmail ? (
+                    <a href={`mailto:${contactInfo.contactEmail}`}>{contactInfo.contactEmail}</a>
+                  ) : (
+                    <span>Not available</span>
+                  )}
                 </p>
               </div>
             </div>
+            {contactInfo.contactPhone && (
+              <div className="contact-item">
+                
+                <div className="contact-details">
+                  <h3>Phone</h3>
+                  <p>
+                    {loading ? (
+                      <span>Loading...</span>
+                    ) : (
+                      <a href={`tel:${contactInfo.contactPhone}`}>{contactInfo.contactPhone}</a>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="contact-item">
               
               <div className="contact-details">

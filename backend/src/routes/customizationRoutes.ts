@@ -49,5 +49,31 @@ router.put('/email', getController, async (req: Request, res: Response) => {
   await controller.updateEmailCustomization(req, res);
 });
 
+// Get contact customization (admin only)
+router.get('/contact', getController, async (req: Request, res: Response) => {
+  const auth = getAuth(req);
+  if (!auth.id || auth.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Admin access required' });
+  }
+  const controller = (req as any).customizationController as CustomizationController;
+  await controller.getContactCustomization(req, res);
+});
+
+// Update contact customization (admin only)
+router.put('/contact', getController, async (req: Request, res: Response) => {
+  const auth = getAuth(req);
+  if (!auth.id || auth.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Admin access required' });
+  }
+  const controller = (req as any).customizationController as CustomizationController;
+  await controller.updateContactCustomization(req, res);
+});
+
+// Get contact customization (public - for support page)
+router.get('/contact/public', getController, async (req: Request, res: Response) => {
+  const controller = (req as any).customizationController as CustomizationController;
+  await controller.getContactCustomization(req, res);
+});
+
 export default router;
 

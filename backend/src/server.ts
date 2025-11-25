@@ -149,6 +149,7 @@ const createTables = async () => {
     await migrateEventDescriptionToArray();
     await migrateEventStartDate();
     await migrateEmailCustomizations();
+    await migrateContactCustomizations();
     await migrateAddressFields();
     await migrateChildLunchFeature();
     await migratePickleballEquipment();
@@ -561,6 +562,24 @@ const migrateEmailCustomizations = async (): Promise<void> => {
     console.log('🛠️ Email customizations table created/verified');
   } catch (error: any) {
     console.error('Error migrating email customizations:', error?.message || error);
+  }
+};
+
+// Migration helper to create contact_customizations table
+const migrateContactCustomizations = async (): Promise<void> => {
+  try {
+    await databaseService.query(`
+      CREATE TABLE IF NOT EXISTS contact_customizations (
+        id INT PRIMARY KEY,
+        contact_email VARCHAR(255) NULL,
+        contact_phone VARCHAR(50) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('🛠️ Contact customizations table created/verified');
+  } catch (error: any) {
+    console.error('Error migrating contact customizations:', error?.message || error);
   }
 };
 

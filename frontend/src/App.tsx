@@ -15,7 +15,7 @@ import { AdminEventForm } from './pages/admin/adminEventForm';
 import { AdminAttendees } from './pages/admin/adminAttendees';
 import { AdminGroups } from './pages/admin/adminGroups';
 import { AdminUsers } from './pages/admin/adminUsers';
-import { AdminCustomization, EmailCustomization } from './pages/admin/adminCustomization';
+import { AdminCustomization, EmailCustomization, ContactCustomization } from './pages/admin/adminCustomization';
 import { AdminProfile } from './pages/admin/adminProfile';
 import { EventDetailsPage } from './pages/admin/eventsDetails';
 import { Event, Registration, Group, User, RegisterForm } from './types';
@@ -54,6 +54,7 @@ const App: React.FC = () => {
   const [cancellationApprovedRows, setCancellationApprovedRows] = useState<any[]>([]);
   const [cancellationsLoading, setCancellationsLoading] = useState<boolean>(false);
   const [emailCustomizationCache, setEmailCustomizationCache] = useState<EmailCustomization | null>(null);
+  const [contactCustomizationCache, setContactCustomizationCache] = useState<ContactCustomization | null>(null);
   const [adminUsersCache, setAdminUsersCache] = useState<User[]>([]);
   const [adminUsersPaginationCache, setAdminUsersPaginationCache] = useState<any | null>(null);
 
@@ -548,6 +549,38 @@ const handleLogout = () => {
     alert(`Successfully assigned ${validRegsToMove.length} attendee(s) to "${targetGroup.name}".`);
   };
 
+  const loadContactCustomizationFromApi = async () => {
+    try {
+      const response = await apiClient.get('/customization/contact') as any;
+      if (response.success && response.data) {
+        setContactCustomizationCache({
+          id: response.data.id,
+          contactEmail: response.data.contactEmail || '',
+          contactPhone: response.data.contactPhone || '',
+          updatedAt: response.data.updatedAt,
+        });
+      }
+    } catch (err) {
+      console.warn('Failed to load contact customization:', err);
+    }
+  };
+
+  const loadEmailCustomizationFromApi = async () => {
+    try {
+      const response = await apiClient.get('/customization/email') as any;
+      if (response.success && response.data) {
+        setEmailCustomizationCache({
+          id: response.data.id,
+          headerText: response.data.headerText || '',
+          footerText: response.data.footerText || '',
+          updatedAt: response.data.updatedAt,
+        });
+      }
+    } catch (err) {
+      console.warn('Failed to load email customization:', err);
+    }
+  };
+
   const handleSetActiveView = (newView: string) => {
     setViewingEventId(null);
     setView(newView);
@@ -560,6 +593,14 @@ const handleLogout = () => {
         cancellationApprovedRows.length === 0
       ) {
         loadCancellationRequestsFromApi();
+      }
+    }
+    if (role === 'admin' && newView === 'customization') {
+      if (!emailCustomizationCache) {
+        loadEmailCustomizationFromApi();
+      }
+      if (!contactCustomizationCache) {
+        loadContactCustomizationFromApi();
       }
     }
   };
@@ -677,7 +718,9 @@ const handleLogout = () => {
           return (
             <AdminCustomization
               initialCustomization={emailCustomizationCache}
+              initialContactCustomization={contactCustomizationCache}
               onCacheUpdate={(c) => setEmailCustomizationCache(c)}
+              onContactCacheUpdate={(c) => setContactCustomizationCache(c)}
             />
           );
         case 'editRegistration':
