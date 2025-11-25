@@ -17,7 +17,7 @@ import customizationRoutes from './routes/customizationRoutes';
 
 // Load environment variables (only from .env in non-production)
 if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
-  dotenv.config();
+dotenv.config();
 }
 
 // Express app
@@ -151,6 +151,7 @@ const createTables = async () => {
     await migrateEmailCustomizations();
     await migrateContactCustomizations();
     await migrateAddressFields();
+    await migrateGroupAssignedColumn();
     await migrateChildLunchFeature();
     await migratePickleballEquipment();
 
@@ -544,6 +545,76 @@ const migrateAddressFields = async (): Promise<void> => {
     }
   } catch (error: any) {
     console.error('Error migrating address fields:', error?.message || error);
+  }
+};
+
+// Migration helper to add group_assigned column to registrations
+const migrateGroupAssignedColumn = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    const regCols: any[] = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+      [dbName, 'registrations']
+    );
+
+    const hasColumn = regCols.some((c: any) => c.COLUMN_NAME === 'group_assigned');
+    
+    if (!hasColumn) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `group_assigned` INT NULL AFTER `country`');
+      console.log('🛠️ Added group_assigned column to registrations table');
+    }
+
+    // Sync existing group assignments from activity_groups.members to registrations.group_assigned
+    try {
+      const groups: any[] = await databaseService.query('SELECT id, members FROM `activity_groups`');
+      for (const group of groups) {
+        if (group.members) {
+          let memberIds: number[] = [];
+          try {
+            memberIds = typeof group.members === 'string' ? JSON.parse(group.members) : group.members;
+            if (!Array.isArray(memberIds)) memberIds = [];
+          } catch {
+            // If parsing fails, try to extract numbers from the string
+            const matches = String(group.members).match(/\d+/g);
+            memberIds = matches ? matches.map(Number) : [];
+          }
+          
+          if (memberIds.length > 0) {
+            const placeholders = memberIds.map(() => '?').join(',');
+            await databaseService.query(
+              `UPDATE \`registrations\` SET \`group_assigned\` = ? WHERE \`id\` IN (${placeholders})`,
+              [group.id, ...memberIds]
+            );
+          }
+        }
+      }
+      console.log('🛠️ Synced existing group assignments to registrations.group_assigned');
+    } catch (syncError: any) {
+      console.warn('⚠️ Could not sync existing group assignments:', syncError?.message || syncError);
+    }
+
+    // Add foreign key constraint (optional, but good for data integrity)
+    if (!hasColumn) {
+      try {
+        await databaseService.query(`
+          ALTER TABLE \`registrations\` 
+          ADD CONSTRAINT \`fk_registrations_group_assigned\` 
+          FOREIGN KEY (\`group_assigned\`) 
+          REFERENCES \`activity_groups\`(\`id\`) 
+          ON DELETE SET NULL 
+          ON UPDATE CASCADE
+        `);
+        console.log('🛠️ Added foreign key constraint for group_assigned');
+      } catch (fkError: any) {
+        // If foreign key creation fails (e.g., constraint already exists), that's okay
+        console.log('ℹ️ Foreign key constraint skipped (may already exist or table not ready)');
+      }
+    }
+  } catch (error: any) {
+    console.error('Error migrating group_assigned column:', error?.message || error);
   }
 };
 

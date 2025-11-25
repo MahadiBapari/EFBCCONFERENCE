@@ -90,6 +90,9 @@ export interface Registration {
   paid?: boolean;
   squarePaymentId?: string;
   
+  // Group Assignment
+  groupAssigned?: number;
+  
   // Legacy fields for backward compatibility
   name: string;
   category: string;

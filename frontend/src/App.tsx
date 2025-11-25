@@ -226,6 +226,7 @@ useEffect(() => {
         paymentMethod: r.paymentMethod ?? 'Card',
         paid: r.paid ?? false,
         squarePaymentId: r.squarePaymentId ?? r.square_payment_id,
+        groupAssigned: r.groupAssigned ?? r.group_assigned ?? undefined,
         // Legacy
         name: r.name ?? `${r.firstName || ''} ${r.lastName || ''}`.trim(),
         category: r.category ?? (r.wednesdayActivity ?? 'Networking'),

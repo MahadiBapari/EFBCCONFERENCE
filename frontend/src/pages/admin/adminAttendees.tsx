@@ -404,8 +404,14 @@ const confirmSingleDelete = async () => {
   }, [groups]);
 
   // Helper function to find which group a registration belongs to
-  const getGroupForRegistration = useCallback((regId: number): string => {
-    const group = groups.find(g => g.members.includes(regId));
+  const getGroupForRegistration = useCallback((reg: Registration): string => {
+    // First check if registration has groupAssigned field (new approach)
+    if (reg.groupAssigned) {
+      const group = groups.find(g => g.id === reg.groupAssigned);
+      return group ? group.name : '-';
+    }
+    // Fallback to old approach (checking members array)
+    const group = groups.find(g => g.members.includes(reg.id));
     return group ? group.name : '-';
   }, [groups]);
 
@@ -436,7 +442,7 @@ const confirmSingleDelete = async () => {
       'Emergency Contact Name': reg.emergencyContactName,
       'Emergency Contact Phone': reg.emergencyContactPhone,
       'Activity': reg.wednesdayActivity,
-      'Group Assigned': getGroupForRegistration(reg.id),
+      'Group Assigned': getGroupForRegistration(reg),
       'Club Rentals': (reg as any).clubRentals,
       'Golf Handicap': reg.golfHandicap,
       'Massage Time Slot': (reg as any).massageTimeSlot,
@@ -656,7 +662,7 @@ const confirmSingleDelete = async () => {
                     <td>{displayValue(reg.wednesdayActivity)}</td>
                     <td>
                       {(() => {
-                        const assignedGroup = getGroupForRegistration(reg.id);
+                        const assignedGroup = getGroupForRegistration(reg);
                         const groupInfo = assignedGroup !== '-' ? groups.find(g => g.name === assignedGroup) : null;
                         return assignedGroup !== '-' ? (
                           <span className="group-badge" title={`Category: ${groupInfo?.category || 'N/A'}`}>
@@ -709,7 +715,7 @@ const confirmSingleDelete = async () => {
             </thead>
             <tbody>
               {filteredRegistrations.map(reg => {
-                const assignedGroup = getGroupForRegistration(reg.id);
+                const assignedGroup = getGroupForRegistration(reg);
                 const groupInfo = assignedGroup !== '-' ? groups.find(g => g.name === assignedGroup) : null;
                 return (
                 <tr key={reg.id}>
@@ -770,8 +776,8 @@ const confirmSingleDelete = async () => {
                           {emailMessage.text}
                         </div>
                       )}
-                    </td>
-                  </tr>
+                  </td>
+                </tr>
                 );
               })}
             </tbody>
