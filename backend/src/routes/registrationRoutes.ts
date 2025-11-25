@@ -64,12 +64,13 @@ router.put('/:id', async (req: any, res: any) => {
   await req.registrationController.updateRegistration(req, res);
 });
 
-router.delete('/:id', async (req: any, res: any) => {
-  await req.registrationController.deleteRegistration(req, res);
-});
-
+// Bulk delete route (must come before /:id to avoid route conflicts)
 router.delete('/bulk', async (req: any, res: any) => {
   await req.registrationController.bulkDeleteRegistrations(req, res);
+});
+
+router.delete('/:id', async (req: any, res: any) => {
+  await req.registrationController.deleteRegistration(req, res);
 });
 
 export default router;

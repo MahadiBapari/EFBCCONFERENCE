@@ -65,8 +65,8 @@ class ApiClient {
     return response.data;
   }
 
-  async delete<T>(url: string): Promise<ApiResponse<T>> {
-    const response = await this.client.delete(url);
+  async delete<T>(url: string, config?: any): Promise<ApiResponse<T>> {
+    const response = await this.client.delete(url, config);
     return response.data;
   }
 }
@@ -109,6 +109,12 @@ export const registrationsApi = {
   },
   async resendConfirmation(id: number): Promise<any> {
     return apiClient.post(`/registrations/${id}/resend-confirmation`, {});
+  },
+  async delete(id: number): Promise<any> {
+    return apiClient.delete(`/registrations/${id}`);
+  },
+  async bulkDelete(ids: number[]): Promise<any> {
+    return apiClient.delete('/registrations/bulk', { data: { ids } });
   }
 };
 

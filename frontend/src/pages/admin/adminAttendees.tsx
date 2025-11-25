@@ -188,10 +188,44 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
-    handleDeleteRegistrations(selectedRegIds);
-    setSelectedRegIds([]);
+  const [deleting, setDeleting] = useState(false);
+
+  const confirmDelete = async () => {
+    if (selectedRegIds.length === 0) return;
+    
+    setDeleting(true);
     setShowDeleteConfirm(false);
+    
+    try {
+      // Call API to delete from database
+      const response = await registrationsApi.bulkDelete(selectedRegIds);
+      
+      if (response.success) {
+        // Update local state after successful deletion
+        handleDeleteRegistrations(selectedRegIds);
+        setSelectedRegIds([]);
+        
+        // Show success message
+        setMessageModalContent({
+          title: 'Success',
+          message: `Successfully deleted ${selectedRegIds.length} registration(s).`,
+          type: 'success'
+        });
+        setShowMessageModal(true);
+      } else {
+        throw new Error(response.error || 'Failed to delete registrations');
+      }
+    } catch (error: any) {
+      console.error('Error deleting registrations:', error);
+      setMessageModalContent({
+        title: 'Error',
+        message: `Failed to delete registrations: ${error?.message || 'Unknown error'}`,
+        type: 'error'
+      });
+      setShowMessageModal(true);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const [cancelling, setCancelling] = useState(false);
@@ -783,8 +817,9 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                 type="button"
                 className="btn btn-danger"
                 onClick={confirmDelete}
+                disabled={deleting}
               >
-                Delete
+                {deleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           }
