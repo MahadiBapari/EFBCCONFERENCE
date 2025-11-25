@@ -242,6 +242,25 @@
   border: 1px solid #fca5a5;
 }
 
+.group-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+  white-space: nowrap;
+}
+
+.group-badge.unassigned {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  font-style: italic;
+}
+
 /* Add Attendee modal */
 .attendee-modal-backdrop {
   position: fixed;
