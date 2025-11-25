@@ -734,11 +734,11 @@ const confirmSingleDelete = async () => {
                           {resendingEmailId === reg.id ? '⏳ Sending...' : '📧 Resend Email'}
                         </button>
                         <button
-                          className="icon-btn"
+                          className="btn btn-danger btn-sm"
                           onClick={() => handleOpenSingleDelete(reg)}
                           title="Delete registration"
                         >
-                          🗑️
+                          Delete
                         </button>
                       </div>
                       {emailMessage && emailMessage.regId === reg.id && (
