@@ -50,7 +50,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     // Personal Information
     firstName: registration?.firstName || user.name.split(' ')[0] || '',
     lastName: registration?.lastName || user.name.split(' ').slice(1).join(' ') || '',
-    badgeName: registration?.badgeName || user.name || '',
+    badgeName: (registration?.badgeName || user.name || '').toUpperCase(),
     email: registration?.email || user.email || '',
     secondaryEmail: registration?.secondaryEmail || '',
     organization: registration?.organization || '',
@@ -292,6 +292,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         golfHandicap: golfHandicapValue,
         massageTimeSlot: massageTimeSlotValue,
         pickleballEquipment: pickleballEquipmentValue,
+        badgeName: (formData.badgeName || '').toUpperCase(), // Ensure badge name is saved in uppercase
         address: composedAddress, // Legacy field for backward compatibility
         addressStreet: addrStreet.trim(),
         city: addrCity.trim(),
@@ -412,6 +413,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         userId: user.id,
         eventId: event.id,
         ...formData,
+        badgeName: (formData.badgeName || '').toUpperCase(), // Ensure badge name is saved in uppercase
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
         golfHandicap: golfHandicapValue,
@@ -498,6 +500,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => {
+      // Convert badgeName to uppercase
+      if (field === 'badgeName' && typeof value === 'string') {
+        value = value.toUpperCase();
+      }
       const updated = { ...prev, [field]: value };
       
       // Clear golf-related fields if activity is not golf
@@ -623,8 +629,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               </div>
             </div>
             <div className="form-group">
-              <label htmlFor="badgeName" className="form-label">Your 1st name as you wish it to appear on your badge <span className="required-asterisk">*</span></label>
-              <input id="badgeName" type="text" className={`form-control ${errors.badgeName ? 'error' : ''}`} value={formData.badgeName || ''} onChange={e => handleInputChange('badgeName', e.target.value)} required />
+              <label htmlFor="badgeName" className="form-label">YOUR 1ST NAME AS YOU WISH IT TO APPEAR ON YOUR BADGE <span className="required-asterisk">*</span></label>
+              <input 
+                id="badgeName" 
+                type="text" 
+                className={`form-control badge-name-uppercase ${errors.badgeName ? 'error' : ''}`} 
+                value={formData.badgeName || ''} 
+                onChange={e => handleInputChange('badgeName', e.target.value)} 
+                required 
+              />
               {errors.badgeName && <div className="error-message">{errors.badgeName}</div>}
             </div>
             <div className="form-row">
