@@ -40,7 +40,8 @@ class ApiClient {
         const status = error?.response?.status;
         const url = (error?.config?.url || '') as string;
         const isAuthFlow = url.includes('/auth/login') || url.includes('/users/register');
-        if (status === 401 && !isAuthFlow && window.location.pathname !== '/login') {
+        const isResetPassword = window.location.pathname === '/reset-password';
+        if (status === 401 && !isAuthFlow && window.location.pathname !== '/login' && !isResetPassword) {
           localStorage.removeItem('token');
           window.location.href = '/login';
         }

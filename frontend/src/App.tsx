@@ -131,6 +131,12 @@ const App: React.FC = () => {
 // Restore session and initial data once on mount
 useEffect(() => {
   const init = async () => {
+    // Skip auth check if on reset password page
+    if (window.location.pathname === '/reset-password') {
+      setAuthInitializing(false);
+      return;
+    }
+
     const token = localStorage.getItem('token');
 
     try {
