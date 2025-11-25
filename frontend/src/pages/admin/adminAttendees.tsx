@@ -4,7 +4,7 @@ import { formatDateShort } from '../../utils/dateUtils';
 import '../../styles/AdminAttendees.css';
 import { RegistrationPreview } from '../../components/RegistrationPreview';
 import { Modal } from '../../components/Modal';
-import { apiClient, cancelApi } from '../../services/apiClient';
+import { apiClient, cancelApi, registrationsApi } from '../../services/apiClient';
 import * as XLSX from 'xlsx';
 
 interface AdminAttendeesProps {
@@ -37,6 +37,8 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   const [selectedRegIds, setSelectedRegIds] = useState<number[]>([]);
   const [previewRegId, setPreviewRegId] = useState<number | null>(null);
   const [showDetailTable, setShowDetailTable] = useState(false);
+  const [resendingEmailId, setResendingEmailId] = useState<number | null>(null);
+  const [emailMessage, setEmailMessage] = useState<{ regId: number; type: 'success' | 'error'; text: string } | null>(null);
 
   // State for Add Attendee (select user) modal
   interface SimpleUser {
@@ -297,6 +299,26 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     handleBulkAssignGroup(selectedRegIds, targetGroupId);
     setSelectedRegIds([]);
     e.target.value = ""; // Reset dropdown
+  };
+
+  const handleResendConfirmation = async (regId: number) => {
+    setResendingEmailId(regId);
+    setEmailMessage(null);
+    
+    try {
+      const response = await registrationsApi.resendConfirmation(regId);
+      if (response.success) {
+        setEmailMessage({ regId, type: 'success', text: 'Confirmation email sent successfully!' });
+      } else {
+        setEmailMessage({ regId, type: 'error', text: response.error || 'Failed to send email' });
+      }
+    } catch (error: any) {
+      setEmailMessage({ regId, type: 'error', text: error?.response?.data?.error || 'Failed to send email' });
+    } finally {
+      setResendingEmailId(null);
+      // Clear message after 5 seconds
+      setTimeout(() => setEmailMessage(null), 5000);
+    }
   };
 
   const groupsByCategory = useMemo(() => {
@@ -631,7 +653,20 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                         >
                           ✏️ Edit
                         </button>
+                        <button 
+                          className="btn btn-outline btn-sm" 
+                          onClick={() => handleResendConfirmation(reg.id)}
+                          disabled={resendingEmailId === reg.id}
+                          title="Resend Confirmation Email"
+                        >
+                          {resendingEmailId === reg.id ? '⏳ Sending...' : '📧 Resend Email'}
+                        </button>
                       </div>
+                      {emailMessage && emailMessage.regId === reg.id && (
+                        <div className={`email-message-small ${emailMessage.type === 'success' ? 'success' : 'error'}`}>
+                          {emailMessage.text}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

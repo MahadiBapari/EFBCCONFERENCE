@@ -47,6 +47,11 @@ router.get('/event/:eventId', async (req: any, res: any) => {
   await req.registrationController.getRegistrations(req, res);
 });
 
+// Resend confirmation email route (must come before /:id to avoid route conflicts)
+router.post('/:id/resend-confirmation', async (req: any, res: any) => {
+  await req.registrationController.resendConfirmationEmail(req, res);
+});
+
 router.get('/:id', async (req: any, res: any) => {
   await req.registrationController.getRegistrationById(req, res);
 });

@@ -218,6 +218,28 @@
 .action-buttons {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.email-message-small {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  max-width: 200px;
+}
+
+.email-message-small.success {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.email-message-small.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
 }
 
 /* Add Attendee modal */

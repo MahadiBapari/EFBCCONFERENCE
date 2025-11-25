@@ -106,6 +106,9 @@ export const authApi = {
 export const registrationsApi = {
   async getById(id: number): Promise<any> {
     return apiClient.get(`/registrations/${id}`);
+  },
+  async resendConfirmation(id: number): Promise<any> {
+    return apiClient.post(`/registrations/${id}/resend-confirmation`, {});
   }
 };
 

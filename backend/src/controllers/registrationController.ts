@@ -405,4 +405,101 @@ export class RegistrationController {
       res.status(500).json(response);
     }
   }
+
+  // Resend registration confirmation email
+  async resendConfirmationEmail(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const registrationId = Number(id);
+
+      if (isNaN(registrationId)) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Invalid registration ID'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Fetch registration
+      const registrationRow = await this.db.findById('registrations', registrationId);
+      if (!registrationRow) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Registration not found'
+        };
+        res.status(404).json(response);
+        return;
+      }
+
+      // Convert to Registration model
+      const registration = Registration.fromDatabase(registrationRow);
+
+      // Fetch event details
+      const eventRow: any = await this.db.findById('events', registration.eventId);
+      if (!eventRow) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Event not found'
+        };
+        res.status(404).json(response);
+        return;
+      }
+
+      // Prepare email payload
+      const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || 'info@efbcconference.org';
+      const toName = registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim();
+      const evName = eventRow?.name;
+      const evDate = eventRow?.date;
+      const payload = {
+        name: toName,
+        eventName: evName,
+        eventDate: evDate,
+        totalPrice: registration.totalPrice,
+        registration: registration.toJSON ? registration.toJSON() : registration
+      } as any;
+
+      // Send emails (fire-and-forget)
+      const emailPromises: Promise<void>[] = [];
+      
+      // Primary email
+      emailPromises.push(
+        sendRegistrationConfirmationEmail({ to: registration.email, ...payload })
+          .catch((e) => console.warn('⚠️ Failed to send registration confirmation:', e))
+      );
+
+      // Secondary email if provided
+      if ((registration as any).secondaryEmail) {
+        emailPromises.push(
+          sendRegistrationConfirmationEmail({ to: (registration as any).secondaryEmail, ...payload })
+            .catch((e) => console.warn('⚠️ Failed to send secondary confirmation:', e))
+        );
+      }
+
+      // Admin copy
+      if (adminCopy) {
+        emailPromises.push(
+          sendRegistrationConfirmationEmail({ to: adminCopy, ...payload })
+            .catch((e) => console.warn('⚠️ Failed to send admin confirmation:', e))
+        );
+      }
+
+      // Wait for all emails to be sent (but don't fail if one fails)
+      await Promise.allSettled(emailPromises);
+
+      const response: ApiResponse = {
+        success: true,
+        message: 'Confirmation email(s) sent successfully'
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error resending confirmation email:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to resend confirmation email'
+      };
+      res.status(500).json(response);
+    }
+  }
 }
