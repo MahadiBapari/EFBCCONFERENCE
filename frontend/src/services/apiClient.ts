@@ -114,7 +114,7 @@ export const registrationsApi = {
     return apiClient.delete(`/registrations/${id}`);
   },
   async bulkDelete(ids: number[]): Promise<any> {
-    return apiClient.delete('/registrations/bulk', { data: { ids } });
+    return apiClient.post('/registrations/bulk-delete', { ids });
   }
 };
 

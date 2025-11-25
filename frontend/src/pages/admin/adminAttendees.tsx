@@ -62,6 +62,8 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageModalContent, setMessageModalContent] = useState<{ title: string; message: string; type: 'success' | 'error' } | null>(null);
+  const [singleDeleteTarget, setSingleDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [deletingSingle, setDeletingSingle] = useState(false);
 
   // Automatically select the most recent event on component mount
   useEffect(() => {
@@ -202,8 +204,8 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       
       if (response.success) {
         // Update local state after successful deletion
-        handleDeleteRegistrations(selectedRegIds);
-        setSelectedRegIds([]);
+      handleDeleteRegistrations(selectedRegIds);
+      setSelectedRegIds([]);
         
         // Show success message
         setMessageModalContent({
@@ -227,6 +229,42 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       setDeleting(false);
     }
   };
+
+const handleOpenSingleDelete = (reg: Registration) => {
+  setSingleDeleteTarget({ id: reg.id, name: reg.name });
+};
+
+const confirmSingleDelete = async () => {
+  if (!singleDeleteTarget) return;
+
+  setDeletingSingle(true);
+
+  try {
+    const response = await registrationsApi.delete(singleDeleteTarget.id);
+    if (response.success) {
+      handleDeleteRegistrations([singleDeleteTarget.id]);
+      setMessageModalContent({
+        title: 'Deleted',
+        message: `${singleDeleteTarget.name} has been removed.`,
+        type: 'success',
+      });
+      setShowMessageModal(true);
+    } else {
+      throw new Error(response.error || 'Failed to delete registration');
+    }
+  } catch (error: any) {
+    console.error('Error deleting registration:', error);
+    setMessageModalContent({
+      title: 'Error',
+      message: `Failed to delete registration: ${error?.message || 'Unknown error'}`,
+      type: 'error',
+    });
+    setShowMessageModal(true);
+  } finally {
+    setDeletingSingle(false);
+    setSingleDeleteTarget(null);
+  }
+};
 
   const [cancelling, setCancelling] = useState(false);
 
@@ -425,12 +463,12 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
     link.href = url;
     link.download = 'attendees.xlsx';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
@@ -642,44 +680,44 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
             </table>
           </div>
         ) : (
-          <div className="table-wrapper printable-area">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th className="th-checkbox no-print">
+        <div className="table-wrapper printable-area">
+          <table className="table">
+            <thead>
+              <tr>
+                <th className="th-checkbox no-print">
+                  <input 
+                    type="checkbox" 
+                    checked={isAllSelected}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    aria-label="Select all attendees"
+                  />
+                </th>
+                <th>Name</th><th>Email</th><th>Category</th><th className="no-print">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRegistrations.map(reg => (
+                <tr key={reg.id}>
+                  <td className="td-checkbox no-print">
                     <input 
                       type="checkbox" 
-                      checked={isAllSelected}
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      aria-label="Select all attendees"
+                      checked={selectedRegIds.includes(reg.id)}
+                      onChange={(e) => handleSelectOne(reg.id, e.target.checked)}
+                      aria-label={`Select ${reg.name}`}
                     />
-                  </th>
-                  <th>Name</th><th>Email</th><th>Category</th><th className="no-print">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRegistrations.map(reg => (
-                  <tr key={reg.id}>
-                    <td className="td-checkbox no-print">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedRegIds.includes(reg.id)}
-                        onChange={(e) => handleSelectOne(reg.id, e.target.checked)}
-                        aria-label={`Select ${reg.name}`}
-                      />
-                    </td>
-                    <td>{reg.name}</td>
-                    <td>{reg.email}</td>
-                    <td>{reg.category}</td>
-                    <td className="no-print">
+                  </td>
+                  <td>{reg.name}</td>
+                  <td>{reg.email}</td>
+                  <td>{reg.category}</td>
+                  <td className="no-print">
                       <div className="action-buttons">
-                        <button 
-                          className="btn btn-secondary btn-sm" 
+                    <button 
+                      className="btn btn-secondary btn-sm" 
                           onClick={() => setPreviewRegId(reg.id)}
-                          title="Details"
-                        >
-                          🔍 Details
-                        </button>
+                      title="Details"
+                    >
+                      🔍 Details
+                    </button>
                         <button 
                           className="btn btn-primary btn-sm" 
                           onClick={() => onEditRegistration(reg.id)}
@@ -695,18 +733,25 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
                         >
                           {resendingEmailId === reg.id ? '⏳ Sending...' : '📧 Resend Email'}
                         </button>
+                        <button
+                          className="icon-btn"
+                          onClick={() => handleOpenSingleDelete(reg)}
+                          title="Delete registration"
+                        >
+                          🗑️
+                        </button>
                       </div>
                       {emailMessage && emailMessage.regId === reg.id && (
                         <div className={`email-message-small ${emailMessage.type === 'success' ? 'success' : 'error'}`}>
                           {emailMessage.text}
                         </div>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         )
       ) : (
         <p>No attendees found for this filter.</p>
@@ -888,6 +933,38 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
           }
         >
           <p>{messageModalContent.message}</p>
+        </Modal>
+      )}
+
+      {singleDeleteTarget && (
+        <Modal
+          title="Delete Registration"
+          onClose={() => (deletingSingle ? null : setSingleDeleteTarget(null))}
+          footer={
+            <div className="modal-footer-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setSingleDeleteTarget(null)}
+                disabled={deletingSingle}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={confirmSingleDelete}
+                disabled={deletingSingle}
+              >
+                {deletingSingle ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          }
+        >
+          <p>
+            Are you sure you want to delete <strong>{singleDeleteTarget.name}</strong>? This action cannot be
+            undone.
+          </p>
         </Modal>
       )}
     </div>

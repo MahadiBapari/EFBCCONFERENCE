@@ -304,7 +304,7 @@ export async function sendRegistrationConfirmationEmail(params: {
       ${formattedEventDate ? `<p style=\"margin:4px 0 0 0;\"><strong>Date:</strong> ${formattedEventDate}</p>` : ''}
       ${priceText ? `<p style=\"margin:8px 0 0 0;\"><strong>${priceText}</strong></p>` : ''}
       ${detailsHtml}
-      <p style="margin:12px 0 0 0;">We look forward to seeing you!</p>
+      
     `,
   });
   const parts: string[] = [];

@@ -64,8 +64,8 @@ router.put('/:id', async (req: any, res: any) => {
   await req.registrationController.updateRegistration(req, res);
 });
 
-// Bulk delete route (must come before /:id to avoid route conflicts)
-router.delete('/bulk', async (req: any, res: any) => {
+// Bulk delete route
+router.post('/bulk-delete', async (req: any, res: any) => {
   await req.registrationController.bulkDeleteRegistrations(req, res);
 });
 
