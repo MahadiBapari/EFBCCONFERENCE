@@ -68,7 +68,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     wednesdayActivity: registration?.wednesdayActivity || '',
     golfHandicap: registration?.golfHandicap || '',
     massageTimeSlot: registration?.massageTimeSlot || '8:00 AM- 10:00 AM',
-    pickleballEquipment: (registration as any)?.pickleballEquipment || false,
+    pickleballEquipment: (registration as any)?.pickleballEquipment !== undefined ? (registration as any).pickleballEquipment : undefined,
 
     // Conference Meals
     wednesdayReception: (registration?.wednesdayReception || '') as any,
@@ -218,6 +218,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     // Validate massage time slot if Massage is selected
     if ((formData.wednesdayActivity || '').toLowerCase().includes('massage') && !(formData as any).massageTimeSlot?.trim()) {
       newErrors.massageTimeSlot = 'Please select a preferred time slot';
+    }
+    // Validate pickleball equipment if Pickleball is selected
+    if ((formData.wednesdayActivity || '').toLowerCase().includes('pickleball') && (formData as any).pickleballEquipment === undefined) {
+      (newErrors as any).pickleballEquipment = 'Please select whether you will bring your own equipment';
     }
     if (formData.spouseDinnerTicket) {
       if (!formData.spouseFirstName?.trim()) newErrors.spouseFirstName = 'Spouse first name is required';
@@ -527,7 +531,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         const isPickleball = (updated.wednesdayActivity || '').toLowerCase().includes('pickleball');
         if (!isPickleball) {
           // Clear pickleball field when not pickleball
-          (updated as any).pickleballEquipment = false;
+          (updated as any).pickleballEquipment = undefined;
         }
       }
       
@@ -858,7 +862,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     <input 
                       type="radio" 
                       name="pickleballEquipment" 
-                      checked={!!(formData as any).pickleballEquipment} 
+                      checked={(formData as any).pickleballEquipment === true} 
                       onChange={() => handleInputChange('pickleballEquipment', true)} 
                     />
                     Yes
@@ -867,12 +871,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     <input 
                       type="radio" 
                       name="pickleballEquipment" 
-                      checked={!(formData as any).pickleballEquipment} 
+                      checked={(formData as any).pickleballEquipment === false} 
                       onChange={() => handleInputChange('pickleballEquipment', false)} 
                     />
                     No
                   </label>
                 </div>
+                {(errors as any).pickleballEquipment && (
+                  <div className="error-message">{(errors as any).pickleballEquipment}</div>
+                )}
               </div>
             )}
           </div>

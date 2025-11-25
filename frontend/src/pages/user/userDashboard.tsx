@@ -122,7 +122,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     onClick={() => handleCancelRegistration(userRegistration.id)}
                     disabled={pendingCancellationIds.includes(userRegistration.id)}
                   >
-                    {pendingCancellationIds.includes(userRegistration.id) ? 'Request Sent' : 'Cancel Registration'}
+                    {pendingCancellationIds.includes(userRegistration.id) ? 'Request Sent' : 'Request to Cancel'}
                   </button>
                 </div>
               )}
