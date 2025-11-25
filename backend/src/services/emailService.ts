@@ -2,7 +2,7 @@ import nodemailer, { type Transporter } from 'nodemailer';
 import dotenv from 'dotenv';
 // Load .env only in non-production to avoid overriding platform env vars
 if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
-  dotenv.config();
+dotenv.config();
 }
 
 const ensureTransporter = (): Transporter | null => {
@@ -215,6 +215,23 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   await sendMail({ to, subject, text, html });
 }
 
+// Helper function to format date as MM/DD/YYYY
+const formatDateMMDDYYYY = (dateStr?: string | null): string => {
+  if (!dateStr) return '';
+  try {
+    // Parse the date string (could be YYYY-MM-DD or ISO format)
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr; // Return original if invalid
+    
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  } catch {
+    return dateStr;
+  }
+};
+
 export async function sendRegistrationConfirmationEmail(params: {
   to: string;
   name: string;
@@ -229,6 +246,22 @@ export async function sendRegistrationConfirmationEmail(params: {
   const priceText = typeof totalPrice === 'number' ? `Total: $${totalPrice.toFixed(2)}` : '';
   const paymentMethod = registration?.paymentMethod || registration?.payment_method || '';
   const squarePaymentId = registration?.squarePaymentId || registration?.square_payment_id || '';
+  
+  // Format event date as MM/DD/YYYY (remove hours)
+  const formattedEventDate = formatDateMMDDYYYY(eventDate);
+  
+  // Get activity-specific details
+  const wednesdayActivity = registration?.wednesdayActivity || registration?.wednesday_activity || '';
+  const clubRentals = registration?.clubRentals || registration?.club_rentals || '';
+  const golfHandicap = registration?.golfHandicap || registration?.golf_handicap || '';
+  const massageTimeSlot = registration?.massageTimeSlot || registration?.massage_time_slot || '';
+  const pickleballEquipment = registration?.pickleballEquipment || registration?.pickleball_equipment;
+  
+  // Get additional fields
+  const dietaryRestrictions = registration?.dietaryRestrictions || registration?.dietary_restrictions || '';
+  const specialRequests = registration?.specialRequests || registration?.special_requests || '';
+  const emergencyContactName = registration?.emergencyContactName || registration?.emergency_contact_name || '';
+  const emergencyContactPhone = registration?.emergencyContactPhone || registration?.emergency_contact_phone || '';
 
   const detailsHtml = registration
     ? `
@@ -240,13 +273,20 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${registration.jobTitle ? `<tr><td style="color:#6b7280;">Job Title</td><td>${registration.jobTitle}</td></tr>`:''}
         ${registration.address ? `<tr><td style="color:#6b7280;">Address</td><td>${String(registration.address).replace(/\n/g,'<br/>')}</td></tr>`:''}
         ${registration.mobile ? `<tr><td style="color:#6b7280;">Mobile</td><td>${registration.mobile}</td></tr>`:''}
-        ${registration.wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${registration.wednesdayActivity}</td></tr>`:''}
+        ${wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${wednesdayActivity}</td></tr>`:''}
+        ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && golfHandicap ? `<tr><td style="color:#6b7280;">Golf Handicap</td><td>${golfHandicap}</td></tr>`:''}
+        ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && clubRentals ? `<tr><td style="color:#6b7280;">Golf Club Preference</td><td>${clubRentals}</td></tr>`:''}
+        ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('massage') && massageTimeSlot ? `<tr><td style="color:#6b7280;">Massage Time Slot</td><td>${massageTimeSlot}</td></tr>`:''}
+        ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('pickleball') && pickleballEquipment !== undefined ? `<tr><td style="color:#6b7280;">Pickleball Equipment</td><td>${pickleballEquipment ? 'I will bring my own' : 'I need equipment'}</td></tr>`:''}
         ${registration.tuesdayEarlyReception ? `<tr><td style="color:#6b7280;">Tuesday Early Arrivals Reception</td><td>${registration.tuesdayEarlyReception}</td></tr>`:''}
         ${registration.wednesdayReception ? `<tr><td style="color:#6b7280;">Wednesday Reception</td><td>${registration.wednesdayReception}</td></tr>`:''}
         ${registration.thursdayBreakfast ? `<tr><td style="color:#6b7280;">Thursday Breakfast</td><td>${registration.thursdayBreakfast}</td></tr>`:''}
         ${registration.thursdayLuncheon ? `<tr><td style="color:#6b7280;">Thursday Luncheon</td><td>${registration.thursdayLuncheon}</td></tr>`:''}
         ${registration.thursdayDinner ? `<tr><td style="color:#6b7280;">Thursday Dinner</td><td>${registration.thursdayDinner}</td></tr>`:''}
         ${registration.fridayBreakfast ? `<tr><td style="color:#6b7280;">Friday Breakfast</td><td>${registration.fridayBreakfast}</td></tr>`:''}
+        ${dietaryRestrictions ? `<tr><td style="color:#6b7280;">Dietary Restrictions</td><td>${dietaryRestrictions}</td></tr>`:''}
+        ${specialRequests ? `<tr><td style="color:#6b7280;">Special Requests</td><td>${specialRequests}</td></tr>`:''}
+        ${emergencyContactName || emergencyContactPhone ? `<tr><td style="color:#6b7280;">Emergency Contact</td><td>${emergencyContactName || ''}${emergencyContactName && emergencyContactPhone ? ' - ' : ''}${emergencyContactPhone || ''}</td></tr>`:''}
         ${priceText ? `<tr><td style="color:#6b7280;">Total</td><td><strong>$${Number(totalPrice).toFixed(2)}</strong></td></tr>`:''}
         ${paymentMethod ? `<tr><td style="color:#6b7280;">Payment Method</td><td>${paymentMethod}</td></tr>` : ''}
         ${paymentMethod === 'Card' && squarePaymentId ? `<tr><td style="color:#6b7280;">Square Payment ID</td><td><code>${squarePaymentId}</code></td></tr>` : ''}
@@ -261,7 +301,7 @@ export async function sendRegistrationConfirmationEmail(params: {
       <p style="margin:0 0 12px 0;">Hi ${name || 'Attendee'},</p>
       <p style="margin:0 0 8px 0;">Thank you for registering for the EFBC Conference.</p>
       ${eventName ? `<p style=\"margin:0;\"><strong>Event:</strong> ${eventName}</p>` : ''}
-      ${eventDate ? `<p style=\"margin:4px 0 0 0;\"><strong>Date:</strong> ${eventDate}</p>` : ''}
+      ${formattedEventDate ? `<p style=\"margin:4px 0 0 0;\"><strong>Date:</strong> ${formattedEventDate}</p>` : ''}
       ${priceText ? `<p style=\"margin:8px 0 0 0;\"><strong>${priceText}</strong></p>` : ''}
       ${detailsHtml}
       <p style="margin:12px 0 0 0;">We look forward to seeing you!</p>
@@ -270,7 +310,7 @@ export async function sendRegistrationConfirmationEmail(params: {
   const parts: string[] = [];
   parts.push('Thank you for registering for EFBC Conference.');
   if (eventName) parts.push(`Event: ${eventName}.`);
-  if (eventDate) parts.push(`Date: ${eventDate}.`);
+  if (formattedEventDate) parts.push(`Date: ${formattedEventDate}.`);
   if (priceText) parts.push(`${priceText}.`);
   if (paymentMethod) parts.push(`Payment method: ${paymentMethod}.`);
   if (paymentMethod === 'Card' && squarePaymentId) {
