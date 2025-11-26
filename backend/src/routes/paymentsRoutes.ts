@@ -24,7 +24,8 @@ router.post('/charge', async (req: Request, res: Response) => {
       currency = 'USD',
       nonce,
       billingAddress,
-      buyerEmail
+      buyerEmail,
+      buyerPhone
     } = req.body || {};
     const baseCents = Number(baseAmountCents ?? amountCents);
     if (!baseCents || !nonce) return res.status(400).json({ success: false, error: 'Missing fields' });
@@ -52,6 +53,7 @@ router.post('/charge', async (req: Request, res: Response) => {
           }
         : undefined,
       buyerEmailAddress: buyerEmail || undefined,
+      buyerPhoneNumber: buyerPhone || undefined,
     }).withRawResponse();
 
     const resultData: any = respRaw?.data;

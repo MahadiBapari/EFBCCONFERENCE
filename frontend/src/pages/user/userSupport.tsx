@@ -249,7 +249,7 @@ export const UserSupport: React.FC = () => {
             </div>
             <div className="faq-item">
               <h3>How do I cancel my registration?</h3>
-              <p>You can request cancellation from your Dashboard. Click "Cancel Registration" and provide a reason. Your cancellation request will be reviewed by an administrator.</p>
+              <p>You can request cancellation from your Dashboard. Click "Request to Cancel" and provide a reason. Your cancellation request will be reviewed by an administrator.</p>
             </div>
             <div className="faq-item">
               <h3>I forgot my password. How do I reset it?</h3>

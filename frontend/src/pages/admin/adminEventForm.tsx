@@ -312,7 +312,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
               </div>
             </div>
             
-            <div className="form-group">
+            {/* <div className="form-group">
               <label className="form-label" htmlFor="childLunchPrice">Child Lunch Price</label>
               <input
                 id="childLunchPrice"
@@ -325,7 +325,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
                 onChange={(e) => setChildLunchPrice(e.target.value === '' ? undefined : Number(e.target.value))}
                 disabled={isSubmitting}
               />
-            </div>
+            </div> */}
 
 
             {/* Spouse breakfast/lunch fields removed per requirement */}
