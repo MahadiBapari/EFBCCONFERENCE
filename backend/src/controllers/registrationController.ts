@@ -136,7 +136,7 @@ export class RegistrationController {
       registration.id = result.insertId;
 
       // Fire-and-forget confirmation emails (primary, secondary if any, and admin copy)
-      const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || 'info@efbcconference.org';
+      const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || 'planner@efbcconference.org';
       const toName = registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim();
       const eventRow: any = await this.db.findById('events', registration.eventId);
       const evName = eventRow?.name;
@@ -447,7 +447,7 @@ export class RegistrationController {
       }
 
       // Prepare email payload
-      const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || 'info@efbcconference.org';
+      const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || 'planner@efbcconference.org';
       const toName = registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim();
       const evName = eventRow?.name;
       const evDate = eventRow?.date;

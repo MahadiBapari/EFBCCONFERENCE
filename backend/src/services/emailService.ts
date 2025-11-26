@@ -419,9 +419,9 @@ export async function sendCancellationRequestAdminEmail(params: {
   const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
   const to =
     process.env.ADMIN_EMAIL ||
+    process.env.ADMIN_NOTIFY_EMAIL ||
     process.env.SUPPORT_EMAIL ||
-    process.env.EMAIL_FROM ||
-    'admin@example.com';
+    'planner@efbcconference.org';
   const subject = `New cancellation request for ${params.eventName || 'event'} (#${params.registrationId})`;
 
   const html = await renderEmailTemplate({

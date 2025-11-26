@@ -140,7 +140,7 @@ export const UserSupport: React.FC = () => {
               */}
               <div className="contact-details">
                 <h3>Response Time</h3>
-                <p>We typically respond within 24-48 hours during business days.</p>
+                <p>Within 24 hours during business hours.</p>
               </div>
             </div>
           </div>
