@@ -31,11 +31,13 @@ router.post('/charge', async (req: Request, res: Response) => {
     const finalCents = applyCardFee ? Math.round(baseCents * 1.035) : Number(amountCents ?? baseCents);
 
     const idempotencyKey = `${Date.now()}-${Math.random()}`;
+    const eventName = req.body.eventName || 'EFBC';
     const respRaw = await sq.payments.create({
       sourceId: nonce,
       idempotencyKey,
       amountMoney: { amount: BigInt(Number(finalCents)), currency },
       locationId: process.env.SQUARE_LOCATION_ID || undefined,
+      note: eventName,
       // Provide billing address to satisfy AVS
       billingAddress: billingAddress
         ? {

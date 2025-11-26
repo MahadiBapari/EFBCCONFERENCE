@@ -343,8 +343,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const nonce = res.token;
       const baseTotal = Number(formData.totalPrice || 0);
       const isCard = (formData.paymentMethod || 'Card') === 'Card';
-      const cardFee = isCard ? Math.round(baseTotal * 0.035 * 100) / 100 : 0;
-      const finalTotal = baseTotal + cardFee;
+      // Include 3.5% fee in the base price for card payments
+      const finalTotal = isCard ? Math.round(baseTotal * 1.035 * 100) / 100 : baseTotal;
       const amountCents = Math.round(finalTotal * 100);
       const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
         method: 'POST',
@@ -352,8 +352,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         body: JSON.stringify({
           amountCents,
           baseAmountCents: Math.round(baseTotal * 100),
-          applyCardFee: true,
+          applyCardFee: false, // Fee is already included in amountCents
           currency: 'USD',
+          eventName: event?.name || 'EFBC Conference Registration',
           nonce,
           buyerEmail: formData.email || undefined,
           billingAddress: {
@@ -417,6 +418,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         userId: user.id,
         eventId: event.id,
         ...formData,
+        totalPrice: finalTotal.toString(), // Save the final total with fee included for card payments
         badgeName: (formData.badgeName || '').toUpperCase(), // Ensure badge name is saved in uppercase
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
@@ -1080,8 +1082,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 {(() => {
                   const baseTotal = Number(formData.totalPrice || 0);
                   const isCard = (formData.paymentMethod || 'Card') === 'Card';
-                  const cardFee = isCard ? Math.round(baseTotal * 0.035 * 100) / 100 : 0;
-                  const finalTotal = baseTotal + cardFee;
+                  // Include 3.5% fee in the total for card payments
+                  const finalTotal = isCard ? Math.round(baseTotal * 1.035 * 100) / 100 : baseTotal;
                   return (
                 <div className="payment-summary">
                   <div className="payment-item">
@@ -1094,16 +1096,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       <span>${(function () { const now = Date.now(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
                     </div>
                   )}
-                  {isCard && (
-                    <div className="payment-item">
-                      <span>Card Processing Fee (3.5%):</span>
-                      <span>${cardFee.toFixed(2)}</span>
-                    </div>
-                  )}
                   <div className="payment-total">
                     <span>Total Due:</span>
                     <span>${finalTotal.toFixed(2)} USD</span>
                   </div>
+                  {isCard && (
+                    <div className="payment-fee-note">
+                      3.5% processing fee included
+                    </div>
+                  )}
                 </div>
                   );
                 })()}

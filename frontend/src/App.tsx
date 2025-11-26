@@ -834,7 +834,7 @@ const handleLogout = () => {
             onClose={() => !cancelSubmitting && setCancelModalOpen(false)}
           >
             <div className="form-group">
-              <p>Please share a brief reason for your cancellation (optional, but helpful for us).</p>
+              <p>Please share a brief reason for your cancellation request and we will be in touch soon.</p>
               <label htmlFor="cancelReason" className="form-label">Reason for cancellation</label>
               <textarea
                 id="cancelReason"

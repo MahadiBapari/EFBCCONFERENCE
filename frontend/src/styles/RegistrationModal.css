@@ -305,6 +305,13 @@ select {
   border-bottom: none;
 }
 
+.payment-fee-note {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  text-align: right;
+}
+
 .payment-total {
   display: flex;
   justify-content: space-between;
