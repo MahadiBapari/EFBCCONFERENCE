@@ -158,7 +158,7 @@ const renderEmailTemplate = async (params: {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
             <tr>
               <td style="padding:24px;text-align:center;background:#ffffff;">
-                <img src="${logoUrl}" alt="${brand}" style="max-width:150px;height:auto;display:block;margin:0 auto;" />
+                <img src="${logoUrl}" alt="${brand}" style="max-width:75px;height:auto;display:block;margin:0 auto;" />
               </td>
             </tr>
             <tr>
