@@ -304,6 +304,17 @@ export async function sendRegistrationConfirmationEmail(params: {
       ${formattedEventDate ? `<p style=\"margin:4px 0 0 0;\"><strong>Date:</strong> ${formattedEventDate}</p>` : ''}
       ${priceText ? `<p style=\"margin:8px 0 0 0;\"><strong>${priceText}</strong></p>` : ''}
       ${detailsHtml}
+      ${paymentMethod === 'Check' ? `
+        <div style="margin:20px 0;padding:16px;background:#f9fafb;border-left:4px solid #3b82f6;border-radius:4px;">
+          <p style="margin:0 0 8px 0;font-weight:600;color:#111827;">If you prefer by check,</p>
+          <p style="margin:0;color:#374151;">Please mail check prior to deadline to:</p>
+          <p style="margin:8px 0 0 0;color:#111827;font-weight:500;">
+            EFBC Conference Inc<br/>
+            127 Low Country Lane<br/>
+            The Woodlands, TX 77380, USA
+          </p>
+        </div>
+      ` : ''}
       
     `,
   });
@@ -315,6 +326,9 @@ export async function sendRegistrationConfirmationEmail(params: {
   if (paymentMethod) parts.push(`Payment method: ${paymentMethod}.`);
   if (paymentMethod === 'Card' && squarePaymentId) {
     parts.push(`Square payment ID: ${squarePaymentId}.`);
+  }
+  if (paymentMethod === 'Check') {
+    parts.push('\n\nIf you prefer by check, please mail check prior to deadline to:\nEFBC Conference Inc\n127 Low Country Lane\nThe Woodlands, TX 77380, USA');
   }
   const text = parts.join(' ').trim();
 

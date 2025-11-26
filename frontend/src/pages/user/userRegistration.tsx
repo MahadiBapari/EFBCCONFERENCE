@@ -85,9 +85,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     spouseFirstName: registration?.spouseFirstName || '',
     spouseLastName: registration?.spouseLastName || '',
     // Child Information
-    childLunchTicket: (registration as any)?.childLunchTicket || false,
-    childFirstName: (registration as any)?.childFirstName || '',
-    childLastName: (registration as any)?.childLastName || '',
+    // childLunchTicket: (registration as any)?.childLunchTicket || false,
+    // childFirstName: (registration as any)?.childFirstName || '',
+    // childLastName: (registration as any)?.childLastName || '',
 
     // Payment Information
     totalPrice: registration?.totalPrice || 675,
@@ -156,10 +156,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   }, [registration?.clubRentals]);
 
   const spouseDinnerSelected = !!formData.spouseDinnerTicket;
-  const childLunchSelected = !!(formData as any).childLunchTicket;
+  // const childLunchSelected = !!(formData as any).childLunchTicket;
   const regTiers = useMemo(() => event?.registrationPricing || [], [event?.registrationPricing]);
   const spouseTiers = useMemo(() => event?.spousePricing || [], [event?.spousePricing]);
-  const childLunchPrice = useMemo(() => event?.childLunchPrice || 0, [event?.childLunchPrice]);
+  // const childLunchPrice = useMemo(() => event?.childLunchPrice || 0, [event?.childLunchPrice]);
 
   useEffect(() => {
     // In edit mode, if spouse ticket was previously purchased, lock it on
@@ -188,9 +188,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     const spouseActive = pickTier(withBounds(spouseTiers));
     let total = regActive?.price ?? 675;
     if (spouseDinnerSelected) total += spouseActive?.price ?? 200;
-    if (childLunchSelected) total += childLunchPrice;
+    // if (childLunchSelected) total += childLunchPrice;
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [isEditing, hadSpouseTicket, formData.spouseDinnerTicket, spouseDinnerSelected, childLunchSelected, childLunchPrice, regTiers, spouseTiers]);
+  }, [isEditing, hadSpouseTicket, formData.spouseDinnerTicket, spouseDinnerSelected, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -227,10 +227,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       if (!formData.spouseFirstName?.trim()) newErrors.spouseFirstName = 'Spouse first name is required';
       if (!formData.spouseLastName?.trim()) newErrors.spouseLastName = 'Spouse last name is required';
     }
-    if ((formData as any).childLunchTicket) {
-      if (!(formData as any).childFirstName?.trim()) (newErrors as any).childFirstName = 'Child first name is required';
-      if (!(formData as any).childLastName?.trim()) (newErrors as any).childLastName = 'Child last name is required';
-    }
+    // if ((formData as any).childLunchTicket) {
+    //   if (!(formData as any).childFirstName?.trim()) (newErrors as any).childFirstName = 'Child first name is required';
+    //   if (!(formData as any).childLastName?.trim()) (newErrors as any).childLastName = 'Child last name is required';
+    // }
     // Validate conference meals (mandatory - must select an option, not "Choose")
     const mealFields = [
       { field: 'tuesdayEarlyReception', label: 'Tuesday Early Arrivals Reception' },
@@ -304,9 +304,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         zipCode: addrZip.trim(),
         country: addrCountry.trim(),
         tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
-        childFirstName: (formData as any).childFirstName || '',
-        childLastName: (formData as any).childLastName || '',
-        childLunchTicket: !!(formData as any).childLunchTicket,
+        // childFirstName: (formData as any).childFirstName || '',
+        // childLastName: (formData as any).childLastName || '',
+        // childLunchTicket: !!(formData as any).childLunchTicket,
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
       } as Registration;
@@ -432,9 +432,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         zipCode: addrZip.trim(),
         country: addrCountry.trim(),
         tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
-        childFirstName: (formData as any).childFirstName || '',
-        childLastName: (formData as any).childLastName || '',
-        childLunchTicket: !!(formData as any).childLunchTicket,
+        // childFirstName: (formData as any).childFirstName || '',
+        // childLastName: (formData as any).childLastName || '',
+        // childLunchTicket: !!(formData as any).childLunchTicket,
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
       } as Registration;
@@ -1013,48 +1013,50 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             </div>
           )}
 
-          {/* Child section - similar to spouse */}
-          <div className="form-section">
-            <h3 className="section-title">Child Information</h3>
-            <div className="form-group">
-              <label className="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  checked={!!(formData as any).childLunchTicket} 
-                  onChange={e => handleInputChange('childLunchTicket', e.target.checked)}
-                />
-                <span>Check Box to purchase Child Lunch Ticket{childLunchPrice > 0 ? ` ($${childLunchPrice.toFixed(2)})` : ''}.</span>
-              </label>
-            </div>
-            {(formData as any).childLunchTicket && (
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="childFirstName" className="form-label">Child's First Name <span className="required-asterisk">*</span></label>
+          {/* Child section - only visible to admins */}
+          {/* {isAdminEdit && (
+            <div className="form-section">
+              <h3 className="section-title">Child Information</h3>
+              <div className="form-group">
+                <label className="checkbox-label">
                   <input 
-                    id="childFirstName" 
-                    type="text" 
-                    className={`form-control ${(errors as any).childFirstName ? 'error' : ''}`} 
-                    value={(formData as any).childFirstName || ''} 
-                    onChange={e => handleInputChange('childFirstName', e.target.value)}
-                    required
+                    type="checkbox" 
+                    checked={!!(formData as any).childLunchTicket} 
+                    onChange={e => handleInputChange('childLunchTicket', e.target.checked)}
                   />
-                  {(errors as any).childFirstName && <div className="error-message">{(errors as any).childFirstName}</div>}
-                </div>
-                <div className="form-group">
-                  <label htmlFor="childLastName" className="form-label">Child's Last Name <span className="required-asterisk">*</span></label>
-                  <input 
-                    id="childLastName" 
-                    type="text" 
-                    className={`form-control ${(errors as any).childLastName ? 'error' : ''}`} 
-                    value={(formData as any).childLastName || ''} 
-                    onChange={e => handleInputChange('childLastName', e.target.value)}
-                    required
-                  />
-                  {(errors as any).childLastName && <div className="error-message">{(errors as any).childLastName}</div>}
-                </div>
+                  <span>Check Box to purchase Child Lunch Ticket{childLunchPrice > 0 ? ` ($${childLunchPrice.toFixed(2)})` : ''}.</span>
+                </label>
               </div>
-            )}
-          </div>
+              {(formData as any).childLunchTicket && (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="childFirstName" className="form-label">Child's First Name <span className="required-asterisk">*</span></label>
+                    <input 
+                      id="childFirstName" 
+                      type="text" 
+                      className={`form-control ${(errors as any).childFirstName ? 'error' : ''}`} 
+                      value={(formData as any).childFirstName || ''} 
+                      onChange={e => handleInputChange('childFirstName', e.target.value)}
+                      required
+                    />
+                    {(errors as any).childFirstName && <div className="error-message">{(errors as any).childFirstName}</div>}
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="childLastName" className="form-label">Child's Last Name <span className="required-asterisk">*</span></label>
+                    <input 
+                      id="childLastName" 
+                      type="text" 
+                      className={`form-control ${(errors as any).childLastName ? 'error' : ''}`} 
+                      value={(formData as any).childLastName || ''} 
+                      onChange={e => handleInputChange('childLastName', e.target.value)}
+                      required
+                    />
+                    {(errors as any).childLastName && <div className="error-message">{(errors as any).childLastName}</div>}
+                  </div>
+                </div>
+              )}
+            </div>
+          )} */}
 
           {/* Payment section: Hide in admin edit mode, show in user mode */}
           {!isAdminEdit && (
