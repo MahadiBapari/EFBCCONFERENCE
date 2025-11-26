@@ -27,7 +27,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     { label: 'Dinner Ticket', price: undefined },
     { label: 'On-Site Dinner Ticket', price: undefined },
   ]);
-  const [childLunchPrice, setChildLunchPrice] = useState<number | undefined>(undefined);
+  // const [childLunchPrice, setChildLunchPrice] = useState<number | undefined>(undefined);
   const [errors, setErrors] = useState<{ name?: string; startDate?: string; endDate?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -45,7 +45,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     setActivities(event.activities || []);
     setRegistrationPricing(event.registrationPricing || registrationPricing);
     setSpousePricing(event.spousePricing && event.spousePricing.length ? event.spousePricing : spousePricing);
-    setChildLunchPrice(event.childLunchPrice);
+    // setChildLunchPrice(event.childLunchPrice);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -96,7 +96,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
         activities,
         registrationPricing,
         spousePricing,
-        childLunchPrice,
+        // childLunchPrice,
       } as Event);
     } finally {
       setIsSubmitting(false);

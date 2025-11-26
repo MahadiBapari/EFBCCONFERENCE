@@ -38,7 +38,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
   ]);
   const [breakfastPrice, setBreakfastPrice] = useState<number | undefined>(event?.breakfastPrice);
   const [breakfastEndDate, setBreakfastEndDate] = useState<string | undefined>(event?.breakfastEndDate);
-  const [childLunchPrice, setChildLunchPrice] = useState<number | undefined>(event?.childLunchPrice);
+  // const [childLunchPrice, setChildLunchPrice] = useState<number | undefined>(event?.childLunchPrice);
   const [errors, setErrors] = useState<{name?: string; startDate?: string; endDate?: string; location?: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -139,7 +139,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
         registrationPricing,
         breakfastPrice,
         breakfastEndDate,
-        childLunchPrice
+        // childLunchPrice
       });
     } catch (error) {
       console.error('Error saving event:', error);
@@ -477,7 +477,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
               </div>
             </div>
 
-            <div className="form-group">
+            {/* <div className="form-group">
               <label className="form-label" htmlFor="childLunchPrice">Child Lunch Price</label>
               <input
                 id="childLunchPrice"
@@ -490,7 +490,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({ event, onClose, 
                 onChange={(e) => setChildLunchPrice(e.target.value === '' ? undefined : Number(e.target.value))}
                 disabled={isSubmitting}
               />
-            </div>
+            </div> */}
 
             <div className="form-group">
               <label className="form-label">Spouse Breakfast/Lunch Price</label>
