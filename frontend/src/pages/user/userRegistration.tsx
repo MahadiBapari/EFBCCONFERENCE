@@ -342,7 +342,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       if (res.status !== 'OK') throw new Error('Card tokenize failed');
       const nonce = res.token;
       const baseTotal = Number(formData.totalPrice || 0);
-      const isCard = (formData.paymentMethod || 'Card') === 'Card';
       // Charge only the base amount (no processing fee added)
       const amountCents = Math.round(baseTotal * 100);
       const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
