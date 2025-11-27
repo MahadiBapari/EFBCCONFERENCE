@@ -178,12 +178,13 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
+    const isPickleball = (registration.wednesdayActivity || '').toLowerCase().includes('pickleball');
     const eventData = [
       ['Selected Activity', registration.wednesdayActivity || ''],
       ...(registration.golfHandicap ? [['Golf Handicap', String(registration.golfHandicap)]] : []),
       ...(registration.clubRentals ? [['Club Rentals', registration.clubRentals]] : []),
       ...((registration as any).massageTimeSlot ? [['Massage Time Slot', (registration as any).massageTimeSlot]] : []),
-      ...(((registration as any).pickleballEquipment !== undefined) ? [['Pickleball Equipment', (registration as any).pickleballEquipment ? 'I will bring my own' : 'I need equipment']] : []),
+      ...(isPickleball && (registration as any).pickleballEquipment !== undefined ? [['Pickleball Equipment', (registration as any).pickleballEquipment ? 'I will bring my own' : 'I need equipment']] : []),
     ];
 
     eventData.forEach(([label, value]) => {
@@ -422,7 +423,7 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
           {registration.golfHandicap && <Line label="Golf Handicap" value={registration.golfHandicap} />}
           {registration.clubRentals && <Line label="Club Rentals" value={registration.clubRentals} />}
           {(registration as any).massageTimeSlot && <Line label="Massage Time Slot" value={(registration as any).massageTimeSlot} />}
-          {((registration as any).pickleballEquipment !== undefined) && (
+          {((registration.wednesdayActivity || '').toLowerCase().includes('pickleball') && (registration as any).pickleballEquipment !== undefined) && (
             <Line 
               label="Pickleball Equipment" 
               value={(registration as any).pickleballEquipment ? 'I will bring my own' : 'I need equipment'} 

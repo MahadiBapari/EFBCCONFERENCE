@@ -261,10 +261,11 @@ export class RegistrationController {
       
       const updateDataObj = updateData as any || {};
       
-      // Check if activity is being updated and determine if golf/massage fields should be cleared
+      // Check if activity is being updated and determine if golf/massage/pickleball fields should be cleared
       const updatedActivity = updateDataObj.wednesdayActivity || existingRow.wednesday_activity || '';
       const isGolf = updatedActivity.toLowerCase().includes('golf');
       const isMassage = updatedActivity.toLowerCase().includes('massage');
+      const isPickleball = updatedActivity.toLowerCase().includes('pickleball');
       
       for (const [camelKey, dbKey] of Object.entries(fieldMapping)) {
         if (camelKey in updateDataObj && camelKey !== 'id') {
@@ -277,6 +278,11 @@ export class RegistrationController {
           
           // Clear massage field if activity is not massage
           if (camelKey === 'massageTimeSlot' && !isMassage) {
+            value = null;
+          }
+          
+          // Clear pickleball field if activity is not pickleball
+          if (camelKey === 'pickleballEquipment' && !isPickleball) {
             value = null;
           }
           
@@ -301,6 +307,9 @@ export class RegistrationController {
         }
         if (!isMassage) {
           dbPayload.massage_time_slot = null;
+        }
+        if (!isPickleball) {
+          dbPayload.pickleball_equipment = null;
         }
       }
       console.log(`[UPDATE] Database payload keys:`, Object.keys(dbPayload));

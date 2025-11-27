@@ -503,6 +503,39 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.paymentMethod]);
 
+  // Clear activity-specific fields when activity doesn't match
+  useEffect(() => {
+    const activity = formData.wednesdayActivity || '';
+    const isGolf = activity.toLowerCase().includes('golf');
+    const isMassage = activity.toLowerCase().includes('massage');
+    const isPickleball = activity.toLowerCase().includes('pickleball');
+    
+    setFormData(prev => {
+      const updated = { ...prev };
+      let changed = false;
+      
+      if (!isGolf && (prev.clubRentals !== undefined || prev.golfHandicap)) {
+        updated.clubRentals = undefined;
+        updated.golfHandicap = '';
+        setNeedsClubRentals(false);
+        setGolfClubPreference('');
+        changed = true;
+      }
+      
+      if (!isMassage && (prev as any).massageTimeSlot) {
+        (updated as any).massageTimeSlot = '';
+        changed = true;
+      }
+      
+      if (!isPickleball && (prev as any).pickleballEquipment !== undefined) {
+        (updated as any).pickleballEquipment = undefined;
+        changed = true;
+      }
+      
+      return changed ? updated : prev;
+    });
+  }, [formData.wednesdayActivity]);
+
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => {
       // Convert badgeName to uppercase
