@@ -284,7 +284,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       
       const golfHandicapValue = isGolf ? formData.golfHandicap : undefined; // Clear if not golf
       const massageTimeSlotValue = isMassage ? (formData as any).massageTimeSlot : undefined; // Clear if not massage
-      const pickleballEquipmentValue = isPickleball ? (formData as any).pickleballEquipment : undefined; // Clear if not pickleball
+      // Only set pickleballEquipment if pickleball is selected, otherwise explicitly set to null
+      const pickleballEquipmentValue = isPickleball ? ((formData as any).pickleballEquipment !== undefined ? (formData as any).pickleballEquipment : null) : null;
 
       const registrationData: Registration = {
         ...(registration?.id ? { id: registration.id } : {} as any),
@@ -402,7 +403,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       
       const golfHandicapValue = isGolf ? formData.golfHandicap : undefined; // Clear if not golf
       const massageTimeSlotValue = isMassage ? (formData as any).massageTimeSlot : undefined; // Clear if not massage
-      const pickleballEquipmentValue = isPickleball ? (formData as any).pickleballEquipment : undefined; // Clear if not pickleball
+      // Only set pickleballEquipment if pickleball is selected, otherwise explicitly set to null
+      const pickleballEquipmentValue = isPickleball ? ((formData as any).pickleballEquipment !== undefined ? (formData as any).pickleballEquipment : null) : null;
 
       // Compose address string for backward compatibility (legacy field)
       const composedAddress = [

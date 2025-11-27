@@ -119,7 +119,12 @@ export class Registration {
     this.golfHandicap = (data as any).golfHandicap;
     this.massageTimeSlot = (data as any).massageTimeSlot;
     const pbe: any = (data as any).pickleballEquipment;
-    this.pickleballEquipment = pbe === true || pbe === 'Yes' || pbe === 'yes' || pbe === 1 || false;
+    // Only set pickleballEquipment if it's explicitly provided (true/false), otherwise leave it undefined
+    if (pbe !== undefined && pbe !== null) {
+      this.pickleballEquipment = pbe === true || pbe === 'Yes' || pbe === 'yes' || pbe === 1;
+    } else {
+      this.pickleballEquipment = undefined;
+    }
     this.spouseFirstName = data.spouseFirstName;
     this.spouseLastName = data.spouseLastName;
     // Accept boolean or "Yes"/"No" and normalize to boolean

@@ -105,6 +105,14 @@ export class RegistrationController {
   async createRegistration(req: Request, res: Response): Promise<void> {
     try {
       const registrationData: CreateRegistrationRequest = req.body;
+      
+      // Clear activity-specific fields if activity doesn't match
+      const activity = registrationData.wednesdayActivity || '';
+      const isPickleball = activity.toLowerCase().includes('pickleball');
+      if (!isPickleball) {
+        (registrationData as any).pickleballEquipment = undefined;
+      }
+      
       const registration = new Registration(registrationData);
       // Compute total dynamically from event pricing
       try {
