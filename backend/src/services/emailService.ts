@@ -65,7 +65,7 @@ const sendUsingTransporter = async (payload: MailPayload): Promise<void> => {
       console.log('SMTP OK - transporter verified');
     } catch (e: unknown) {
       const msg = (e as { message?: string })?.message || String(e);
-      console.error('❌ SMTP FAIL -', msg);
+      console.error('SMTP FAIL -', msg);
     } finally {
       smtpVerifiedLogged = true;
     }
@@ -106,20 +106,20 @@ const sendMail = async (payload: MailPayload): Promise<void> => {
     await sendUsingResend(payload);
     return;
   }
-  console.warn('⚠️ No email transport available (SMTP or RESEND_API_KEY). Email not sent.');
+  console.warn('No email transport available (SMTP or RESEND_API_KEY). Email not sent.');
 };
 
 // Helper to send email to user and also send a copy to admin
 const sendMailWithAdminCopy = async (payload: MailPayload, sendAdminCopy: boolean = true): Promise<void> => {
   // Send to primary recipient
-  await sendMail(payload).catch((e) => console.warn('⚠️ Failed to send email to primary recipient:', e));
+  await sendMail(payload).catch((e) => console.warn('Failed to send email to primary recipient:', e));
   
   // Send copy to admin if requested and admin email is different from recipient
   if (sendAdminCopy) {
     const adminEmail = getAdminEmail();
     if (adminEmail && adminEmail !== payload.to) {
       await sendMail({ ...payload, to: adminEmail }).catch((e) => 
-        console.warn('⚠️ Failed to send admin copy:', e)
+        console.warn('Failed to send admin copy:', e)
       );
     }
   }
@@ -182,7 +182,7 @@ const renderEmailTemplate = async (params: {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
             <tr>
               <td style="padding:24px;text-align:center;background:#ffffff;">
-                <img src="${logoUrl}" alt="${brand}" style="max-width:75px;height:auto;display:block;margin:0 auto;" />
+                <img src="${logoUrl}" alt="${brand}" style="max-width:150px;height:auto;display:block;margin:0 auto;" />
               </td>
             </tr>
             <tr>
