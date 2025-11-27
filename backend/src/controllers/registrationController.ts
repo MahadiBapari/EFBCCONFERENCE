@@ -136,7 +136,7 @@ export class RegistrationController {
       registration.id = result.insertId;
 
       // Fire-and-forget confirmation emails (primary, secondary if any, and admin copy)
-      const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || 'planner@efbcconference.org';
+      const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || process.env.SUPPORT_EMAIL || 'planner@efbcconference.org';
       const toName = registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim();
       const eventRow: any = await this.db.findById('events', registration.eventId);
       const evName = eventRow?.name;
@@ -148,12 +148,15 @@ export class RegistrationController {
         totalPrice: registration.totalPrice,
         registration: registration.toJSON ? registration.toJSON() : registration
       } as any;
+      // Send to primary email (this will also send admin copy)
       sendRegistrationConfirmationEmail({ to: registration.email, ...payload }).catch((e) => console.warn('⚠️ Failed to send registration confirmation:', e));
-      if ((registration as any).secondaryEmail) {
-        sendRegistrationConfirmationEmail({ to: (registration as any).secondaryEmail, ...payload }).catch((e) => console.warn('⚠️ Failed to send secondary confirmation:', e));
-      }
-      if (adminCopy) {
+      // Send admin copy separately to ensure it's sent
+      if (adminCopy && adminCopy !== registration.email) {
         sendRegistrationConfirmationEmail({ to: adminCopy, ...payload }).catch((e) => console.warn('⚠️ Failed to send admin confirmation:', e));
+      }
+      // Send to secondary email if provided (no admin copy to avoid duplicates)
+      if ((registration as any).secondaryEmail && (registration as any).secondaryEmail !== registration.email && (registration as any).secondaryEmail !== adminCopy) {
+        sendRegistrationConfirmationEmail({ to: (registration as any).secondaryEmail, ...payload }).catch((e) => console.warn('⚠️ Failed to send secondary confirmation:', e));
       }
 
       const response: ApiResponse = {
@@ -447,7 +450,7 @@ export class RegistrationController {
       }
 
       // Prepare email payload
-      const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || 'planner@efbcconference.org';
+      const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || process.env.SUPPORT_EMAIL || 'planner@efbcconference.org';
       const toName = registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim();
       const evName = eventRow?.name;
       const evDate = eventRow?.date;
@@ -468,19 +471,19 @@ export class RegistrationController {
           .catch((e) => console.warn('⚠️ Failed to send registration confirmation:', e))
       );
 
-      // Secondary email if provided
-      if ((registration as any).secondaryEmail) {
-        emailPromises.push(
-          sendRegistrationConfirmationEmail({ to: (registration as any).secondaryEmail, ...payload })
-            .catch((e) => console.warn('⚠️ Failed to send secondary confirmation:', e))
-        );
-      }
-
-      // Admin copy
-      if (adminCopy) {
+      // Admin copy (send separately to ensure it's sent)
+      if (adminCopy && adminCopy !== registration.email) {
         emailPromises.push(
           sendRegistrationConfirmationEmail({ to: adminCopy, ...payload })
             .catch((e) => console.warn('⚠️ Failed to send admin confirmation:', e))
+        );
+      }
+
+      // Secondary email if provided (no admin copy to avoid duplicates)
+      if ((registration as any).secondaryEmail && (registration as any).secondaryEmail !== registration.email && (registration as any).secondaryEmail !== adminCopy) {
+        emailPromises.push(
+          sendRegistrationConfirmationEmail({ to: (registration as any).secondaryEmail, ...payload })
+            .catch((e) => console.warn('⚠️ Failed to send secondary confirmation:', e))
         );
       }
 

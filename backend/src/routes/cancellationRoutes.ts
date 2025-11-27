@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { DatabaseService } from '../services/databaseService';
-import { sendCancellationRequestAdminEmail, sendCancellationDecisionEmail, sendRegistrationRestoredEmail } from '../services/emailService';
+import { sendCancellationRequestAdminEmail, sendCancellationRequestConfirmationEmail, sendCancellationDecisionEmail, sendRegistrationRestoredEmail } from '../services/emailService';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
@@ -39,21 +39,34 @@ router.post('/registrations/:id/cancel-request', async (req: Request, res: Respo
       'INSERT INTO cancellation_requests (registration_id, user_id, event_id, reason) VALUES (?,?,?,?)',
       [id, reg.user_id, reg.event_id, reason || null]
     );
-    // Send admin notification email (best-effort, non-blocking)
+    // Send emails (best-effort, non-blocking)
     try {
       const userRows = await db.query('SELECT name, email FROM users WHERE id=? LIMIT 1', [reg.user_id]);
       const eventRows = await db.query('SELECT name FROM events WHERE id=? LIMIT 1', [reg.event_id]);
       const user = userRows[0] || {};
       const event = eventRows[0] || {};
+      
+      // Send admin notification email
       await sendCancellationRequestAdminEmail({
         registrationId: id,
         userName: user.name,
         userEmail: user.email,
         eventName: event.name,
         reason: reason || null,
-      });
+      }).catch((err) => console.warn('Failed to send cancellation request admin email:', (err as any)?.message || err));
+      
+      // Send confirmation email to user (also sends admin copy)
+      if (user.email) {
+        await sendCancellationRequestConfirmationEmail({
+          to: user.email,
+          userName: user.name,
+          eventName: event.name,
+          registrationId: id,
+          reason: reason || null,
+        }).catch((err) => console.warn('Failed to send cancellation request confirmation email:', (err as any)?.message || err));
+      }
     } catch (err) {
-      console.warn('Failed to send cancellation request admin email:', (err as any)?.message || err);
+      console.warn('Failed to send cancellation request emails:', (err as any)?.message || err);
     }
     return res.json({ success: true, message: 'Cancellation request submitted' });
   } catch (e) {

@@ -46,6 +46,14 @@ const ensureTransporter = (): Transporter | null => {
 const transporter: Transporter | null = ensureTransporter();
 let smtpVerifiedLogged = false;
 
+// Helper function to get admin email
+const getAdminEmail = (): string | null => {
+  return process.env.ADMIN_NOTIFY_EMAIL || 
+         process.env.ADMIN_EMAIL || 
+         process.env.SUPPORT_EMAIL || 
+         'planner@efbcconference.org';
+};
+
 // Generic send helper with HTTP API fallback (Resend)
 type MailPayload = { to: string; subject: string; text: string; html: string };
 
@@ -99,6 +107,22 @@ const sendMail = async (payload: MailPayload): Promise<void> => {
     return;
   }
   console.warn('⚠️ No email transport available (SMTP or RESEND_API_KEY). Email not sent.');
+};
+
+// Helper to send email to user and also send a copy to admin
+const sendMailWithAdminCopy = async (payload: MailPayload, sendAdminCopy: boolean = true): Promise<void> => {
+  // Send to primary recipient
+  await sendMail(payload).catch((e) => console.warn('⚠️ Failed to send email to primary recipient:', e));
+  
+  // Send copy to admin if requested and admin email is different from recipient
+  if (sendAdminCopy) {
+    const adminEmail = getAdminEmail();
+    if (adminEmail && adminEmail !== payload.to) {
+      await sendMail({ ...payload, to: adminEmail }).catch((e) => 
+        console.warn('⚠️ Failed to send admin copy:', e)
+      );
+    }
+  }
 };
 
 // Get custom footer from database
@@ -213,6 +237,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   const text = `Verify your email: ${link}`;
 
   await sendMail({ to, subject, text, html });
+  // Note: Verification emails don't need admin copy
 }
 
 // Helper function to format date as MM/DD/YYYY
@@ -332,6 +357,7 @@ export async function sendRegistrationConfirmationEmail(params: {
   }
   const text = parts.join(' ').trim();
 
+  // Send to user (admin copy will be handled by the caller if needed)
   await sendMail({ to, subject, text, html });
 }
 
@@ -385,6 +411,7 @@ export async function sendAdminCreatedUserEmail(params: {
   ].join('\n');
 
   await sendMail({ to, subject, text, html });
+  // Note: Admin-created user emails don't need admin copy (admin already knows)
 }
 
 export async function sendPasswordResetEmail(to: string, token: string): Promise<void> {
@@ -406,6 +433,7 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
   const text = `Reset your password: ${link}`;
 
   await sendMail({ to, subject, text, html });
+  // Note: Password reset emails don't need admin copy
 }
  
 // Email to admin when a user submits a cancellation request
@@ -456,6 +484,43 @@ export async function sendCancellationRequestAdminEmail(params: {
   await sendMail({ to, subject, text, html });
 }
 
+// Email to user confirming their cancellation request was submitted
+export async function sendCancellationRequestConfirmationEmail(params: {
+  to: string;
+  userName?: string;
+  eventName?: string;
+  registrationId: number;
+  reason?: string | null;
+}): Promise<void> {
+  const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
+  const subject = `Cancellation request submitted for ${params.eventName || 'event'}`;
+
+  const html = await renderEmailTemplate({
+    subject,
+    heading: 'Cancellation request received',
+    preheader: 'Your cancellation request has been submitted and is under review.',
+    contentHtml: `
+      <p style="margin:0 0 12px 0;">Hi ${params.userName || 'there'},</p>
+      <p style="margin:0 0 8px 0;">We have received your request to cancel your registration${params.eventName ? ` for <strong>${params.eventName}</strong>` : ''}.</p>
+      <p style="margin:0 0 8px 0;">Your cancellation request (Registration #${params.registrationId}) is now under review by our team.</p>
+      ${params.reason ? `<p style="margin:8px 0 0 0;"><strong>Reason provided:</strong></p><p style="margin:4px 0 8px 0;white-space:pre-line;">${params.reason}</p>` : ''}
+      <p style="margin:12px 0 0 0;">You will receive an email notification once your request has been reviewed and a decision has been made.</p>
+      <p style="margin:8px 0 0 0;">If you have any questions, please contact the conference organizers.</p>
+    `,
+  });
+
+  const lines: string[] = [];
+  lines.push(`Hi ${params.userName || 'there'},`);
+  lines.push(`We have received your request to cancel your registration${params.eventName ? ` for ${params.eventName}` : ''}.`);
+  lines.push(`Your cancellation request (Registration #${params.registrationId}) is now under review.`);
+  if (params.reason) lines.push(`Reason: ${params.reason}.`);
+  lines.push('You will receive an email notification once your request has been reviewed.');
+  const text = lines.join(' ');
+
+  // Send to user and also send a copy to admin
+  await sendMailWithAdminCopy({ to: params.to, subject, text, html }, true);
+}
+
 // Email to user when their cancellation is approved or rejected
 export async function sendCancellationDecisionEmail(params: {
   to: string;
@@ -504,7 +569,8 @@ export async function sendCancellationDecisionEmail(params: {
   if (params.adminNote) lines.push(`Admin note: ${params.adminNote}.`);
   const text = lines.join(' ');
 
-  await sendMail({ to: params.to, subject, text, html });
+  // Send to user and also send a copy to admin
+  await sendMailWithAdminCopy({ to: params.to, subject, text, html }, true);
 }
 
 // Email to user when a previously cancelled registration is restored
@@ -533,6 +599,7 @@ export async function sendRegistrationRestoredEmail(params: {
   if (params.eventName) lines.push(`Event: ${params.eventName}.`);
   const text = lines.join(' ');
 
-  await sendMail({ to: params.to, subject, text, html });
+  // Send to user and also send a copy to admin
+  await sendMailWithAdminCopy({ to: params.to, subject, text, html }, true);
 }
 
