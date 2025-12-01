@@ -456,7 +456,7 @@ export class UserController {
       // Generate verification token, store expiry, and send email
       const token = crypto.randomBytes(32).toString('hex');
       await this.db.query(
-        'UPDATE users SET email_verification_token=?, email_verification_expires_at=DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE id=?',
+        'UPDATE users SET email_verification_token=?, email_verification_expires_at=DATE_ADD(NOW(), INTERVAL 5 MINUTE) WHERE id=?',
         [token, user.id]
       );
       // Fire-and-forget email send on registration

@@ -223,9 +223,9 @@ router.post('/resend-verification', async (req: Request, res: Response) => {
         redirect: `${frontendUrl}/login?verified=true`
       });
     }
-    // Generate new token and update expiry
+    // Generate new token and update expiry (5 minutes for testing)
     const token = crypto.randomBytes(32).toString('hex');
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+    const expires = new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' '); // 5 minutes
     await db.query('UPDATE users SET email_verification_token=?, email_verification_expires_at=? WHERE id=?', [token, expires, u.id]);
     // Fire-and-forget email send
     setImmediate(async () => {
