@@ -142,27 +142,67 @@ router.post('/reset-password', async (req: Request, res: Response) => {
 // Verify email using token
 router.get('/verify-email', async (req: Request, res: Response) => {
   try {
-    const token = (req.query.token as string) || '';
+    let token = (req.query.token as string) || '';
+    // Trim whitespace and decode URL encoding
+    token = decodeURIComponent(token).trim();
     if (!token) return res.status(400).json({ success: false, error: 'Token is required' });
+    
     const db = getDb();
+    
+    // First check if user is already verified
+    const alreadyVerified = await db.query(
+      'SELECT id, email FROM users WHERE email_verification_token=? AND email_verified_at IS NOT NULL LIMIT 1',
+      [token]
+    );
+    if (alreadyVerified.length > 0) {
+      const redirect = process.env.EMAIL_VERIFY_REDIRECT || process.env.FRONTEND_URL || 'http://localhost:3000';
+      if (redirect) return res.redirect(302, `${redirect}/login?verified=true`);
+      return res.json({ success: true, message: 'Email already verified' });
+    }
+    
+    // Check for valid token
     const rows = await db.query(
-      'SELECT id, email_verification_expires_at FROM users WHERE email_verification_token=? LIMIT 1',
+      'SELECT id, email, email_verification_expires_at, email_verified_at FROM users WHERE email_verification_token=? LIMIT 1',
       [token]
     );
     const u = rows[0];
-    if (!u) return res.status(400).json({ success: false, error: 'Invalid token' });
-    if (u.email_verification_expires_at && new Date(u.email_verification_expires_at).getTime() < Date.now()) {
-      return res.status(400).json({ success: false, error: 'Token expired' });
+    
+    if (!u) {
+      // Log for debugging
+      console.warn('Email verification failed: Invalid token', { tokenLength: token.length, tokenPrefix: token.substring(0, 10) });
+      // Try to find user by partial token match (in case of truncation) or redirect to resend page
+      const frontendUrl = process.env.FRONTEND_URL || process.env.EMAIL_VERIFY_REDIRECT || 'http://localhost:3000';
+      return res.redirect(302, `${frontendUrl}/resend-verification?invalid=true`);
     }
+    
+    // Check if already verified
+    if (u.email_verified_at) {
+      const redirect = process.env.EMAIL_VERIFY_REDIRECT || process.env.FRONTEND_URL || 'http://localhost:3000';
+      if (redirect) return res.redirect(302, `${redirect}/login?verified=true`);
+      return res.json({ success: true, message: 'Email already verified' });
+    }
+    
+    // Check expiration
+    if (u.email_verification_expires_at && new Date(u.email_verification_expires_at).getTime() < Date.now()) {
+      // Redirect to resend page with email parameter
+      const frontendUrl = process.env.FRONTEND_URL || process.env.EMAIL_VERIFY_REDIRECT || 'http://localhost:3000';
+      return res.redirect(302, `${frontendUrl}/resend-verification?email=${encodeURIComponent(u.email)}&expired=true`);
+    }
+    
+    // Verify the email
     await db.query(
       'UPDATE users SET email_verified_at=NOW(), email_verification_token=NULL, email_verification_expires_at=NULL WHERE id=?',
       [u.id]
     );
-    const redirect = process.env.EMAIL_VERIFY_REDIRECT;
-    if (redirect) return res.redirect(302, redirect);
+    
+    const redirect = process.env.EMAIL_VERIFY_REDIRECT || process.env.FRONTEND_URL || 'http://localhost:3000';
+    if (redirect) {
+      return res.redirect(302, `${redirect}/login?verified=true&email=${encodeURIComponent(u.email)}`);
+    }
     return res.json({ success: true, message: 'Email verified successfully' });
-  } catch (e) {
-    return res.status(500).json({ success: false, error: 'Verification failed' });
+  } catch (e: any) {
+    console.error('Email verification error:', e);
+    return res.status(500).json({ success: false, error: 'Verification failed. Please try again or contact support.' });
   }
 });
 
@@ -175,7 +215,15 @@ router.post('/resend-verification', async (req: Request, res: Response) => {
     const rows = await db.query('SELECT id, email_verified_at FROM users WHERE email=? LIMIT 1', [email]);
     const u = rows[0];
     if (!u) return res.status(404).json({ success: false, error: 'User not found' });
-    if (u.email_verified_at) return res.json({ success: true, message: 'Email already verified' });
+    if (u.email_verified_at) {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      return res.json({ 
+        success: true, 
+        message: 'Email already verified',
+        redirect: `${frontendUrl}/login?verified=true`
+      });
+    }
+    // Generate new token and update expiry
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
     await db.query('UPDATE users SET email_verification_token=?, email_verification_expires_at=? WHERE id=?', [token, expires, u.id]);
@@ -187,9 +235,43 @@ router.post('/resend-verification', async (req: Request, res: Response) => {
         console.error('SMTP sendVerificationEmail failed:', e?.message || e);
       }
     });
-    return res.json({ success: true, message: 'Verification email sent' });
-  } catch (e) {
-    return res.status(500).json({ success: false, error: 'Resend failed' });
+    return res.json({ success: true, message: 'Verification email sent. Please check your inbox.' });
+  } catch (e: any) {
+    console.error('Resend verification error:', e);
+    return res.status(500).json({ success: false, error: 'Failed to resend verification email. Please try again later.' });
+  }
+});
+
+// GET endpoint for resend verification page (returns user info if email provided)
+router.get('/resend-verification', async (req: Request, res: Response) => {
+  try {
+    const email = (req.query.email as string) || '';
+    if (!email) {
+      return res.json({ success: true, email: null });
+    }
+    const db = getDb();
+    const rows = await db.query('SELECT id, email, email_verified_at FROM users WHERE email=? LIMIT 1', [email]);
+    const u = rows[0];
+    if (!u) {
+      return res.json({ success: false, error: 'User not found', email: null });
+    }
+    if (u.email_verified_at) {
+      return res.json({ 
+        success: true, 
+        email: u.email,
+        verified: true,
+        message: 'Email already verified'
+      });
+    }
+    return res.json({ 
+      success: true, 
+      email: u.email,
+      verified: false,
+      canResend: true
+    });
+  } catch (e: any) {
+    console.error('Get resend verification error:', e);
+    return res.status(500).json({ success: false, error: 'Failed to check verification status' });
   }
 });
 

@@ -3,6 +3,7 @@ import { MOCK_REGISTRATIONS } from './data/mockData';
 import { LoginPage } from './pages/authentication/login';
 import { RegistrationPage } from './pages/authentication/registration';
 import ResetPasswordPage from './pages/authentication/resetPassword';
+import ResendVerificationPage from './pages/authentication/resendVerification';
 import { Sidebar } from './components/Sidebar';
 import { Modal } from './components/Modal';
 import { UserDashboard } from './pages/user/userDashboard';
@@ -131,8 +132,8 @@ const App: React.FC = () => {
 // Restore session and initial data once on mount
 useEffect(() => {
   const init = async () => {
-    // Skip auth check if on reset password page
-    if (window.location.pathname === '/reset-password') {
+    // Skip auth check if on reset password or resend verification page
+    if (window.location.pathname === '/reset-password' || window.location.pathname === '/resend-verification') {
       setAuthInitializing(false);
       return;
     }
@@ -801,6 +802,9 @@ const handleLogout = () => {
   if (!role) {
     if (window.location.pathname === '/reset-password') {
       return <ResetPasswordPage />;
+    }
+    if (window.location.pathname === '/resend-verification') {
+      return <ResendVerificationPage />;
     }
     if (showRegistration) {
       return <RegistrationPage onRegister={handleRegister} onBackToLogin={handleBackToLogin} />;
