@@ -168,8 +168,20 @@ router.get('/verify-email', async (req: Request, res: Response) => {
     const u = rows[0];
     
     if (!u) {
-      // Log for debugging
-      console.warn('Email verification failed: Invalid token', { tokenLength: token.length, tokenPrefix: token.substring(0, 10) });
+      // Log for debugging - check if token exists in database at all
+      const allTokens = await db.query('SELECT id, email, email_verification_token, LENGTH(email_verification_token) as token_len FROM users WHERE email_verification_token IS NOT NULL LIMIT 5');
+      console.warn('Email verification failed: Invalid token', { 
+        tokenLength: token.length, 
+        tokenPrefix: token.substring(0, 10),
+        tokenSuffix: token.substring(token.length - 10),
+        tokensInDb: allTokens.length,
+        sampleTokens: allTokens.map((t: any) => ({ 
+          id: t.id, 
+          email: t.email, 
+          tokenLen: t.token_len,
+          tokenPrefix: t.email_verification_token?.substring(0, 10) 
+        }))
+      });
       // Try to find user by partial token match (in case of truncation) or redirect to resend page
       const frontendUrl = process.env.FRONTEND_URL || process.env.EMAIL_VERIFY_REDIRECT || 'http://localhost:3000';
       return res.redirect(302, `${frontendUrl}/resend-verification?invalid=true`);
@@ -225,12 +237,30 @@ router.post('/resend-verification', async (req: Request, res: Response) => {
     }
     // Generate new token and update expiry
     const token = crypto.randomBytes(32).toString('hex');
+    console.log(`[RESEND] Generated token for user ${u.id} (${email}): length=${token.length}, prefix=${token.substring(0, 10)}`);
+    
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' '); // 24 hours
     await db.query('UPDATE users SET email_verification_token=?, email_verification_expires_at=? WHERE id=?', [token, expires, u.id]);
-    // Fire-and-forget email send
+    
+    // Verify the token was saved
+    const verifyToken = await db.query('SELECT email_verification_token, LENGTH(email_verification_token) as token_len FROM users WHERE id=? LIMIT 1', [u.id]);
+    if (!verifyToken[0] || !verifyToken[0].email_verification_token) {
+      console.error(`[RESEND] Failed to save verification token for user ${u.id}. Token in DB:`, verifyToken[0]);
+      return res.status(500).json({ success: false, error: 'Failed to generate verification token. Please try again.' });
+    }
+    
+    if (verifyToken[0].email_verification_token !== token) {
+      console.error(`[RESEND] Token mismatch for user ${u.id}. Expected: ${token.substring(0, 10)}..., Got: ${verifyToken[0].email_verification_token?.substring(0, 10)}...`);
+      return res.status(500).json({ success: false, error: 'Token verification failed. Please try again.' });
+    }
+    
+    console.log(`[RESEND] Token saved successfully for user ${u.id}. Token length in DB: ${verifyToken[0].token_len}`);
+    
+    // Fire-and-forget email send (after token is confirmed saved)
     setImmediate(async () => {
       try {
         await sendVerificationEmail(email, token);
+        console.log(`[RESEND] Verification email sent to ${email}`);
       } catch (e: any) {
         console.error('SMTP sendVerificationEmail failed:', e?.message || e);
       }

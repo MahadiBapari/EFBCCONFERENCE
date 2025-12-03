@@ -455,14 +455,37 @@ export class UserController {
 
       // Generate verification token, store expiry, and send email
       const token = crypto.randomBytes(32).toString('hex');
-      await this.db.query(
+      console.log(`[REGISTER] Generated token for user ${user.id} (${email}): length=${token.length}, prefix=${token.substring(0, 10)}`);
+      
+      // Ensure token is saved before sending email
+      const updateResult = await this.db.query(
         'UPDATE users SET email_verification_token=?, email_verification_expires_at=DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE id=?',
         [token, user.id]
       );
-      // Fire-and-forget email send on registration
+      
+      // Verify the token was saved
+      const verifyToken = await this.db.query(
+        'SELECT email_verification_token, LENGTH(email_verification_token) as token_len FROM users WHERE id=? LIMIT 1',
+        [user.id]
+      );
+      
+      if (!verifyToken[0] || !verifyToken[0].email_verification_token) {
+        console.error(`[REGISTER] Failed to save verification token for user ${user.id}. Token in DB:`, verifyToken[0]);
+        throw new Error('Failed to save verification token');
+      }
+      
+      if (verifyToken[0].email_verification_token !== token) {
+        console.error(`[REGISTER] Token mismatch for user ${user.id}. Expected: ${token.substring(0, 10)}..., Got: ${verifyToken[0].email_verification_token?.substring(0, 10)}...`);
+        throw new Error('Token verification failed');
+      }
+      
+      console.log(`[REGISTER] Token saved successfully for user ${user.id}. Token length in DB: ${verifyToken[0].token_len}`);
+      
+      // Fire-and-forget email send on registration (after token is confirmed saved)
       setImmediate(async () => {
         try {
           await sendVerificationEmail(email, token);
+          console.log(`[REGISTER] Verification email sent to ${email}`);
         } catch (e: any) {
           console.error('SMTP sendVerificationEmail (register) failed:', e?.message || e);
         }
