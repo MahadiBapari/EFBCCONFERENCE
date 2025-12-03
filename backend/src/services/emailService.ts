@@ -152,7 +152,7 @@ const renderEmailTemplate = async (params: {
   const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
   const heading = params.heading || brand;
   const preheader = params.preheader || '';
-  // Use provided footerHtml or fetch from database
+  // Use provided footerHtml or fetch from database (default to dynamic footer)
   const customFooter = params.footerHtml !== undefined ? params.footerHtml : await getCustomFooter();
   const footerHtml = customFooter || '';
   const buttonHtml = params.cta
@@ -260,9 +260,8 @@ export async function sendVerificationCompleteEmail(to: string, userName?: strin
     preheader: 'Your email address has been verified. You can now access your account.',
     contentHtml: `
       <p style="margin:0 0 12px 0;">Hi ${userName || 'there'},</p>
-      <p style="margin:0 0 8px 0;">Great news! Your email address has been successfully verified.</p>
-      <p style="margin:0 0 8px 0;">You can now sign in to your EFBC Conference account and access all features.</p>
-      <p style="margin:12px 0 0 0;">If you have any questions or need assistance, please don't hesitate to contact us.</p>
+      <p style="margin:0 0 8px 0;">Your email address has been successfully verified.</p>
+      <p style="margin:0 0 8px 0;">You can now sign in to your EFBC Conference account</p>
     `,
     cta: { label: 'Sign In', url: loginUrl },
     footerHtml: '', // No custom footer for verification complete emails
