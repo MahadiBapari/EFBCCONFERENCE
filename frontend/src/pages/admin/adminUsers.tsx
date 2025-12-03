@@ -361,64 +361,71 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
       <div className="admin-users-table-container">
         {initialLoading ? (
           <div className="loading">Loading users...</div>
-        ) : loading ? (
-          <div className="table-loading">
-            <div className="loading-spinner"></div>
-            <span>Searching...</span>
-          </div>
-        ) : users.length > 0 ? (
-          <table className="admin-users-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => {
-                const { firstName, lastName } = splitName(user.name);
-                return (
-                  <tr key={user.id}>
-                    <td>{user.id}</td>
-                    <td>{firstName}</td>
-                    <td>{lastName}</td>
-                    <td>{user.email}</td>
-                    <td>
-                      <span className={`role-badge role-${user.role || 'user'}`}>
-                        {user.role || 'user'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="admin-users-row-actions">
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => openEditModal(user)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-danger btn-sm"
-                          onClick={() => handleDeleteUser(user)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
         ) : (
-          <div className="no-users">
-            <p>No users found{debouncedSearchQuery ? ` matching "${debouncedSearchQuery}"` : ''}.</p>
-          </div>
+          <>
+            <div className={`table-wrapper ${loading ? 'loading-overlay' : ''}`}>
+              {users.length > 0 ? (
+                <table className="admin-users-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>First Name</th>
+                      <th>Last Name</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => {
+                      const { firstName, lastName } = splitName(user.name);
+                      return (
+                        <tr key={user.id}>
+                          <td>{user.id}</td>
+                          <td>{firstName}</td>
+                          <td>{lastName}</td>
+                          <td>{user.email}</td>
+                          <td>
+                            <span className={`role-badge role-${user.role || 'user'}`}>
+                              {user.role || 'user'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="admin-users-row-actions">
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => openEditModal(user)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-danger btn-sm"
+                                onClick={() => handleDeleteUser(user)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="no-users">
+                  <p>No users found{debouncedSearchQuery ? ` matching "${debouncedSearchQuery}"` : ''}.</p>
+                </div>
+              )}
+              {loading && (
+                <div className="table-loading-overlay">
+                  <div className="loading-spinner"></div>
+                  <span>Loading...</span>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
@@ -427,19 +434,42 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
           <button
             className="btn btn-secondary"
             onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
+            disabled={currentPage === 1 || loading}
           >
             Previous
           </button>
-          <div className="pagination-info">
-            <span>
-              Page {pagination.page} of {pagination.totalPages}
-            </span>
+          <div className="pagination-numbers">
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => {
+              // Show first page, last page, current page, and pages around current
+              const showPage = 
+                pageNum === 1 || 
+                pageNum === pagination.totalPages || 
+                (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
+              
+              if (!showPage) {
+                // Show ellipsis
+                if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                  return <span key={pageNum} className="pagination-ellipsis">...</span>;
+                }
+                return null;
+              }
+              
+              return (
+                <button
+                  key={pageNum}
+                  className={`btn pagination-number ${pageNum === currentPage ? 'active' : ''}`}
+                  onClick={() => handlePageChange(pageNum)}
+                  disabled={loading}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
           </div>
           <button
             className="btn btn-secondary"
             onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === pagination.totalPages}
+            disabled={currentPage === pagination.totalPages || loading}
           >
             Next
           </button>

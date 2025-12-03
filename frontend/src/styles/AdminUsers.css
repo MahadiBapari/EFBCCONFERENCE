@@ -134,6 +134,31 @@
   color: var(--text-secondary);
 }
 
+.table-wrapper {
+  position: relative;
+}
+
+.table-wrapper.loading-overlay {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.table-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: 10;
+  color: var(--text-secondary);
+}
+
 .table-loading {
   display: flex;
   flex-direction: column;
@@ -176,14 +201,57 @@
 
 .admin-users-pagination {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-top: 2rem;
   padding: 1rem;
   background: var(--bg-secondary);
   border-radius: 8px;
-  gap: 1rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.pagination-numbers {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.pagination-number {
+  min-width: 40px;
+  height: 40px;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-number:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+.pagination-number.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.pagination-number:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-ellipsis {
+  padding: 0 0.5rem;
+  color: var(--text-secondary);
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .pagination-info {
