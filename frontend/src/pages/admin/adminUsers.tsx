@@ -52,7 +52,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
       totalPages: 0,
     }
   );
-  const usersPerPage = 30; // For testing, will be 30 later
+  const usersPerPage = 10; // Users per page
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // State for creating a user by admin
@@ -110,14 +110,39 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         if (response.success && response.data) {
           const newUsers = Array.isArray(response.data) ? response.data : [];
           setUsers(newUsers);
-          const newPagination: PaginationInfo = response.pagination
-            ? response.pagination
-            : {
-                page: page,
-                limit: usersPerPage,
-                total: newUsers.length,
-                totalPages: 1,
-              };
+          
+          // Use pagination from response - backend should always return it
+          let newPagination: PaginationInfo;
+          if (response.pagination) {
+            newPagination = response.pagination;
+            // Ensure page matches what we requested
+            newPagination.page = page;
+          } else {
+            // Fallback: if backend doesn't return pagination, we can't calculate it correctly
+            // because we don't know the total count. Log a warning.
+            console.warn('Backend did not return pagination info, using fallback');
+            newPagination = {
+              page: page,
+              limit: usersPerPage,
+              total: newUsers.length, // This is wrong but we don't have the total
+              totalPages: Math.max(1, Math.ceil(newUsers.length / usersPerPage)),
+            };
+          }
+          
+          // Ensure pagination is set correctly
+          if (newPagination.totalPages === 0 && newPagination.total > 0) {
+            newPagination.totalPages = 1;
+          }
+          
+          // Debug log to help diagnose pagination issues
+          console.log('Pagination info:', {
+            page: newPagination.page,
+            limit: newPagination.limit,
+            total: newPagination.total,
+            totalPages: newPagination.totalPages,
+            usersReturned: newUsers.length
+          });
+          
           setPagination(newPagination);
           if (onCacheUpdate) {
             onCacheUpdate(newUsers, newPagination);
