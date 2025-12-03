@@ -281,7 +281,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
                   </svg>
                 </div>
                 <div className="success-alert-text">
-                  <p className="success-alert-title">Account Created Successfully!</p>
+                  <p className="success-alert-title">Account set-up successful!</p>
                   <p className="success-alert-message">{submitMessage}</p>
                 </div>
               </div>
