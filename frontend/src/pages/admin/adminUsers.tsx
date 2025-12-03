@@ -92,16 +92,15 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
   });
 
   const loadUsers = useCallback(
-    async (overridePage?: number, overrideSearch?: string) => {
+    async (page: number, search?: string) => {
       try {
         setLoading(true);
         setError(null);
 
-        const pageToUse = overridePage ?? currentPage;
-        const searchToUse = overrideSearch ?? debouncedSearchQuery;
+        const searchToUse = search ?? debouncedSearchQuery;
 
         const params = new URLSearchParams();
-        params.append('page', pageToUse.toString());
+        params.append('page', page.toString());
         params.append('limit', usersPerPage.toString());
         if (searchToUse.trim()) {
           params.append('search', searchToUse.trim());
@@ -114,7 +113,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
           const newPagination: PaginationInfo = response.pagination
             ? response.pagination
             : {
-                page: pageToUse,
+                page: page,
                 limit: usersPerPage,
                 total: newUsers.length,
                 totalPages: 1,
@@ -133,12 +132,13 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         setInitialLoading(false);
       }
     },
-    [currentPage, debouncedSearchQuery, usersPerPage, onCacheUpdate]
+    [debouncedSearchQuery, usersPerPage, onCacheUpdate]
   );
 
+  // Load users when currentPage or debouncedSearchQuery changes
   useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
+    loadUsers(currentPage, debouncedSearchQuery);
+  }, [currentPage, debouncedSearchQuery, loadUsers]);
 
   // Debounce search query to avoid too many API calls
   useEffect(() => {
@@ -149,7 +149,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
     searchTimeoutRef.current = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
       setCurrentPage(1); // Reset to first page when search changes
-      loadUsers(1, searchQuery);
+      // loadUsers will be called by the useEffect when debouncedSearchQuery changes
     }, 300); // 300ms debounce delay
 
     return () => {
@@ -176,7 +176,8 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
       setCurrentPage(newPage);
-      loadUsers(newPage);
+      // Don't call loadUsers here - let the useEffect handle it
+      // This prevents double loading and race conditions
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -213,7 +214,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         setCreateError(res.error || 'Failed to create user.');
       } else {
         setCreateSuccess('User created successfully. A temporary password has been emailed.');
-        await loadUsers();
+        await loadUsers(currentPage, debouncedSearchQuery);
         // Keep modal open but clear password-related info; or close after short delay
         setTimeout(() => {
           setShowCreateModal(false);
@@ -286,7 +287,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         setEditError(res.error || 'Failed to update user.');
       } else {
         setEditSuccess('User updated successfully.');
-        await loadUsers();
+        await loadUsers(currentPage, debouncedSearchQuery);
         setTimeout(() => {
           setEditingUser(null);
           setEditSuccess(null);
@@ -307,7 +308,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
       if (!res.success) {
         setError(res.error || 'Failed to delete user');
       } else {
-        await loadUsers();
+        await loadUsers(currentPage, debouncedSearchQuery);
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to delete user');
@@ -329,7 +330,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
           />
           <button 
             className="btn btn-secondary" 
-            onClick={() => loadUsers()}
+            onClick={() => loadUsers(currentPage, debouncedSearchQuery)}
             disabled={loading || initialLoading}
           >
             Refresh
@@ -350,7 +351,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
           {error}
           <button
             className="btn btn-primary btn-sm error-retry-btn"
-            onClick={() => loadUsers()}
+            onClick={() => loadUsers(currentPage, debouncedSearchQuery)}
           >
             Retry
           </button>
