@@ -248,6 +248,37 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   // Note: Verification emails don't need admin copy
 }
 
+// Email sent when user's email is successfully verified
+export async function sendVerificationCompleteEmail(to: string, userName?: string): Promise<void> {
+  const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
+  const subject = 'Email verification complete';
+  const loginUrl = (process.env.FRONTEND_URL || 'http://localhost:3000') + '/login';
+  
+  const html = await renderEmailTemplate({
+    subject,
+    heading: 'Email verified successfully',
+    preheader: 'Your email address has been verified. You can now access your account.',
+    contentHtml: `
+      <p style="margin:0 0 12px 0;">Hi ${userName || 'there'},</p>
+      <p style="margin:0 0 8px 0;">Great news! Your email address has been successfully verified.</p>
+      <p style="margin:0 0 8px 0;">You can now sign in to your EFBC Conference account and access all features.</p>
+      <p style="margin:12px 0 0 0;">If you have any questions or need assistance, please don't hesitate to contact us.</p>
+    `,
+    cta: { label: 'Sign In', url: loginUrl },
+    footerHtml: '', // No custom footer for verification complete emails
+  });
+  
+  const text = [
+    `Hi ${userName || 'there'},`,
+    'Your email address has been successfully verified.',
+    'You can now sign in to your EFBC Conference account.',
+    `Sign in: ${loginUrl}`
+  ].join('\n');
+
+  await sendMail({ to, subject, text, html });
+  // Note: Verification complete emails don't need admin copy
+}
+
 // Helper function to format date range as "12 to 15 May" or "DD Month to DD Month"
 const formatEventDateRange = (startDate?: string | null, endDate?: string | null): string => {
   if (!startDate && !endDate) return '';

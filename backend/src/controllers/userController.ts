@@ -3,7 +3,7 @@ import { User } from '../models/User';
 import { ApiResponse, CreateUserRequest, UpdateUserRequest, LoginRequest, RegisterRequest, AuthResponse } from '../types';
 import { DatabaseService } from '../services/databaseService';
 import crypto from 'crypto';
-import { sendVerificationEmail, sendAdminCreatedUserEmail } from '../services/emailService';
+import { sendVerificationEmail, sendAdminCreatedUserEmail, sendVerificationCompleteEmail } from '../services/emailService';
 import { generateStrongTempPassword } from './adminPasswordUtils';
 
 export class UserController {
@@ -563,6 +563,15 @@ export class UserController {
       }
 
       console.log(`[ADMIN] User ${userId} (${updatedUser.email}) email verified by admin`);
+
+      // Send verification complete email
+      try {
+        await sendVerificationCompleteEmail(updatedUser.email, updatedUser.name || '');
+        console.log(`[ADMIN] Verification complete email sent to ${updatedUser.email}`);
+      } catch (e: any) {
+        console.error('Failed to send verification complete email:', e?.message || e);
+        // Don't fail the verification if email fails
+      }
 
       const response: ApiResponse = {
         success: true,
