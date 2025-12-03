@@ -275,7 +275,17 @@ export async function sendRegistrationConfirmationEmail(params: {
   const { to, name, eventName, eventDate, totalPrice, registration } = params;
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
   const subject = 'Your EFBC Conference Registration is Confirmed';
-  const priceText = typeof totalPrice === 'number' ? `Total: $${totalPrice.toFixed(2)}` : '';
+  
+  // Get totalPrice from params or registration object, convert to number
+  const paymentAmount = totalPrice !== undefined && totalPrice !== null 
+    ? Number(totalPrice) 
+    : (registration?.totalPrice !== undefined && registration?.totalPrice !== null 
+        ? Number(registration.totalPrice) 
+        : (registration?.total_price !== undefined && registration?.total_price !== null 
+            ? Number(registration.total_price) 
+            : 0));
+  
+  const priceText = paymentAmount > 0 ? `Total: $${paymentAmount.toFixed(2)}` : '';
   const paymentMethod = registration?.paymentMethod || registration?.payment_method || '';
   const squarePaymentId = registration?.squarePaymentId || registration?.square_payment_id || '';
   
@@ -319,7 +329,7 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${dietaryRestrictions ? `<tr><td style="color:#6b7280;">Dietary Restrictions</td><td>${dietaryRestrictions}</td></tr>`:''}
         ${specialRequests ? `<tr><td style="color:#6b7280;">Special Requests</td><td>${specialRequests}</td></tr>`:''}
         ${emergencyContactName || emergencyContactPhone ? `<tr><td style="color:#6b7280;">Emergency Contact</td><td>${emergencyContactName || ''}${emergencyContactName && emergencyContactPhone ? ' - ' : ''}${emergencyContactPhone || ''}</td></tr>`:''}
-        ${priceText ? `<tr><td style="color:#6b7280;">Total</td><td><strong>$${Number(totalPrice).toFixed(2)}</strong></td></tr>`:''}
+        ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;">Payment Amount</td><td><strong style="color:#111827;font-size:16px;">$${paymentAmount.toFixed(2)}</strong></td></tr>`:''}
         ${paymentMethod ? `<tr><td style="color:#6b7280;">Payment Method</td><td>${paymentMethod}</td></tr>` : ''}
         ${paymentMethod === 'Card' && squarePaymentId ? `<tr><td style="color:#6b7280;">Square Payment ID</td><td><code>${squarePaymentId}</code></td></tr>` : ''}
       </table>
@@ -334,10 +344,10 @@ export async function sendRegistrationConfirmationEmail(params: {
       <p style="margin:0 0 8px 0;">Thank you for registering for the EFBC Conference.</p>
       ${eventName ? `<p style=\"margin:0;\"><strong>Event:</strong> ${eventName}</p>` : ''}
       ${formattedEventDate ? `<p style=\"margin:4px 0 0 0;\"><strong>Date:</strong> ${formattedEventDate}</p>` : ''}
-      ${priceText ? `<p style=\"margin:8px 0 0 0;\"><strong>${priceText}</strong></p>` : ''}
+      ${paymentAmount > 0 ? `<p style=\"margin:12px 0 8px 0;padding:12px;background:#f0f9ff;border-left:4px solidrgba(59, 131, 246, 0);border-radius:4px;\"><strong style=\"color:#111827;font-size:16px;\">Payment Amount: $${paymentAmount.toFixed(2)}</strong></p>` : ''}
       ${detailsHtml}
       ${paymentMethod === 'Check' ? `
-        <div style="margin:20px 0;padding:16px;background:#f9fafb;border-left:4px solid #3b82f6;border-radius:4px;">
+        <div style="margin:20px 0;padding:16px;background:#f9fafb;border-left:4px solidrgba(59, 131, 246, 0);border-radius:4px;">
           <p style="margin:0 0 8px 0;font-weight:600;color:#111827;">If you prefer by check,</p>
           <p style="margin:0;color:#374151;">Please mail check prior to deadline to:</p>
           <p style="margin:8px 0 0 0;color:#111827;font-weight:500;">
@@ -354,7 +364,7 @@ export async function sendRegistrationConfirmationEmail(params: {
   parts.push('Thank you for registering for EFBC Conference.');
   if (eventName) parts.push(`Event: ${eventName}.`);
   if (formattedEventDate) parts.push(`Date: ${formattedEventDate}.`);
-  if (priceText) parts.push(`${priceText}.`);
+  if (paymentAmount > 0) parts.push(`Payment Amount: $${paymentAmount.toFixed(2)}.`);
   if (paymentMethod) parts.push(`Payment method: ${paymentMethod}.`);
   if (paymentMethod === 'Card' && squarePaymentId) {
     parts.push(`Square payment ID: ${squarePaymentId}.`);

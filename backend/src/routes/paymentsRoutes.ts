@@ -172,6 +172,13 @@ router.post('/charge', async (req: Request, res: Response) => {
     const getErrorMessage = (errorCode: string, errorDetail?: string): string => {
       switch (errorCode) {
         case 'GENERIC_DECLINE':
+          // Check if the error detail suggests a transaction type issue
+          if (errorDetail && (errorDetail.toLowerCase().includes('transaction type') || 
+              errorDetail.toLowerCase().includes('not permitted') ||
+              errorDetail.toLowerCase().includes('self-payment') ||
+              errorDetail.toLowerCase().includes('associated with merchant'))) {
+            return 'Your card issuer has declined this transaction due to policy restrictions. This may occur if you are associated with the merchant account. Please use a different payment method or contact your card issuer for assistance.';
+          }
           return 'Your card was declined by the card issuer. This could be due to insufficient funds, card restrictions, or security measures. Please contact your bank or try a different payment method.';
         case 'CVV_FAILURE':
           return 'The CVV code is incorrect. Please check the 3-digit code on the back of your card and try again.';
@@ -189,6 +196,9 @@ router.post('/charge', async (req: Request, res: Response) => {
           return 'This card type is not supported. Please use a different payment method.';
         case 'CARD_DECLINED':
           return 'Your card was declined. Please contact your bank or try a different payment method.';
+        case 'TRANSACTION_TYPE_NOT_PERMITTED':
+        case 'TRANSACTION_NOT_PERMITTED':
+          return 'Your card issuer has declined this transaction type. This may occur if you are associated with the merchant account. Please use a different payment method or contact your card issuer for assistance.';
         default:
           return errorDetail || `Payment failed: ${errorCode}. Please try again or contact support.`;
       }
