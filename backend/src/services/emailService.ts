@@ -217,9 +217,16 @@ const renderEmailTemplate = async (params: {
 };
 
 export async function sendVerificationEmail(to: string, token: string): Promise<void> {
-  const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || '5000'}`;
-  const verifyPath = `/api/auth/verify-email?token=${encodeURIComponent(token)}`;
+  // Use FRONTEND_URL for verification links since the frontend will handle the redirect
+  // Or use EMAIL_VERIFY_REDIRECT if set, otherwise fall back to BACKEND_URL
+  const baseUrl = process.env.EMAIL_VERIFY_REDIRECT || process.env.FRONTEND_URL || process.env.BACKEND_URL || `http://localhost:${process.env.PORT || '5000'}`;
+  // Ensure token is properly encoded (only encode once)
+  const encodedToken = encodeURIComponent(token);
+  const verifyPath = `/api/auth/verify-email?token=${encodedToken}`;
   const link = `${baseUrl}${verifyPath}`;
+  
+  // Log token for debugging (first 10 chars only for security)
+  console.log(`[EMAIL] Sending verification email to ${to} with token prefix: ${token.substring(0, 10)}...`);
 
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
   const subject = 'Verify your email address';

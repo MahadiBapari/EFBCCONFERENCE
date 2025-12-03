@@ -143,9 +143,19 @@ router.post('/reset-password', async (req: Request, res: Response) => {
 router.get('/verify-email', async (req: Request, res: Response) => {
   try {
     let token = (req.query.token as string) || '';
-    // Trim whitespace and decode URL encoding
-    token = decodeURIComponent(token).trim();
+    
+    // Handle URL encoding - try decoding, but handle errors gracefully
+    try {
+      token = decodeURIComponent(token).trim();
+    } catch (e) {
+      // If decodeURIComponent fails, token might already be decoded or have special characters
+      token = token.trim();
+    }
+    
     if (!token) return res.status(400).json({ success: false, error: 'Token is required' });
+    
+    // Log the incoming token for debugging
+    console.log(`[VERIFY] Attempting verification with token: length=${token.length}, prefix=${token.substring(0, 10)}`);
     
     const db = getDb();
     
@@ -162,7 +172,7 @@ router.get('/verify-email', async (req: Request, res: Response) => {
     
     // Check for valid token
     const rows = await db.query(
-      'SELECT id, email, email_verification_expires_at, email_verified_at FROM users WHERE email_verification_token=? LIMIT 1',
+      'SELECT id, email, email_verification_expires_at, email_verified_at, email_verification_token FROM users WHERE email_verification_token=? LIMIT 1',
       [token]
     );
     const u = rows[0];
@@ -182,6 +192,20 @@ router.get('/verify-email', async (req: Request, res: Response) => {
           tokenPrefix: t.email_verification_token?.substring(0, 10) 
         }))
       });
+      
+      // Try to find if token might be expired (check all users with tokens)
+      const allUsersWithTokens = await db.query(
+        'SELECT id, email, email_verification_token, email_verification_expires_at FROM users WHERE email_verification_token IS NOT NULL'
+      );
+      
+      // Check if any token is similar (might be a partial match or encoding issue)
+      for (const user of allUsersWithTokens) {
+        const dbToken = user.email_verification_token;
+        if (dbToken && (dbToken.includes(token.substring(0, 20)) || token.includes(dbToken.substring(0, 20)))) {
+          console.warn(`[VERIFY] Possible token mismatch for user ${user.id} (${user.email}). DB token prefix: ${dbToken.substring(0, 10)}, provided token prefix: ${token.substring(0, 10)}`);
+        }
+      }
+      
       // Try to find user by partial token match (in case of truncation) or redirect to resend page
       const frontendUrl = process.env.FRONTEND_URL || process.env.EMAIL_VERIFY_REDIRECT || 'http://localhost:3000';
       return res.redirect(302, `${frontendUrl}/resend-verification?invalid=true`);
