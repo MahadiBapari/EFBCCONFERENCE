@@ -248,20 +248,58 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   // Note: Verification emails don't need admin copy
 }
 
-// Helper function to format date as MM/DD/YYYY
-const formatDateMMDDYYYY = (dateStr?: string | null): string => {
-  if (!dateStr) return '';
+// Helper function to format date range as "12 to 15 May" or "DD Month to DD Month"
+const formatEventDateRange = (startDate?: string | null, endDate?: string | null): string => {
+  if (!startDate && !endDate) return '';
+  if (startDate && !endDate) {
+    // Single date - format as "DD Month"
+    try {
+      const date = new Date(startDate);
+      if (isNaN(date.getTime())) return startDate;
+      const day = date.getDate();
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+      return `${day} ${monthNames[date.getMonth()]}`;
+    } catch {
+      return startDate;
+    }
+  }
+  if (!startDate && endDate) {
+    // Only end date
+    try {
+      const date = new Date(endDate);
+      if (isNaN(date.getTime())) return endDate;
+      const day = date.getDate();
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+      return `${day} ${monthNames[date.getMonth()]}`;
+    } catch {
+      return endDate;
+    }
+  }
+  // Both dates - format as "DD to DD Month" or "DD Month to DD Month" if different months
   try {
-    // Parse the date string (could be YYYY-MM-DD or ISO format)
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr; // Return original if invalid
+    const start = new Date(startDate!);
+    const end = new Date(endDate!);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return `${startDate} to ${endDate}`;
+    }
+    const startDay = start.getDate();
+    const endDay = end.getDate();
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+    const startMonth = start.getMonth();
+    const endMonth = end.getMonth();
     
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${month}/${day}/${year}`;
+    if (startMonth === endMonth) {
+      // Same month: "12 to 15 May"
+      return `${startDay} to ${endDay} ${monthNames[startMonth]}`;
+    } else {
+      // Different months: "30 April to 2 May"
+      return `${startDay} ${monthNames[startMonth]} to ${endDay} ${monthNames[endMonth]}`;
+    }
   } catch {
-    return dateStr;
+    return `${startDate} to ${endDate}`;
   }
 };
 
@@ -270,10 +308,11 @@ export async function sendRegistrationConfirmationEmail(params: {
   name: string;
   eventName?: string;
   eventDate?: string;
+  eventStartDate?: string; // Add this parameter for date range formatting
   totalPrice?: number;
   registration?: any; // optional full registration to include details in email
 }): Promise<void> {
-  const { to, name, eventName, eventDate, totalPrice, registration } = params;
+  const { to, name, eventName, eventDate, eventStartDate, totalPrice, registration } = params;
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
   const subject = 'Your EFBC Conference Registration is Confirmed';
   
@@ -290,8 +329,8 @@ export async function sendRegistrationConfirmationEmail(params: {
   const paymentMethod = registration?.paymentMethod || registration?.payment_method || '';
   const squarePaymentId = registration?.squarePaymentId || registration?.square_payment_id || '';
   
-  // Format event date as MM/DD/YYYY (remove hours)
-  const formattedEventDate = formatDateMMDDYYYY(eventDate);
+  // Format event date range as "12 to 15 May"
+  const formattedEventDate = formatEventDateRange(eventStartDate || null, eventDate || null);
   
   // Get activity-specific details
   const wednesdayActivity = registration?.wednesdayActivity || registration?.wednesday_activity || '';
@@ -305,6 +344,15 @@ export async function sendRegistrationConfirmationEmail(params: {
   const specialRequests = registration?.specialRequests || registration?.special_requests || '';
   const emergencyContactName = registration?.emergencyContactName || registration?.emergency_contact_name || '';
   const emergencyContactPhone = registration?.emergencyContactPhone || registration?.emergency_contact_phone || '';
+  
+  // Get missing fields
+  const isFirstTimeAttending = registration?.isFirstTimeAttending !== undefined 
+    ? registration.isFirstTimeAttending 
+    : (registration?.is_first_time_attending !== undefined 
+        ? registration.is_first_time_attending 
+        : null);
+  const companyType = registration?.companyType || registration?.company_type || '';
+  const officePhone = registration?.officePhone || registration?.office_phone || '';
 
   const detailsHtml = registration
     ? `
@@ -316,6 +364,9 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${registration.jobTitle ? `<tr><td style="color:#6b7280;">Job Title</td><td>${registration.jobTitle}</td></tr>`:''}
         ${registration.address ? `<tr><td style="color:#6b7280;">Address</td><td>${String(registration.address).replace(/\n/g,'<br/>')}</td></tr>`:''}
         ${registration.mobile ? `<tr><td style="color:#6b7280;">Mobile</td><td>${registration.mobile}</td></tr>`:''}
+        ${officePhone ? `<tr><td style="color:#6b7280;">Office Phone</td><td>${officePhone}</td></tr>`:''}
+        ${isFirstTimeAttending !== null ? `<tr><td style="color:#6b7280;">First Time Attending?</td><td>${isFirstTimeAttending ? 'Yes' : 'No'}</td></tr>`:''}
+        ${companyType ? `<tr><td style="color:#6b7280;">Company Type</td><td>${companyType}</td></tr>`:''}
         ${wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${wednesdayActivity}</td></tr>`:''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && golfHandicap ? `<tr><td style="color:#6b7280;">Golf Handicap</td><td>${golfHandicap}</td></tr>`:''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && clubRentals ? `<tr><td style="color:#6b7280;">Golf Club Preference</td><td>${clubRentals}</td></tr>`:''}
@@ -349,7 +400,6 @@ export async function sendRegistrationConfirmationEmail(params: {
       ${detailsHtml}
       ${paymentMethod === 'Check' ? `
         <div style="margin:20px 0;padding:16px;background:#f9fafb;border-left:4px solidrgba(59, 131, 246, 0);border-radius:4px;">
-          <p style="margin:0 0 8px 0;font-weight:600;color:#111827;">If you prefer by check,</p>
           <p style="margin:0;color:#374151;">Please mail check prior to deadline to:</p>
           <p style="margin:8px 0 0 0;color:#111827;font-weight:500;">
             EFBC Conference Inc<br/>

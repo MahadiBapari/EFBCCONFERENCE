@@ -149,10 +149,12 @@ export class RegistrationController {
       const eventRow: any = await this.db.findById('events', registration.eventId);
       const evName = eventRow?.name;
       const evDate = eventRow?.date;
+      const evStartDate = eventRow?.start_date;
       const payload = {
         name: toName,
         eventName: evName,
         eventDate: evDate,
+        eventStartDate: evStartDate,
         totalPrice: registration.totalPrice,
         registration: registration.toJSON ? registration.toJSON() : registration
       } as any;
@@ -471,10 +473,12 @@ export class RegistrationController {
       const toName = registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim();
       const evName = eventRow?.name;
       const evDate = eventRow?.date;
+      const evStartDate = eventRow?.start_date;
       const payload = {
         name: toName,
         eventName: evName,
         eventDate: evDate,
+        eventStartDate: evStartDate,
         totalPrice: registration.totalPrice,
         registration: registration.toJSON ? registration.toJSON() : registration
       } as any;
