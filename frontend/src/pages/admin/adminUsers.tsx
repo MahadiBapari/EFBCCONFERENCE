@@ -437,17 +437,6 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
                           </td>
                           <td>
                             <div className="admin-users-row-actions">
-                              {!user.emailVerifiedAt && (
-                                <button
-                                  type="button"
-                                  className="btn btn-primary btn-sm"
-                                  onClick={() => handleVerifyUser(user)}
-                                  disabled={loading}
-                                  title="Verify user email"
-                                >
-                                  Verify
-                                </button>
-                              )}
                               <button
                                 type="button"
                                 className="btn btn-secondary btn-sm"
@@ -462,6 +451,17 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
                               >
                                 Delete
                               </button>
+                              {!user.emailVerifiedAt && (
+                                <button
+                                  type="button"
+                                  className="btn btn-primary btn-sm"
+                                  onClick={() => handleVerifyUser(user)}
+                                  disabled={loading}
+                                  title="Verify user email"
+                                >
+                                  Verify
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
