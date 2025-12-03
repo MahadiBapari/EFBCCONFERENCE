@@ -114,13 +114,21 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     return res;
   };
   // Use new separate fields if available, otherwise parse legacy address field
-  const initialAddr = registration?.addressStreet 
+  // Since these are separate database fields, always prefer them if the registration object exists
+  // The fields may be null/undefined, but we should still use the structure
+  const initialAddr = registration && (
+    registration.addressStreet !== undefined || 
+    registration.city !== undefined || 
+    registration.state !== undefined || 
+    registration.zipCode !== undefined || 
+    registration.country !== undefined
+  )
     ? {
-        street: registration.addressStreet || '',
-        city: registration.city || '',
-        state: registration.state || '',
-        zip: registration.zipCode || '',
-        country: registration.country || ''
+        street: registration.addressStreet ?? '',
+        city: registration.city ?? '',
+        state: registration.state ?? '',
+        zip: registration.zipCode ?? '',
+        country: registration.country ?? ''
       }
     : parseAddress(registration?.address);
   const [addrStreet, setAddrStreet] = useState<string>(initialAddr.street);
