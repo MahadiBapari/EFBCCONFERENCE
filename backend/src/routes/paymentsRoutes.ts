@@ -188,11 +188,65 @@ router.post('/charge', async (req: Request, res: Response) => {
       });
     }
     
-    // Check if payment was declined or not completed
-    if (payment.status === 'FAILED' || payment.status === 'CANCELED') {
+    // Check for card-specific errors (these appear in card_details.errors)
+    const cardDetails = (payment as any)?.card_details;
+    if (cardDetails?.errors && Array.isArray(cardDetails.errors) && cardDetails.errors.length > 0) {
+      const cardError = cardDetails.errors[0];
+      const errorCode = cardError.code || '';
+      const errorDetail = cardError.detail || cardError.code || 'Card declined';
+      
+      // Provide user-friendly error messages based on error code
+      let userMessage = 'Your card was declined. ';
+      switch (errorCode) {
+        case 'GENERIC_DECLINE':
+          userMessage += 'The card issuer declined the payment. Please contact your bank or try a different payment method.';
+          break;
+        case 'CVV_FAILURE':
+          userMessage += 'The CVV code is incorrect. Please check and try again.';
+          break;
+        case 'ADDRESS_VERIFICATION_FAILURE':
+          userMessage += 'The billing address does not match the card. Please verify your address and try again.';
+          break;
+        case 'INSUFFICIENT_FUNDS':
+          userMessage += 'Insufficient funds. Please use a different card or contact your bank.';
+          break;
+        case 'EXPIRED_CARD':
+          userMessage += 'The card has expired. Please use a different card.';
+          break;
+        case 'INVALID_EXPIRATION':
+          userMessage += 'The card expiration date is invalid. Please check and try again.';
+          break;
+        case 'INVALID_CARD':
+          userMessage += 'The card number is invalid. Please check and try again.';
+          break;
+        default:
+          userMessage += errorDetail;
+      }
+      
       return res.status(400).json({
         success: false,
-        error: `Payment ${payment.status.toLowerCase()}. Please check your card details and try again.`,
+        error: userMessage,
+        paymentStatus: payment.status,
+        errorCode: errorCode,
+        details: cardDetails.errors
+      });
+    }
+    
+    // Check if payment was declined or not completed
+    if (payment.status === 'FAILED' || payment.status === 'CANCELED') {
+      // Check if payment was delayed and then cancelled
+      if ((payment as any).delay_action === 'CANCEL' || (payment as any).delayed_until) {
+        return res.status(400).json({
+          success: false,
+          error: 'Payment was declined by your card issuer. Please contact your bank or try a different payment method.',
+          paymentStatus: payment.status,
+          delayAction: (payment as any).delay_action
+        });
+      }
+      
+      return res.status(400).json({
+        success: false,
+        error: 'Payment was declined. Please check your card details and try again, or contact your bank for assistance.',
         paymentStatus: payment.status
       });
     }
