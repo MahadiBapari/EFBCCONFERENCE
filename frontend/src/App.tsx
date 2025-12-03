@@ -794,7 +794,6 @@ const handleLogout = () => {
     return (
       <div className="app-loading-screen">
         <div className="app-loading-spinner" />
-        <p className="app-loading-text">Loading your dashboard…</p>
       </div>
     );
   }
