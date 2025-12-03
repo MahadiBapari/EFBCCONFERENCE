@@ -50,7 +50,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     // Personal Information
     firstName: registration?.firstName || user.name.split(' ')[0] || '',
     lastName: registration?.lastName || user.name.split(' ').slice(1).join(' ') || '',
-    badgeName: (registration?.badgeName || user.name || '').toUpperCase(),
+    badgeName: registration?.badgeName || '',
     email: registration?.email || user.email || '',
     secondaryEmail: registration?.secondaryEmail || '',
     organization: registration?.organization || '',
@@ -659,12 +659,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="firstName" className="form-label">First Name <span className="required-asterisk">*</span></label>
-                <input id="firstName" type="text" className={`form-control ${errors.firstName ? 'error' : ''}`} value={formData.firstName || ''} onChange={e => handleInputChange('firstName', e.target.value)} required />
+                <input id="firstName" type="text" className={`form-control ${errors.firstName ? 'error' : ''}`} value={formData.firstName || ''} onChange={e => handleInputChange('firstName', e.target.value)} placeholder="John" required />
                 {errors.firstName && <div className="error-message">{errors.firstName}</div>}
               </div>
               <div className="form-group">
                 <label htmlFor="lastName" className="form-label">Last Name <span className="required-asterisk">*</span></label>
-                <input id="lastName" type="text" className={`form-control ${errors.lastName ? 'error' : ''}`} value={formData.lastName || ''} onChange={e => handleInputChange('lastName', e.target.value)} required />
+                <input id="lastName" type="text" className={`form-control ${errors.lastName ? 'error' : ''}`} value={formData.lastName || ''} onChange={e => handleInputChange('lastName', e.target.value)} placeholder="Doe" required />
                 {errors.lastName && <div className="error-message">{errors.lastName}</div>}
               </div>
             </div>
@@ -683,12 +683,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="email" className="form-label">Email <span className="required-asterisk">*</span></label>
-                <input id="email" type="email" className={`form-control ${errors.email ? 'error' : ''}`} value={formData.email || ''} onChange={e => handleInputChange('email', e.target.value)} required />
+                <input id="email" type="email" className={`form-control ${errors.email ? 'error' : ''}`} value={formData.email || ''} onChange={e => handleInputChange('email', e.target.value)} placeholder="john.doe@example.com" required />
                 {errors.email && <div className="error-message">{errors.email}</div>}
               </div>
               <div className="form-group">
                 <label htmlFor="secondaryEmail" className="form-label">Secondary Email</label>
-                <input id="secondaryEmail" type="email" className="form-control" value={formData.secondaryEmail || ''} onChange={e => handleInputChange('secondaryEmail', e.target.value)} />
+                <input id="secondaryEmail" type="email" className="form-control" value={formData.secondaryEmail || ''} onChange={e => handleInputChange('secondaryEmail', e.target.value)} placeholder="optional@example.com" />
               </div>
             </div>
             <div className="form-row">
@@ -705,42 +705,42 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             </div>
             <div className="form-group">
               <label htmlFor="addrStreet" className="form-label">Address <span className="required-asterisk">*</span></label>
-              <input id="addrStreet" type="text" className={`form-control ${errors.address ? 'error' : ''}`} value={addrStreet} onChange={e=>{ setAddrStreet(e.target.value); if (errors.address) setErrors(prev=>({ ...prev, address:'' })); }} required />
+              <input id="addrStreet" type="text" className={`form-control ${errors.address ? 'error' : ''}`} value={addrStreet} onChange={e=>{ setAddrStreet(e.target.value); if (errors.address) setErrors(prev=>({ ...prev, address:'' })); }} placeholder="123 Main Street" required />
               {errors.address && <div className="error-message">{errors.address}</div>}
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="addrCity" className="form-label">City <span className="required-asterisk">*</span></label>
-                <input id="addrCity" type="text" className={`form-control ${errors.city ? 'error' : ''}`} value={addrCity} onChange={e=>{ setAddrCity(e.target.value); if (errors.city) setErrors(prev=>({ ...prev, city:'' })); }} required />
+                <input id="addrCity" type="text" className={`form-control ${errors.city ? 'error' : ''}`} value={addrCity} onChange={e=>{ setAddrCity(e.target.value); if (errors.city) setErrors(prev=>({ ...prev, city:'' })); }} placeholder="New York" required />
                 {errors.city && <div className="error-message">{errors.city}</div>}
               </div>
               <div className="form-group">
                 <label htmlFor="addrState" className="form-label">State <span className="required-asterisk">*</span></label>
-                <input id="addrState" type="text" className={`form-control ${errors.state ? 'error' : ''}`} value={addrState} onChange={e=>{ setAddrState(e.target.value); if (errors.state) setErrors(prev=>({ ...prev, state:'' })); }} required />
+                <input id="addrState" type="text" className={`form-control ${errors.state ? 'error' : ''}`} value={addrState} onChange={e=>{ setAddrState(e.target.value); if (errors.state) setErrors(prev=>({ ...prev, state:'' })); }} placeholder="NY" required />
                 {errors.state && <div className="error-message">{errors.state}</div>}
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="addrZip" className="form-label">Zip Code <span className="required-asterisk">*</span></label>
-                <input id="addrZip" type="text" className={`form-control ${errors.zip ? 'error' : ''}`} value={addrZip} onChange={e=>{ setAddrZip(e.target.value); if (errors.zip) setErrors(prev=>({ ...prev, zip:'' })); }} required />
+                <input id="addrZip" type="text" className={`form-control ${errors.zip ? 'error' : ''}`} value={addrZip} onChange={e=>{ setAddrZip(e.target.value); if (errors.zip) setErrors(prev=>({ ...prev, zip:'' })); }} placeholder="10001" required />
                 {errors.zip && <div className="error-message">{errors.zip}</div>}
               </div>
               <div className="form-group">
                 <label htmlFor="addrCountry" className="form-label">Country <span className="required-asterisk">*</span></label>
-                <input id="addrCountry" type="text" className={`form-control ${errors.country ? 'error' : ''}`} value={addrCountry} onChange={e=>{ setAddrCountry(e.target.value); if (errors.country) setErrors(prev=>({ ...prev, country:'' })); }} required />
+                <input id="addrCountry" type="text" className={`form-control ${errors.country ? 'error' : ''}`} value={addrCountry} onChange={e=>{ setAddrCountry(e.target.value); if (errors.country) setErrors(prev=>({ ...prev, country:'' })); }} placeholder="US" required />
                 {errors.country && <div className="error-message">{errors.country}</div>}
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="mobile" className="form-label">Mobile <span className="required-asterisk">*</span></label>
-                <input id="mobile" type="tel" className={`form-control ${errors.mobile ? 'error' : ''}`} value={formData.mobile || ''} onChange={e => handleInputChange('mobile', e.target.value)} required />
+                <input id="mobile" type="tel" className={`form-control ${errors.mobile ? 'error' : ''}`} value={formData.mobile || ''} onChange={e => handleInputChange('mobile', e.target.value)} placeholder="(123) 456-7890" required />
                 {errors.mobile && <div className="error-message">{errors.mobile}</div>}
               </div>
               <div className="form-group">
                 <label htmlFor="officePhone" className="form-label">Office Phone</label>
-                <input id="officePhone" type="tel" className="form-control" value={formData.officePhone || ''} onChange={e => handleInputChange('officePhone', e.target.value)} />
+                <input id="officePhone" type="tel" className="form-control" value={formData.officePhone || ''} onChange={e => handleInputChange('officePhone', e.target.value)} placeholder="(123) 456-7890" />
               </div>
             </div>
             <div className="form-group">
