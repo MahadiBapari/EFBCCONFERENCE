@@ -507,4 +507,77 @@ export class UserController {
       res.status(500).json(response);
     }
   }
+
+  // Verify user email (admin action)
+  async verifyUser(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const userId = Number(id);
+
+      if (isNaN(userId)) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Invalid user ID'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Check if user exists
+      const user = await this.db.findById('users', userId);
+      if (!user) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'User not found'
+        };
+        res.status(404).json(response);
+        return;
+      }
+
+      // Check if already verified
+      if (user.email_verified_at) {
+        const response: ApiResponse = {
+          success: true,
+          message: 'User email is already verified',
+          data: User.fromDatabase(user).toJSON()
+        };
+        res.status(200).json(response);
+        return;
+      }
+
+      // Verify the email
+      await this.db.query(
+        'UPDATE users SET email_verified_at = NOW(), email_verification_token = NULL, email_verification_expires_at = NULL WHERE id = ?',
+        [userId]
+      );
+
+      // Fetch updated user
+      const updatedUser = await this.db.findById('users', userId);
+      if (!updatedUser) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Failed to verify user'
+        };
+        res.status(500).json(response);
+        return;
+      }
+
+      console.log(`[ADMIN] User ${userId} (${updatedUser.email}) email verified by admin`);
+
+      const response: ApiResponse = {
+        success: true,
+        message: 'User email verified successfully',
+        data: User.fromDatabase(updatedUser).toJSON()
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error verifying user:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to verify user'
+      };
+      res.status(500).json(response);
+    }
+  }
 }

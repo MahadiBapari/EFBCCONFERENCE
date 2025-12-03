@@ -69,7 +69,7 @@ export class User {
   }
 
   // Convert to JSON (without password)
-  toJSON(): Omit<IUser, 'password'> {
+  toJSON(): Omit<IUser, 'password'> & { emailVerifiedAt?: string | null } {
     return {
       id: this.id!,
       name: this.name,
@@ -79,7 +79,8 @@ export class User {
       // expose snake_case columns to align with DB schema
       // Note: API consumers expecting camelCase can map as needed upstream
       createdAt: this.created_at,
-      updatedAt: this.updated_at
+      updatedAt: this.updated_at,
+      emailVerifiedAt: (this as any).email_verified_at || null
     };
   }
 
@@ -98,7 +99,7 @@ export class User {
 
   // Create from database row
   static fromDatabase(row: any): User {
-    return new User({
+    const user = new User({
       id: row.id,
       name: row.name,
       email: row.email,
@@ -108,6 +109,9 @@ export class User {
       created_at: row.created_at || row.created_At,
       updated_at: row.updated_at || row.updated_At
     });
+    // Store email_verified_at for JSON output
+    (user as any).email_verified_at = row.email_verified_at || null;
+    return user;
   }
 
   // Validate email format

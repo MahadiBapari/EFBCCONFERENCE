@@ -9,6 +9,7 @@ export interface User {
   role?: 'admin' | 'user' | 'guest';
   isActive?: boolean;
   createdAt?: string;
+  emailVerifiedAt?: string | null;
 }
 
 export interface PaginationInfo {
@@ -340,6 +341,25 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
     }
   };
 
+  const handleVerifyUser = async (user: User) => {
+    const confirmed = window.confirm(`Are you sure you want to verify email for user "${user.name}" (${user.email})?`);
+    if (!confirmed) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await apiClient.put(`/users/${user.id}/verify`, {});
+      if (!res.success) {
+        setError(res.error || 'Failed to verify user');
+      } else {
+        await loadUsers(currentPage, debouncedSearchQuery);
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to verify user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="admin-users-container">
       <div className="admin-users-header">
@@ -417,6 +437,17 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
                           </td>
                           <td>
                             <div className="admin-users-row-actions">
+                              {!user.emailVerifiedAt && (
+                                <button
+                                  type="button"
+                                  className="btn btn-primary btn-sm"
+                                  onClick={() => handleVerifyUser(user)}
+                                  disabled={loading}
+                                  title="Verify user email"
+                                >
+                                  Verify
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 className="btn btn-secondary btn-sm"

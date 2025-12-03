@@ -70,4 +70,9 @@ router.delete('/:id', async (req: any, res: any) => {
   await req.userController.deleteUser(req, res);
 });
 
+// Verify user email (admin action)
+router.put('/:id/verify', async (req: any, res: any) => {
+  await req.userController.verifyUser(req, res);
+});
+
 export default router;
