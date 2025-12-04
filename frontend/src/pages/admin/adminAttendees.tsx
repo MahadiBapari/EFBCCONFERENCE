@@ -733,7 +733,7 @@ const confirmSingleDelete = async () => {
               </tr>
             </thead>
             <tbody>
-              {filteredRegistrations.map(reg => (
+              {paginatedRegistrations.map(reg => (
                 <tr key={reg.id}>
                   <td className="td-checkbox no-print">
                     <input 
