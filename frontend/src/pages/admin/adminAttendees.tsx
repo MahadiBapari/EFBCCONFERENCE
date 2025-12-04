@@ -43,7 +43,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const attendeesPerPage = 5;
+  const attendeesPerPage = 30;
 
   // State for Add Attendee (select user) modal
   interface SimpleUser {
