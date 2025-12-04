@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Registration, Event, Group } from '../../types';
 import { formatDateShort } from '../../utils/dateUtils';
 import '../../styles/AdminAttendees.css';
+import '../../styles/AdminUsers.css'; // Import pagination styles
 import { RegistrationPreview } from '../../components/RegistrationPreview';
 import { Modal } from '../../components/Modal';
 import { apiClient, cancelApi, registrationsApi } from '../../services/apiClient';
@@ -39,6 +40,10 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   const [showDetailTable, setShowDetailTable] = useState(false);
   const [resendingEmailId, setResendingEmailId] = useState<number | null>(null);
   const [emailMessage, setEmailMessage] = useState<{ regId: number; type: 'success' | 'error'; text: string } | null>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const attendeesPerPage = 5;
 
   // State for Add Attendee (select user) modal
   interface SimpleUser {
@@ -164,6 +169,23 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     return results;
   }, [filter, registrations, searchQuery, selectedEventId]);
 
+  // Paginated registrations
+  const totalPages = Math.max(1, Math.ceil(filteredRegistrations.length / attendeesPerPage));
+  const startIndex = (currentPage - 1) * attendeesPerPage;
+  const endIndex = startIndex + attendeesPerPage;
+  const paginatedRegistrations = filteredRegistrations.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchQuery, selectedEventId]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top of table
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // const onSave = (regData: Registration) => {
   //   handleSaveRegistration(regData);
   //   setEditingReg(null);
@@ -179,9 +201,16 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
 
   const handleSelectAll = (isChecked: boolean) => {
     if (isChecked) {
-      setSelectedRegIds(filteredRegistrations.map(r => r.id));
+      // Select all on current page
+      const pageIds = paginatedRegistrations.map(r => r.id);
+      setSelectedRegIds(prev => {
+        const combined = [...prev, ...pageIds];
+        return Array.from(new Set(combined));
+      });
     } else {
-      setSelectedRegIds([]);
+      // Deselect all on current page
+      const pageIds = paginatedRegistrations.map(r => r.id);
+      setSelectedRegIds(prev => prev.filter(id => !pageIds.includes(id)));
     }
   };
   
@@ -503,7 +532,9 @@ const confirmSingleDelete = async () => {
     setShowAddModal(false);
   };
 
-  const isAllSelected = filteredRegistrations.length > 0 && selectedRegIds.length === filteredRegistrations.length;
+  // Check if all items on current page are selected
+  const isAllSelected = paginatedRegistrations.length > 0 && 
+    paginatedRegistrations.every(reg => selectedRegIds.includes(reg.id));
 
   return (
     <div className="container">
@@ -642,7 +673,7 @@ const confirmSingleDelete = async () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredRegistrations.map(reg => (
+                {paginatedRegistrations.map(reg => (
                   <tr key={`detail-${reg.id}`}>
                     <td>{displayValue(reg.badgeName)}</td>
                     <td>{displayValue(reg.firstName)}</td>
@@ -761,6 +792,50 @@ const confirmSingleDelete = async () => {
         )
       ) : (
         <p>No attendees found for this filter.</p>
+      )}
+
+      {filteredRegistrations.length > 0 && totalPages > 1 && (
+        <div className="admin-users-pagination">
+          <button
+            className="btn btn-secondary"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+          <div className="pagination-numbers">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+              const showPage = 
+                pageNum === 1 || 
+                pageNum === totalPages || 
+                (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
+              
+              if (!showPage) {
+                if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                  return <span key={pageNum} className="pagination-ellipsis">...</span>;
+                }
+                return null;
+              }
+              
+              return (
+                <button
+                  key={pageNum}
+                  className={`btn btn-secondary pagination-number ${pageNum === currentPage ? 'active' : ''}`}
+                  onClick={() => handlePageChange(pageNum)}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            className="btn btn-secondary"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
       )}
 
       {previewRegId && (() => {
