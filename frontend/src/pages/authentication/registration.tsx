@@ -79,7 +79,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
       const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
       const res = await authApi.register({ name: fullName, email: formData.email, password: formData.password });
       const payload: any = (res as any).data || res;
-      const msg = payload?.message || 'Registration successful. Please check your email to verify your account.';
+      const msg = payload?.message || 'Please check your email to verify your account.';
       setSubmitMessage(msg);
     } catch (error: any) {
       console.error('Registration error:', error);
