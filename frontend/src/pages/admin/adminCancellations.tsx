@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cancelApi } from '../../services/apiClient';
 import '../../styles/AdminCancellations.css';
 
@@ -25,6 +25,11 @@ interface AdminCancellationsProps {
 }
 
 export const AdminCancellations: React.FC<AdminCancellationsProps> = ({ pendingRows, approvedRows, loading, onReload, onChanged }) => {
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const [note, setNote] = useState<Record<number,string>>({});
   const [activeTab, setActiveTab] = useState<'requests' | 'cancelled'>('requests');
 

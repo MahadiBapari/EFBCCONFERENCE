@@ -29,6 +29,11 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
   const [editingGroup, setEditingGroup] = useState({ id: null as number | null, name: "" });
   const [draggedUnassignedId, setDraggedUnassignedId] = useState<number | null>(null);
 
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // Automatically select the most recent event on component mount and set tabs from event.activities
   useEffect(() => {
     if (events.length > 0 && selectedEventId === null) {

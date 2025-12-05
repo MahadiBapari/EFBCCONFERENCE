@@ -9,6 +9,11 @@ export const UserSupport: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   useEffect(() => {
     const loadContactInfo = async () => {
       try {

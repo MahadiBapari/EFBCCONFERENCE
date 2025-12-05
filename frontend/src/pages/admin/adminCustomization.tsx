@@ -29,6 +29,11 @@ export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
   onCacheUpdate,
   onContactCacheUpdate,
 }) => {
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const [activeTab, setActiveTab] = useState<'email' | 'contact'>('email');
   const [customization, setCustomization] = useState<EmailCustomization>(
     initialCustomization || {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../../types';
 import '../../styles/UserProfile.css';
 import { authApi } from '../../services/apiClient';
@@ -9,6 +9,10 @@ interface AdminProfileProps {
 }
 
 export const AdminProfile: React.FC<AdminProfileProps> = ({ user, onUpdateProfile }) => {
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     firstName: (user.name || '').split(' ').slice(0, -1).join(' ') || (user.name || '').split(' ')[0] || '',

@@ -31,6 +31,11 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   const [errors, setErrors] = useState<{ name?: string; startDate?: string; endDate?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // hydrate from incoming event once on mount
   useEffect(() => {
     if (!event) return;

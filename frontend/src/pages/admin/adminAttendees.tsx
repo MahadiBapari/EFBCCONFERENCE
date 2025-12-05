@@ -41,6 +41,11 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   const [resendingEmailId, setResendingEmailId] = useState<number | null>(null);
   const [emailMessage, setEmailMessage] = useState<{ regId: number; type: 'success' | 'error'; text: string } | null>(null);
   
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const attendeesPerPage = 30;

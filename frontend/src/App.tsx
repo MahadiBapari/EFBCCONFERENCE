@@ -596,6 +596,10 @@ const handleLogout = () => {
     setViewingEventId(null);
     setView(newView);
     setMobileSidebarOpen(false);
+    
+    // Scroll to top when view changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     if (role === 'admin' && newView === 'cancellations') {
       // Only load from API if we don't already have data cached
       if (

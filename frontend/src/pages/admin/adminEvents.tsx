@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Event } from '../../types';
 import { isEventExpired } from '../../types';
 import { formatDateShort } from '../../utils/dateUtils';
@@ -20,6 +20,11 @@ export const AdminEvents: React.FC<AdminEventsProps> = ({
   onOpenEventForm
 }) => {
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   // Saving is handled in AdminEventForm page
 

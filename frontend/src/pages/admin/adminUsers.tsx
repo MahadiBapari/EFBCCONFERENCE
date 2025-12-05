@@ -56,6 +56,11 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
   const usersPerPage = 30; // Users per page
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // State for creating a user by admin
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creating, setCreating] = useState(false);

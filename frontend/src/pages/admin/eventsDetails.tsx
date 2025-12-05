@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Event, Registration, Group } from '../../types';
 
 interface EventDetailsPageProps {
@@ -14,6 +14,11 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
   groups, 
   onBack 
 }) => {
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState("");
 
   const eventRegistrations = useMemo(() => {
