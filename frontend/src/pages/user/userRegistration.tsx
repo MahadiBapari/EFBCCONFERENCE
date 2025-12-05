@@ -100,6 +100,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [squareSdkLoading, setSquareSdkLoading] = useState(false);
   // Address fields (split) - prefer new separate fields, fallback to parsing legacy address field
   const parseAddress = (addr?: string) => {
     const res = { street:'', city:'', state:'', zip:'', country:'' };
@@ -371,9 +372,21 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     
     setIsSubmitting(true);
     try {
-      const card = await ensureCardMounted();
+      // Ensure card is mounted with proper error handling
+      let card;
+      try {
+        card = await ensureCardMounted();
+      } catch (error: any) {
+        const errorMsg = error?.message || 'Failed to initialize payment form';
+        alert(`Payment Error: ${errorMsg}`);
+        setIsSubmitting(false);
+        return;
+      }
+      
       const res = await card.tokenize();
-      if (res.status !== 'OK') throw new Error('Card tokenize failed');
+      if (res.status !== 'OK') {
+        throw new Error(res.errors?.[0]?.detail || 'Card tokenize failed');
+      }
       const nonce = res.token;
       
       // Calculate spouse-only price
@@ -498,10 +511,21 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (!validateForm()) return;
     setIsSubmitting(true);
     try {
-      // ensure card is mounted
-      const card = await ensureCardMounted();
+      // Ensure card is mounted with proper error handling
+      let card;
+      try {
+        card = await ensureCardMounted();
+      } catch (error: any) {
+        const errorMsg = error?.message || 'Failed to initialize payment form';
+        alert(`Payment Error: ${errorMsg}`);
+        setIsSubmitting(false);
+        return;
+      }
+      
       const res = await card.tokenize();
-      if (res.status !== 'OK') throw new Error('Card tokenize failed');
+      if (res.status !== 'OK') {
+        throw new Error(res.errors?.[0]?.detail || 'Card tokenize failed');
+      }
       const nonce = res.token;
       const baseTotal = Number(formData.totalPrice || 0);
       // Charge only the base amount (no processing fee added)
@@ -616,17 +640,67 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   };
 
   // Ensure Square SDK is loaded and card element attached when Card is selected (including by default)
-  const ensureSquareLoaded = async () => {
-    if ((window as any).Square) {
+  const ensureSquareLoaded = async (timeoutMs: number = 10000): Promise<void> => {
+    // Check if Square is already available
+    if ((window as any).Square && (window as any).Square.payments) {
       return;
     }
-    await new Promise<void>((resolve, reject) => {
-      const existing = document.querySelector('script[data-square-sdk]');
-      if (existing) {
-        existing.addEventListener('load', () => { resolve(); });
-        existing.addEventListener('error', () => reject(new Error('Failed to load Square SDK')));
-        return;
-      }
+
+    // Check if script is already loading
+    const existing = document.querySelector('script[data-square-sdk]');
+    if (existing) {
+      // Wait for existing script to load
+      return new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Square SDK script load timeout'));
+        }, timeoutMs);
+
+        const checkSquare = () => {
+          if ((window as any).Square && (window as any).Square.payments) {
+            clearTimeout(timeout);
+            resolve();
+          } else {
+            setTimeout(checkSquare, 100);
+          }
+        };
+
+        if ((window as any).Square && (window as any).Square.payments) {
+          clearTimeout(timeout);
+          resolve();
+        } else {
+          existing.addEventListener('load', () => {
+            // Wait for Square.payments to be available
+            const checkInterval = setInterval(() => {
+              if ((window as any).Square && (window as any).Square.payments) {
+                clearInterval(checkInterval);
+                clearTimeout(timeout);
+                resolve();
+              }
+            }, 50);
+            setTimeout(() => {
+              clearInterval(checkInterval);
+              if (!((window as any).Square && (window as any).Square.payments)) {
+                clearTimeout(timeout);
+                reject(new Error('Square SDK loaded but payments API not available'));
+              }
+            }, timeoutMs);
+          });
+          existing.addEventListener('error', () => {
+            clearTimeout(timeout);
+            reject(new Error('Failed to load Square SDK script'));
+          });
+          // Start checking immediately in case it's already loaded
+          checkSquare();
+        }
+      });
+    }
+
+    // Load script if not already present
+    return new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Square SDK script load timeout'));
+      }, timeoutMs);
+
       const s = document.createElement('script');
       const squareSdkUrl =
         process.env.NODE_ENV === 'production'
@@ -636,32 +710,107 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       s.src = squareSdkUrl;
       s.async = true;
       s.setAttribute('data-square-sdk', 'true');
-      s.onload = () => { resolve(); };
-      s.onerror = () => reject(new Error('Failed to load Square SDK'));
+      
+      s.onload = () => {
+        // Wait for Square.payments to be available after script loads
+        const checkInterval = setInterval(() => {
+          if ((window as any).Square && (window as any).Square.payments) {
+            clearInterval(checkInterval);
+            clearTimeout(timeout);
+            resolve();
+          }
+        }, 50);
+        
+        // Timeout if Square.payments doesn't become available
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          if (!((window as any).Square && (window as any).Square.payments)) {
+            clearTimeout(timeout);
+            reject(new Error('Square SDK loaded but payments API not available'));
+          }
+        }, timeoutMs);
+      };
+      
+      s.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error('Failed to load Square SDK script'));
+      };
+      
       document.head.appendChild(s);
     });
   };
 
-  const ensureCardMounted = async () => {
-    await ensureSquareLoaded();
-    if (cardInstance) return cardInstance;
-    const payments = (window as any).Square.payments(
-      process.env.REACT_APP_SQUARE_APP_ID,
-      process.env.REACT_APP_SQUARE_LOCATION_ID
+  const ensureCardMounted = async (retries: number = 3): Promise<any> => {
+    // Validate environment variables
+    const appId = process.env.REACT_APP_SQUARE_APP_ID;
+    const locationId = process.env.REACT_APP_SQUARE_LOCATION_ID;
+    
+    if (!appId || !locationId) {
+      throw new Error('Square payment configuration is missing. Please contact support.');
+    }
+
+    // Return existing instance if available
+    if (cardInstance) {
+      return cardInstance;
+    }
+
+    // Ensure SDK is loaded with retries
+    let lastError: Error | null = null;
+    for (let i = 0; i < retries; i++) {
+      try {
+        await ensureSquareLoaded(15000); // 15 second timeout
+        
+        // Verify Square.payments is available
+        if (!(window as any).Square || !(window as any).Square.payments) {
+          throw new Error('Square.payments API is not available');
+        }
+
+        // Initialize payments
+        const payments = (window as any).Square.payments(appId, locationId);
+        
+        // Wait a bit for payments to be ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const card = await payments.card();
+        
+        // Make sure container exists and is empty before attach
+        const container = document.getElementById('card-container');
+        if (!container) {
+          throw new Error('Card container element not found');
+        }
+        container.innerHTML = '';
+        
+        await card.attach('#card-container');
+        setCardInstance(card);
+        return card;
+      } catch (error: any) {
+        lastError = error;
+        if (i < retries - 1) {
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        }
+      }
+    }
+
+    // All retries failed
+    throw new Error(
+      lastError?.message || 
+      'Web Payments SDK was unable to be initialized in time. Please refresh the page and try again.'
     );
-    const card = await payments.card();
-    // make sure container exists and is empty before attach
-    const container = document.getElementById('card-container');
-    if (container) container.innerHTML = '';
-    await card.attach('#card-container');
-    setCardInstance(card);
-    return card;
   };
 
   useEffect(() => {
     if ((formData.paymentMethod || 'Card') === 'Card') {
-      // Fire and forget; errors are handled on pay
-      ensureCardMounted().catch(() => void 0);
+      // Pre-load card element, but don't block on errors (they'll be handled on pay)
+      setSquareSdkLoading(true);
+      ensureCardMounted()
+        .then(() => setSquareSdkLoading(false))
+        .catch((error) => {
+          setSquareSdkLoading(false);
+          console.warn('Square SDK pre-load failed (will retry on payment):', error?.message || error);
+        });
+    } else {
+      setSquareSdkLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.paymentMethod]);
@@ -1353,6 +1502,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     </label>
                   </div>
                   <div className={`mt-half ${((formData.paymentMethod || 'Card') === 'Card') ? '' : 'card-fields-hidden'}`}>
+                    {squareSdkLoading && (
+                      <div style={{ padding: '1rem', textAlign: 'center', color: '#6b7280' }}>
+                        Loading payment form...
+                      </div>
+                    )}
                     <div id="card-container" />
                   </div>
                   {formData.paymentMethod === 'Check' && (
