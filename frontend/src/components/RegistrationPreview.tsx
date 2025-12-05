@@ -18,6 +18,7 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
 }) => {
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [loading, setLoading] = useState(true);
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   useEffect(() => {
     const fetchRegistration = async () => {
@@ -347,6 +348,24 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
     </div>
   );
 
+  const handleResendConfirmation = async () => {
+    if (!registration?.id) return;
+    try {
+      setResendingEmail(true);
+      const response = await registrationsApi.resendConfirmation(registration.id);
+      if (response.success) {
+        alert('Confirmation email sent successfully!');
+      } else {
+        alert('Failed to send confirmation email. Please try again later.');
+      }
+    } catch (error) {
+      console.error('Error resending confirmation email:', error);
+      alert('Failed to send confirmation email. Please try again later.');
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
   if (loading) {
     return (
       <Modal
@@ -388,9 +407,23 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       }
       onClose={onClose}
       footer={
-        <div className="modal-footer-actions">
-          <button className="btn btn-secondary" onClick={onClose}>Close</button>
-          <button className="btn btn-primary" onClick={downloadPDF}>Download PDF</button>
+        <div className="modal-footer-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleResendConfirmation}
+            disabled={resendingEmail}
+          >
+            {resendingEmail ? 'Sending...' : 'Resend Confirmation Email'}
+          </button>
+          <div>
+            <button type="button" className="btn btn-secondary" onClick={downloadPDF} style={{ marginRight: '8px' }}>
+              Download PDF
+            </button>
+            <button type="button" className="btn btn-primary" onClick={onClose}>
+              Close
+            </button>
+          </div>
         </div>
       }
     >
