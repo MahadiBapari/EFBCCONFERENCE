@@ -57,6 +57,90 @@ const getAdminEmail = (): string | null => {
 // Generic send helper with HTTP API fallback (Resend)
 type MailPayload = { to: string; subject: string; text: string; html: string };
 
+// Spam-triggering words and phrases to avoid in subject lines
+const SPAM_TRIGGER_WORDS = [
+  'free', 'act now', 'limited time', 'urgent', 'click here', 'winner', 
+  'congratulations', 'guaranteed', 'no risk', 'special promotion', 
+  'exclusive offer', 'buy now', 'order now', 'deal', 'discount', 'save',
+  'win', 'prize', 'cash', 'money', '$$$', '!!!', 'asap', 'limited offer',
+  'one time', 'once in a lifetime', 'risk free', 'no obligation',
+  'act immediately', 'call now', 'order today', 'buy today', 'sale',
+  'clearance', 'lowest price', 'best price', 'cheap', 'affordable',
+  'amazing', 'incredible', 'unbelievable', 'shocking', 'secret',
+  'hidden', 'exclusive', 'private', 'insider', 'members only'
+];
+
+// Sanitize subject line to avoid spam triggers
+const sanitizeSubjectLine = (subject: string): string => {
+  let sanitized = subject.trim();
+  
+  // Convert to lowercase for comparison (but preserve original case structure)
+  const lowerSubject = sanitized.toLowerCase();
+  
+  // Check for spam-triggering words and replace with professional alternatives
+  SPAM_TRIGGER_WORDS.forEach(spamWord => {
+    const regex = new RegExp(`\\b${spamWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+    if (regex.test(lowerSubject)) {
+      // Replace with professional alternatives
+      const replacements: Record<string, string> = {
+        'free': 'complimentary',
+        'act now': 'please review',
+        'urgent': 'important',
+        'click here': 'view details',
+        'winner': 'selected',
+        'congratulations': 'thank you',
+        'guaranteed': 'confirmed',
+        'special promotion': 'information',
+        'exclusive offer': 'details',
+        'buy now': 'register',
+        'order now': 'register',
+        'deal': 'information',
+        'discount': 'pricing',
+        'save': 'information',
+        'win': 'selected',
+        'prize': 'award',
+        'cash': 'payment',
+        'money': 'payment',
+        'sale': 'information',
+        'amazing': 'important',
+        'incredible': 'important',
+        'unbelievable': 'important',
+        'shocking': 'important',
+        'secret': 'information',
+        'hidden': 'additional',
+        'exclusive': 'important',
+        'private': 'personal',
+        'insider': 'important',
+        'members only': 'for attendees'
+      };
+      
+      const replacement = replacements[spamWord.toLowerCase()] || 'information';
+      sanitized = sanitized.replace(regex, replacement);
+    }
+  });
+  
+  // Remove excessive capitalization (more than 3 consecutive uppercase letters)
+  sanitized = sanitized.replace(/([A-Z]{4,})/g, (match) => {
+    return match.charAt(0) + match.slice(1).toLowerCase();
+  });
+  
+  // Remove excessive punctuation (more than 1 exclamation or question mark)
+  sanitized = sanitized.replace(/[!?]{2,}/g, (match) => match.charAt(0));
+  
+  // Remove multiple spaces
+  sanitized = sanitized.replace(/\s+/g, ' ');
+  
+  // Ensure proper capitalization (first letter uppercase, rest sentence case)
+  sanitized = sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
+  
+  // Limit subject line length (recommended max 50 characters for best deliverability)
+  if (sanitized.length > 60) {
+    sanitized = sanitized.substring(0, 57) + '...';
+  }
+  
+  return sanitized.trim();
+};
+
 const sendUsingTransporter = async (payload: MailPayload): Promise<void> => {
   if (!transporter) throw new Error('No SMTP transporter');
   if (!smtpVerifiedLogged) {
@@ -202,7 +286,12 @@ const emailQueue = new EmailQueue();
 
 // Public function to queue email for sending
 export const queueEmail = (payload: MailPayload, maxRetries: number = 3): void => {
-  emailQueue.enqueue(payload, maxRetries);
+  // Sanitize subject line before queuing to avoid spam triggers
+  const sanitizedPayload = {
+    ...payload,
+    subject: sanitizeSubjectLine(payload.subject)
+  };
+  emailQueue.enqueue(sanitizedPayload, maxRetries);
 };
 
 // Get queue status (for monitoring)
@@ -327,7 +416,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   console.log(`[EMAIL] Verification link: ${backendUrl}${verifyPath.substring(0, 50)}...`);
 
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
-  const subject = 'Verify your email address';
+  const subject = sanitizeSubjectLine('Verify your email address');
   const html = await renderEmailTemplate({
     subject,
     heading: 'Verify your email',
@@ -348,7 +437,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
 // Email sent when user's email is successfully verified
 export async function sendVerificationCompleteEmail(to: string, userName?: string): Promise<void> {
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
-  const subject = 'Email verification complete';
+  const subject = sanitizeSubjectLine('Email verification complete');
   const loginUrl = (process.env.FRONTEND_URL || 'http://localhost:3000') + '/login';
   
   const html = await renderEmailTemplate({
@@ -441,7 +530,7 @@ export async function sendRegistrationConfirmationEmail(params: {
 }): Promise<void> {
   const { to, name, eventName, eventDate, eventStartDate, totalPrice, registration } = params;
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
-  const subject = 'Your EFBC Conference Registration is Confirmed';
+  const subject = sanitizeSubjectLine('Your EFBC Conference Registration is Confirmed');
   
   // Get totalPrice from params or registration object, convert to number
   const paymentAmount = totalPrice !== undefined && totalPrice !== null 
@@ -566,7 +655,7 @@ export async function sendAdminCreatedUserEmail(params: {
   const { to, name, tempPassword, role } = params;
   const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
-  const subject = `${brand} account created for you`;
+  const subject = sanitizeSubjectLine(`${brand} account created for you`);
   const loginUrl = (process.env.FRONTEND_URL || 'http://localhost:3000') + '/login';
 
   const html = await renderEmailTemplate({
@@ -613,7 +702,7 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
   const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const link = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
-  const subject = 'Reset your EFBC Conference password';
+  const subject = sanitizeSubjectLine('Reset your EFBC Conference password');
   const html = await renderEmailTemplate({
     subject,
     heading: 'Reset your password',
@@ -645,7 +734,7 @@ export async function sendCancellationRequestAdminEmail(params: {
     process.env.ADMIN_NOTIFY_EMAIL ||
     process.env.SUPPORT_EMAIL ||
     'planner@efbcconference.org';
-  const subject = `New cancellation request for ${params.eventName || 'event'} (#${params.registrationId})`;
+  const subject = sanitizeSubjectLine(`New cancellation request for ${params.eventName || 'event'} (#${params.registrationId})`);
 
   const html = await renderEmailTemplate({
     subject,
@@ -688,7 +777,7 @@ export async function sendCancellationRequestConfirmationEmail(params: {
   reason?: string | null;
 }): Promise<void> {
   const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
-  const subject = `Cancellation request submitted for ${params.eventName || 'event'}`;
+  const subject = sanitizeSubjectLine(`Cancellation request submitted for ${params.eventName || 'event'}`);
 
   const html = await renderEmailTemplate({
     subject,
@@ -726,10 +815,11 @@ export async function sendCancellationDecisionEmail(params: {
   adminNote?: string | null;
 }): Promise<void> {
   const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
-  const subject =
+  const subject = sanitizeSubjectLine(
     params.status === 'approved'
       ? 'Your registration cancellation has been approved'
-      : 'Your registration cancellation has been reviewed';
+      : 'Your registration cancellation has been reviewed'
+  );
 
   const statusText = params.status === 'approved' ? 'approved' : 'not approved';
 
@@ -775,7 +865,7 @@ export async function sendRegistrationRestoredEmail(params: {
   eventName?: string;
 }): Promise<void> {
   const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
-  const subject = 'Your registration has been restored';
+  const subject = sanitizeSubjectLine('Your registration has been restored');
 
   const html = await renderEmailTemplate({
     subject,
