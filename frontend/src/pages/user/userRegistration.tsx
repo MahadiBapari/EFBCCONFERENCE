@@ -318,10 +318,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         // childLunchTicket: !!(formData as any).childLunchTicket,
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
+        // Preserve payment information from existing registration if already paid
+        ...(isAlreadyPaid ? {
+          paid: (registration as any)?.paid,
+          squarePaymentId: (registration as any)?.squarePaymentId,
+        } : {}),
       } as Registration;
       
-      // For card payments, ensure payment was completed (has payment ID)
-      if (!isAdminEdit && (formData.paymentMethod || 'Card') === 'Card' && !registrationData.paid && !(registrationData as any).squarePaymentId) {
+      // For card payments, ensure payment was completed (has payment ID) - only check for new registrations
+      if (!isAdminEdit && (formData.paymentMethod || 'Card') === 'Card' && !isAlreadyPaid && !(registrationData as any).squarePaymentId) {
         alert('Payment must be completed before registration can be submitted. Please use the "Pay & Complete Registration" button.');
         setIsSubmitting(false);
         return;
