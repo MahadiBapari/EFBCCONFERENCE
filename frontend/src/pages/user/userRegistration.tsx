@@ -45,6 +45,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const isEditing = !!registration;
   const isAlreadyPaid = !!(registration as any)?.paid;
   const hadSpouseTicket = toBooleanYesNo((registration as any)?.spouseDinnerTicket);
+  const hadSpousePayment = !!(registration as any)?.spousePaymentId;
 
   const [formData, setFormData] = useState<Partial<Registration>>({
     // Personal Information
@@ -169,11 +170,14 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const spouseTiers = useMemo(() => event?.spousePricing || [], [event?.spousePricing]);
   // const childLunchPrice = useMemo(() => event?.childLunchPrice || 0, [event?.childLunchPrice]);
 
+  // Ensure spouse ticket stays checked if payment was made
   useEffect(() => {
-    // In edit mode, if spouse ticket was previously purchased, lock it on
-    if (isEditing && hadSpouseTicket && !formData.spouseDinnerTicket) {
+    if (hadSpousePayment && !formData.spouseDinnerTicket) {
       setFormData(prev => ({ ...prev, spouseDinnerTicket: true }));
     }
+  }, [hadSpousePayment, formData.spouseDinnerTicket]);
+
+  useEffect(() => {
     const now = Date.now();
     const withBounds = (arr: any[] = []) =>
       arr
@@ -261,6 +265,13 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!event) return;
+    
+    // Prevent unchecking spouse ticket if payment was made
+    if (hadSpousePayment && !formData.spouseDinnerTicket) {
+      alert('Cannot remove spouse ticket that has already been paid for. You can only edit the spouse information.');
+      return;
+    }
+    
     if (!validateForm()) return;
     
     // For card payments, ensure payment is completed before allowing submission
@@ -300,6 +311,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         userId: user.id,
         eventId: event.id,
         ...formData,
+        // Force spouse ticket to true if payment was made
+        spouseDinnerTicket: hadSpousePayment ? true : formData.spouseDinnerTicket,
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
         golfHandicap: golfHandicapValue,
@@ -322,6 +335,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         ...(isAlreadyPaid ? {
           paid: (registration as any)?.paid,
           squarePaymentId: (registration as any)?.squarePaymentId,
+          spousePaymentId: (registration as any)?.spousePaymentId,
         } : {}),
       } as Registration;
       
@@ -340,6 +354,140 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       console.error('Error saving registration:', error);
       alert('An error occurred while saving the registration. Please try again.');
     } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSpousePayment = async () => {
+    if (!event) return;
+    if (!formData.spouseDinnerTicket) {
+      alert('Please select spouse dinner ticket first.');
+      return;
+    }
+    if (!formData.spouseFirstName || !formData.spouseLastName) {
+      alert('Please enter spouse first and last name.');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const card = await ensureCardMounted();
+      const res = await card.tokenize();
+      if (res.status !== 'OK') throw new Error('Card tokenize failed');
+      const nonce = res.token;
+      
+      // Calculate spouse-only price
+      const now = Date.now();
+      const tiers = (event.spousePricing || []).map((t: any) => ({
+        ...t,
+        s: t.startDate ? new Date(t.startDate).getTime() : -Infinity,
+        e: t.endDate ? new Date(t.endDate).getTime() : Infinity
+      })).sort((a: any, b: any) => a.s - b.s);
+      const active = tiers.find((t: any) => now >= t.s && now <= t.e) ||
+        (now < tiers[0]?.s ? tiers[0] : (now > tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
+      const spousePrice = active?.price ?? 0;
+      const amountCents = Math.round(spousePrice * 100);
+      
+      const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amountCents,
+          baseAmountCents: amountCents,
+          applyCardFee: false,
+          currency: 'USD',
+          eventName: `${event?.name || 'EFBC Conference'} - Spouse Ticket`,
+          nonce,
+          buyerEmail: formData.email || undefined,
+          buyerPhone: formData.mobile || formData.officePhone || undefined,
+          billingAddress: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            addressLine1: addrStreet,
+            locality: addrCity,
+            administrativeDistrictLevel1: addrState,
+            postalCode: addrZip,
+            country: (addrCountry && addrCountry.length === 2 ? addrCountry.toUpperCase() : 'US')
+          }
+        })
+      });
+      
+      if (!payRes.ok) {
+        const errorData = await payRes.json().catch(() => ({ error: 'Network error or invalid response' }));
+        const errorMessage = errorData?.error || errorData?.message || `Payment failed with status ${payRes.status}`;
+        throw new Error(errorMessage);
+      }
+      
+      const payload = await payRes.json();
+      if (!payload?.success) {
+        const errorMessage = payload?.error || payload?.message || 'Payment charge failed';
+        throw new Error(errorMessage);
+      }
+      
+      if (!payload?.paymentId) {
+        throw new Error('Payment was processed but no payment ID was returned. Please contact support.');
+      }
+      
+      if (payload?.status && payload.status !== 'COMPLETED') {
+        throw new Error(`Payment status is ${payload.status}. Payment may not have been completed successfully.`);
+      }
+      
+      // Update registration with spouse payment ID
+      const composedAddress = [
+        addrStreet.trim(),
+        `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
+        addrCountry.trim()
+      ].filter(Boolean).join('\n');
+      
+      const isGolf = (formData.wednesdayActivity || '').toLowerCase().includes('golf');
+      const isMassage = (formData.wednesdayActivity || '').toLowerCase().includes('massage');
+      const isPickleball = (formData.wednesdayActivity || '').toLowerCase().includes('pickleball');
+      
+      const clubRentalsValue = isGolf 
+        ? (needsClubRentals && golfClubPreference 
+            ? golfClubPreference 
+            : (!needsClubRentals ? 'I will bring my own' : undefined))
+        : undefined;
+      
+      const golfHandicapValue = isGolf ? formData.golfHandicap : undefined;
+      const massageTimeSlotValue = isMassage ? (formData as any).massageTimeSlot : undefined;
+      const pickleballEquipmentValue = isPickleball ? ((formData as any).pickleballEquipment !== undefined ? (formData as any).pickleballEquipment : null) : null;
+      
+      const registrationData: Registration = {
+        ...(registration?.id ? { id: registration.id } : {} as any),
+        userId: user.id,
+        eventId: event.id,
+        ...formData,
+        totalPrice: (Number(registration?.totalPrice || 0) + spousePrice).toString(),
+        badgeName: (formData.badgeName || '').toUpperCase(),
+        specialRequests: (formData as any).specialRequests || '',
+        clubRentals: clubRentalsValue,
+        golfHandicap: golfHandicapValue,
+        massageTimeSlot: massageTimeSlotValue,
+        pickleballEquipment: pickleballEquipmentValue,
+        address: composedAddress,
+        addressStreet: addrStreet.trim(),
+        city: addrCity.trim(),
+        state: addrState.trim(),
+        zipCode: addrZip.trim(),
+        country: addrCountry.trim(),
+        tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
+        name: `${formData.firstName} ${formData.lastName}`,
+        category: formData.wednesdayActivity || 'Networking',
+        // Preserve existing payment info
+        paid: (registration as any)?.paid,
+        squarePaymentId: (registration as any)?.squarePaymentId,
+        // Add spouse payment ID
+        spousePaymentId: payload.paymentId,
+      } as Registration;
+      
+      onSave(registrationData);
+      alert('Spouse ticket payment successful! Registration updated.');
+      onBack();
+    } catch (err: any) {
+      console.error('Spouse payment error:', err);
+      const errorMessage = err?.message || err?.response?.data?.error || 'Payment failed. Please check your card details and try again.';
+      alert(`Payment Error: ${errorMessage}`);
       setIsSubmitting(false);
     }
   };
@@ -1005,33 +1153,34 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             </div>
           </div>
 
-          {/* Spouse section logic:
-              - User edit mode: Only show if spouse ticket was originally purchased (read-only, can't add new)
-              - Admin edit mode: Always show, allow adding/editing spouse
-              - Create mode (both user and admin): Always show, allow adding spouse */}
-          {(!isEditing || hadSpouseTicket || isAdminEdit) && (
-            <div className="form-section">
-              <h3 className="section-title">Spouse/Guest Information</h3>
-              {(!isEditing || isAdminEdit) && (
-                <div className="form-group">
-                  <label className="checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      checked={!!formData.spouseDinnerTicket} 
-                      onChange={e => handleInputChange('spouseDinnerTicket', e.target.checked)}
-                      disabled={isEditing && !isAdminEdit} // Disable in user edit mode
-                    />
-                    <span>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
-                  </label>
-                </div>
-              )}
-              {/* Show spouse name fields:
-                  - In user edit mode: only if ticket was purchased originally
-                  - In admin edit mode: if checkbox is selected
-                  - In create mode: if checkbox is selected */}
-              {( (isEditing && !isAdminEdit && hadSpouseTicket) || 
-                  (isEditing && isAdminEdit && formData.spouseDinnerTicket) || 
-                  (!isEditing && formData.spouseDinnerTicket) ) && (
+          {/* Spouse section: Always show to allow adding spouse later */}
+          <div className="form-section">
+            <h3 className="section-title">Spouse/Guest Information</h3>
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={!!formData.spouseDinnerTicket} 
+                    onChange={e => {
+                      // Prevent unchecking if spouse payment was made
+                      if (hadSpousePayment && !e.target.checked) {
+                        alert('Cannot remove spouse ticket that has already been paid for. You can only edit the spouse information.');
+                        return;
+                      }
+                      handleInputChange('spouseDinnerTicket', e.target.checked);
+                    }}
+                    disabled={hadSpousePayment} // Disable checkbox if payment was made
+                  />
+                  <span>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
+                  {hadSpousePayment && (
+                    <span style={{ marginLeft: '8px', color: '#6b7280', fontSize: '0.875rem' }}>
+                      (Already paid - cannot be removed)
+                    </span>
+                  )}
+                </label>
+              </div>
+              {/* Show spouse name fields when checkbox is selected */}
+              {formData.spouseDinnerTicket && (
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="spouseFirstName" className="form-label">Spouse/Guest's First Name <span className="required-asterisk">*</span></label>
@@ -1041,7 +1190,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       className={`form-control ${errors.spouseFirstName ? 'error' : ''}`} 
                       value={formData.spouseFirstName || ''} 
                       onChange={e => handleInputChange('spouseFirstName', e.target.value)}
-                      disabled={isEditing && !isAdminEdit && hadSpouseTicket} // Disable in user edit mode
                     />
                     {errors.spouseFirstName && <div className="error-message">{errors.spouseFirstName}</div>}
                   </div>
@@ -1053,14 +1201,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       className={`form-control ${errors.spouseLastName ? 'error' : ''}`} 
                       value={formData.spouseLastName || ''} 
                       onChange={e => handleInputChange('spouseLastName', e.target.value)}
-                      disabled={isEditing && !isAdminEdit && hadSpouseTicket} // Disable in user edit mode
                     />
                     {errors.spouseLastName && <div className="error-message">{errors.spouseLastName}</div>}
                   </div>
                 </div>
               )}
-            </div>
-          )}
+          </div>
 
           {/* Child section - only visible to admins */}
           {/* {isAdminEdit && (
@@ -1111,20 +1257,51 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           {!isAdminEdit && (
             <div className="form-section">
               <h3 className="section-title">Payment Information</h3>
-              {isAlreadyPaid ? (
-                <div className="payment-summary">
-                  <div className="payment-item">
-                    <span>Paid:</span>
-                    <span>Yes</span>
-                  </div>
-                  {(registration as any)?.squarePaymentId && (
-                    <div className="payment-item">
-                      <span>Square Payment ID:</span>
-                      <span>{(registration as any).squarePaymentId}</span>
+              {(() => {
+                // Check if spouse is being added (wasn't there before, but now is)
+                const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
+                const spousePrice = (() => {
+                  if (!formData.spouseDinnerTicket) return 0;
+                  const now = Date.now();
+                  const tiers = (event?.spousePricing || []).map((t: any) => ({
+                    ...t,
+                    s: t.startDate ? new Date(t.startDate).getTime() : -Infinity,
+                    e: t.endDate ? new Date(t.endDate).getTime() : Infinity
+                  })).sort((a: any, b: any) => a.s - b.s);
+                  const active = tiers.find((t: any) => now >= t.s && now <= t.e) ||
+                    (now < tiers[0]?.s ? tiers[0] : (now > tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
+                  return active?.price ?? 0;
+                })();
+
+                if (isAlreadyPaid && !isAddingSpouse) {
+                  return (
+                    <div className="payment-summary">
+                      <div className="payment-item">
+                        <span>Paid:</span>
+                        <span>Yes</span>
+                      </div>
+                      {(registration as any)?.squarePaymentId && (
+                        <div className="payment-item">
+                          <span>Square Payment ID:</span>
+                          <span>{(registration as any).squarePaymentId}</span>
+                        </div>
+                      )}
+                      {hadSpouseTicket && (registration as any)?.spousePaymentId && (
+                        <div className="payment-item">
+                          <span>Spouse Payment ID:</span>
+                          <span>{(registration as any).spousePaymentId}</span>
+                        </div>
+                      )}
+                      {isAddingSpouse && (
+                        <div className="payment-item" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+                          <span>Spouse Ticket (New):</span>
+                          <span>${spousePrice.toFixed(2)}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ) : (
+                  );
+                }
+                return (
               <>
                 {(() => {
                   const baseTotal = Number(formData.totalPrice || 0);
@@ -1187,20 +1364,27 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   )}
                 </div>
               </>
-            )}
+                );
+              })()}
             </div>
           )}
 
           <div className="modal-footer-actions" style={{ marginTop: '1rem' }}>
             <button type="button" className="btn btn-secondary" onClick={onBack} disabled={isSubmitting}>Cancel</button>
-            {/* Show submit button only for Check payment, admin edit, or already paid registrations */}
-            {/* For Card payment (not already paid), show Pay & Complete button instead */}
             {(() => {
               const paymentMethod = formData.paymentMethod || 'Card';
-              const showSubmitButton = isAdminEdit || isAlreadyPaid || paymentMethod === 'Check';
-              const showPayButton = !isAdminEdit && !isAlreadyPaid && paymentMethod === 'Card';
+              const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
+              const showSubmitButton = isAdminEdit || (isAlreadyPaid && !isAddingSpouse) || paymentMethod === 'Check';
+              const showPayButton = !isAdminEdit && !isAlreadyPaid && paymentMethod === 'Card' && !isAddingSpouse;
+              const showSpousePayButton = !isAdminEdit && isAlreadyPaid && isAddingSpouse && paymentMethod === 'Card';
               
-              if (showSubmitButton) {
+              if (showSpousePayButton) {
+                return (
+                  <button type="button" className="btn btn-primary btn-save" onClick={handleSpousePayment} disabled={isSubmitting}>
+                    {isSubmitting ? 'Processing...' : 'Pay for Spouse Ticket'}
+                  </button>
+                );
+              } else if (showSubmitButton) {
                 return (
                   <button className="btn btn-primary btn-save" type="submit" form="registration-form" disabled={isSubmitting}>
                     {isSubmitting ? 'Saving...' : (registration ? 'Update Registration' : 'Complete Registration')}

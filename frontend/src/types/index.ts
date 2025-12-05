@@ -89,6 +89,7 @@ export interface Registration {
   paymentMethod: 'Card' | 'Check';
   paid?: boolean;
   squarePaymentId?: string;
+  spousePaymentId?: string;
   
   // Group Assignment
   groupAssigned?: number;

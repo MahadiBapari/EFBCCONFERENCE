@@ -333,6 +333,13 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       doc.text('Square Payment ID:', margin, yPos);
       doc.setFont('helvetica', 'normal');
       doc.text((registration as any).squarePaymentId, margin + 60, yPos);
+      yPos += 6;
+    }
+    if ((registration as any).spousePaymentId) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Spouse Payment ID:', margin, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text((registration as any).spousePaymentId, margin + 60, yPos);
     }
 
     // Save PDF
@@ -516,6 +523,9 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
           )}
           {registration.paymentMethod === 'Card' && (registration as any).squarePaymentId && (
             <Line label="Square Payment ID" value={(registration as any).squarePaymentId} />
+          )}
+          {(registration as any).spousePaymentId && (
+            <Line label="Spouse Payment ID" value={(registration as any).spousePaymentId} />
           )}
         </div>
       </div>

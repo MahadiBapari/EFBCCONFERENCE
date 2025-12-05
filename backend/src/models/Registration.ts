@@ -56,6 +56,7 @@ export class Registration {
   public cancellationAt?: string;
   public paid?: boolean;
   public squarePaymentId?: string;
+  public spousePaymentId?: string;
   public groupAssigned?: number;
 
   // Helper method to format dates for MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
@@ -146,6 +147,7 @@ export class Registration {
     this.cancellationAt = (data as any).cancellationAt as any;
     this.paid = (data as any).paid as any;
     this.squarePaymentId = (data as any).squarePaymentId as any;
+    this.spousePaymentId = (data as any).spousePaymentId ?? (data as any).spouse_payment_id ?? undefined;
     this.groupAssigned = (data as any).groupAssigned ?? (data as any).group_assigned ?? undefined;
   }
 
@@ -209,6 +211,7 @@ export class Registration {
     if (this.tuesdayEarlyReception) (base as any).tuesdayEarlyReception = this.tuesdayEarlyReception;
     if (typeof this.paid === 'boolean') (base as any).paid = this.paid;
     if (this.squarePaymentId) (base as any).squarePaymentId = this.squarePaymentId;
+    if (this.spousePaymentId) (base as any).spousePaymentId = this.spousePaymentId;
     if (this.groupAssigned) (base as any).groupAssigned = this.groupAssigned;
     return base as any;
   }
@@ -269,6 +272,7 @@ export class Registration {
       payment_method: this.paymentMethod || null,
       paid: this.paid ?? false,
       square_payment_id: this.nullIfUndefined(this.squarePaymentId),
+      spouse_payment_id: this.nullIfUndefined(this.spousePaymentId),
       group_assigned: this.nullIfUndefined(this.groupAssigned),
       updated_at: this.formatDateForDB(this.updatedAt || new Date().toISOString()),
     };
@@ -337,6 +341,7 @@ export class Registration {
       tuesdayEarlyReception: row.tuesday_early_reception,
       paid: !!row.paid,
       squarePaymentId: row.square_payment_id,
+      spousePaymentId: row.spouse_payment_id,
       groupAssigned: row.group_assigned || undefined,
       // Legacy fields are not mapped from DB in this version
       name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
