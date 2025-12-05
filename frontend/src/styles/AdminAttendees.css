@@ -221,6 +221,16 @@
   flex-wrap: wrap;
 }
 
+/* Hover effect for Details button */
+.action-buttons .btn-details:hover {
+  background-color: var(--background-color);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
 .email-message-small {
   margin-top: 0.5rem;
   padding: 0.5rem 0.75rem;

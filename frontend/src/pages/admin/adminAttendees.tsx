@@ -749,18 +749,18 @@ const confirmSingleDelete = async () => {
                   <td className="no-print">
                       <div className="action-buttons">
                     <button 
-                      className="btn btn-secondary btn-sm" 
+                      className="btn btn-secondary btn-sm btn-details" 
                           onClick={() => setPreviewRegId(reg.id)}
                       title="Details"
                     >
-                      🔍 Details
+                      Details
                     </button>
                         <button 
                           className="btn btn-primary btn-sm" 
                           onClick={() => onEditRegistration(reg.id)}
                           title="Edit"
                         >
-                          ✏️ Edit
+                          Edit
                         </button>
                         <button 
                           className="btn btn-outline btn-sm" 
@@ -768,7 +768,7 @@ const confirmSingleDelete = async () => {
                           disabled={resendingEmailId === reg.id}
                           title="Resend Confirmation Email"
                         >
-                          {resendingEmailId === reg.id ? '⏳ Sending...' : '📧 Resend Email'}
+                          {resendingEmailId === reg.id ? 'Sending...' : 'Resend Email'}
                         </button>
                         <button
                           className="btn btn-danger btn-sm"
