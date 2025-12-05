@@ -93,6 +93,7 @@ const sendUsingResend = async (payload: MailPayload): Promise<void> => {
   }
 };
 
+// Internal function to actually send email (used by queue)
 const sendMail = async (payload: MailPayload): Promise<void> => {
   try {
     if (transporter) {
@@ -107,20 +108,116 @@ const sendMail = async (payload: MailPayload): Promise<void> => {
     return;
   }
   console.warn('No email transport available (SMTP or RESEND_API_KEY). Email not sent.');
+  throw new Error('No email transport available');
 };
 
-// Helper to send email to user and also send a copy to admin
+// Email Queue System
+interface QueuedEmail {
+  payload: MailPayload;
+  retries: number;
+  maxRetries: number;
+  id: string;
+}
+
+class EmailQueue {
+  private queue: QueuedEmail[] = [];
+  private processing: boolean = false;
+  private readonly delayBetweenEmails = 600; // 600ms = slightly more than 500ms for 2 req/sec rate limit
+
+  // Add email to queue
+  enqueue(payload: MailPayload, maxRetries: number = 3): void {
+    const id = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    this.queue.push({
+      payload,
+      retries: 0,
+      maxRetries,
+      id
+    });
+    console.log(`[EMAIL QUEUE] Email queued for ${payload.to}. Queue length: ${this.queue.length}`);
+    
+    // Start processing if not already processing
+    if (!this.processing) {
+      this.processQueue();
+    }
+  }
+
+  // Process queue sequentially
+  private async processQueue(): Promise<void> {
+    if (this.processing) return;
+    this.processing = true;
+
+    while (this.queue.length > 0) {
+      const email = this.queue.shift();
+      if (!email) break;
+
+      try {
+        console.log(`[EMAIL QUEUE] Processing email ${email.id} to ${email.payload.to} (attempt ${email.retries + 1}/${email.maxRetries + 1})`);
+        await sendMail(email.payload);
+        console.log(`[EMAIL QUEUE] Successfully sent email ${email.id} to ${email.payload.to}`);
+      } catch (error: any) {
+        email.retries++;
+        const errorMsg = error?.message || String(error);
+        console.error(`[EMAIL QUEUE] Failed to send email ${email.id} to ${email.payload.to} (attempt ${email.retries}/${email.maxRetries + 1}):`, errorMsg);
+
+        if (email.retries <= email.maxRetries) {
+          // Retry: add back to queue
+          const retryDelay = Math.min(1000 * email.retries, 5000); // Exponential backoff: 1s, 2s, 3s, max 5s
+          console.log(`[EMAIL QUEUE] Retrying email ${email.id} in ${retryDelay}ms...`);
+          setTimeout(() => {
+            this.queue.unshift(email); // Add to front of queue for retry
+            if (!this.processing) {
+              this.processQueue();
+            }
+          }, retryDelay);
+        } else {
+          // Max retries exceeded
+          console.error(`[EMAIL QUEUE] Max retries exceeded for email ${email.id} to ${email.payload.to}. Email will not be sent.`);
+        }
+      }
+
+      // Add delay between emails to respect rate limits (except for last email)
+      if (this.queue.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, this.delayBetweenEmails));
+      }
+    }
+
+    this.processing = false;
+    if (this.queue.length > 0) {
+      // More emails were added while processing, continue
+      this.processQueue();
+    }
+  }
+
+  // Get queue status
+  getStatus(): { queueLength: number; processing: boolean } {
+    return {
+      queueLength: this.queue.length,
+      processing: this.processing
+    };
+  }
+}
+
+// Create singleton queue instance
+const emailQueue = new EmailQueue();
+
+// Public function to queue email for sending
+export const queueEmail = (payload: MailPayload, maxRetries: number = 3): void => {
+  emailQueue.enqueue(payload, maxRetries);
+};
+
+// Get queue status (for monitoring)
+export const getEmailQueueStatus = () => emailQueue.getStatus();
+
+// Helper to send email to user and also send a copy to admin (using queue)
 const sendMailWithAdminCopy = async (payload: MailPayload, sendAdminCopy: boolean = true): Promise<void> => {
-  // Send to primary recipient
-  await sendMail(payload).catch((e) => console.warn('Failed to send email to primary recipient:', e));
+  // Queue primary recipient email
+  emailQueue.enqueue(payload);
   
-  // Send copy to admin if requested and admin email is different from recipient
+  // Queue admin copy if requested and admin email is different from recipient
   if (sendAdminCopy) {
     const adminEmail = getAdminEmail();
     if (adminEmail && adminEmail !== payload.to) {
-      await sendMail({ ...payload, to: adminEmail }).catch((e) => 
-        console.warn('Failed to send admin copy:', e)
-      );
+      emailQueue.enqueue({ ...payload, to: adminEmail });
     }
   }
 };
@@ -244,7 +341,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   });
   const text = `Verify your email: ${link}`;
 
-  await sendMail({ to, subject, text, html });
+  queueEmail({ to, subject, text, html });
   // Note: Verification emails don't need admin copy
 }
 
@@ -274,7 +371,7 @@ export async function sendVerificationCompleteEmail(to: string, userName?: strin
     `Sign in: ${loginUrl}`
   ].join('\n');
 
-  await sendMail({ to, subject, text, html });
+  queueEmail({ to, subject, text, html });
   // Note: Verification complete emails don't need admin copy
 }
 
@@ -456,7 +553,7 @@ export async function sendRegistrationConfirmationEmail(params: {
   const text = parts.join(' ').trim();
 
   // Send to user (admin copy will be handled by the caller if needed)
-  await sendMail({ to, subject, text, html });
+  queueEmail({ to, subject, text, html });
 }
 
 // Email sent when an admin creates a user account on behalf of someone
@@ -508,7 +605,7 @@ export async function sendAdminCreatedUserEmail(params: {
     `Please sign in and change this password as soon as possible.`,
   ].join('\n');
 
-  await sendMail({ to, subject, text, html });
+  queueEmail({ to, subject, text, html });
   // Note: Admin-created user emails don't need admin copy (admin already knows)
 }
 
@@ -530,7 +627,7 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
   });
   const text = `Reset your password: ${link}`;
 
-  await sendMail({ to, subject, text, html });
+  queueEmail({ to, subject, text, html });
   // Note: Password reset emails don't need admin copy
 }
  
@@ -579,7 +676,7 @@ export async function sendCancellationRequestAdminEmail(params: {
   if (params.reason) lines.push(`Reason: ${params.reason}.`);
   const text = lines.join(' ');
 
-  await sendMail({ to, subject, text, html });
+  queueEmail({ to, subject, text, html });
 }
 
 // Email to user confirming their cancellation request was submitted

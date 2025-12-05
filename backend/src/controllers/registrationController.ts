@@ -158,15 +158,24 @@ export class RegistrationController {
         totalPrice: registration.totalPrice,
         registration: registration.toJSON ? registration.toJSON() : registration
       } as any;
-      // Send to primary email (this will also send admin copy)
-      sendRegistrationConfirmationEmail({ to: registration.email, ...payload }).catch((e) => console.warn('⚠️ Failed to send registration confirmation:', e));
-      // Send admin copy separately to ensure it's sent
+      // Send emails via queue (emails will be sent sequentially with automatic retries)
+      // Primary email (this will also send admin copy via sendMailWithAdminCopy)
+      sendRegistrationConfirmationEmail({ to: registration.email, ...payload }).catch((e) => 
+        console.warn('⚠️ Failed to queue registration confirmation:', e)
+      );
+      
+      // Send admin copy separately to ensure it's sent (only if not already sent via sendMailWithAdminCopy)
       if (adminCopy && adminCopy !== registration.email) {
-        sendRegistrationConfirmationEmail({ to: adminCopy, ...payload }).catch((e) => console.warn('⚠️ Failed to send admin confirmation:', e));
+        sendRegistrationConfirmationEmail({ to: adminCopy, ...payload }).catch((e) => 
+          console.warn('⚠️ Failed to queue admin confirmation:', e)
+        );
       }
+      
       // Send to secondary email if provided (no admin copy to avoid duplicates)
       if ((registration as any).secondaryEmail && (registration as any).secondaryEmail !== registration.email && (registration as any).secondaryEmail !== adminCopy) {
-        sendRegistrationConfirmationEmail({ to: (registration as any).secondaryEmail, ...payload }).catch((e) => console.warn('⚠️ Failed to send secondary confirmation:', e));
+        sendRegistrationConfirmationEmail({ to: (registration as any).secondaryEmail, ...payload }).catch((e) => 
+          console.warn('⚠️ Failed to queue secondary confirmation:', e)
+        );
       }
 
       const response: ApiResponse = {
@@ -483,33 +492,25 @@ export class RegistrationController {
         registration: registration.toJSON ? registration.toJSON() : registration
       } as any;
 
-      // Send emails (fire-and-forget)
-      const emailPromises: Promise<void>[] = [];
-      
+      // Send emails via queue (emails will be sent sequentially with automatic retries)
       // Primary email
-      emailPromises.push(
-        sendRegistrationConfirmationEmail({ to: registration.email, ...payload })
-          .catch((e) => console.warn('⚠️ Failed to send registration confirmation:', e))
+      sendRegistrationConfirmationEmail({ to: registration.email, ...payload }).catch((e) => 
+        console.warn('⚠️ Failed to queue registration confirmation:', e)
       );
 
       // Admin copy (send separately to ensure it's sent)
       if (adminCopy && adminCopy !== registration.email) {
-        emailPromises.push(
-          sendRegistrationConfirmationEmail({ to: adminCopy, ...payload })
-            .catch((e) => console.warn('⚠️ Failed to send admin confirmation:', e))
+        sendRegistrationConfirmationEmail({ to: adminCopy, ...payload }).catch((e) => 
+          console.warn('⚠️ Failed to queue admin confirmation:', e)
         );
       }
 
       // Secondary email if provided (no admin copy to avoid duplicates)
       if ((registration as any).secondaryEmail && (registration as any).secondaryEmail !== registration.email && (registration as any).secondaryEmail !== adminCopy) {
-        emailPromises.push(
-          sendRegistrationConfirmationEmail({ to: (registration as any).secondaryEmail, ...payload })
-            .catch((e) => console.warn('⚠️ Failed to send secondary confirmation:', e))
+        sendRegistrationConfirmationEmail({ to: (registration as any).secondaryEmail, ...payload }).catch((e) => 
+          console.warn('⚠️ Failed to queue secondary confirmation:', e)
         );
       }
-
-      // Wait for all emails to be sent (but don't fail if one fails)
-      await Promise.allSettled(emailPromises);
 
       const response: ApiResponse = {
         success: true,

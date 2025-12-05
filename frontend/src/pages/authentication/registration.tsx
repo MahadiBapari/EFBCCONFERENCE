@@ -83,7 +83,10 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
       setSubmitMessage(msg);
     } catch (error: any) {
       console.error('Registration error:', error);
-      const msg = error?.response?.data?.error || 'Failed to create account';
+      // Show detailed validation errors if available
+      const errorMsg = error?.response?.data?.error || 'Failed to create account';
+      const validationDetails = error?.response?.data?.message;
+      const msg = validationDetails ? `${errorMsg}: ${validationDetails}` : errorMsg;
       setSubmitError(msg);
     } finally {
       setIsSubmitting(false);

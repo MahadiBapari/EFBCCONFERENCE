@@ -159,25 +159,19 @@ router.get('/verify-email', async (req: Request, res: Response) => {
     
     const db = getDb();
     
-    // First check if user is already verified
-    const alreadyVerified = await db.query(
-      'SELECT id, email FROM users WHERE email_verification_token=? AND email_verified_at IS NOT NULL LIMIT 1',
-      [token]
-    );
-    if (alreadyVerified.length > 0) {
-      const redirect = process.env.EMAIL_VERIFY_REDIRECT || process.env.FRONTEND_URL || 'http://localhost:3000';
-      if (redirect) return res.redirect(302, `${redirect}/login?verified=true`);
-      return res.json({ success: true, message: 'Email already verified' });
-    }
-    
     // Check for valid token
     const rows = await db.query(
       'SELECT id, email, email_verification_expires_at, email_verified_at, email_verification_token FROM users WHERE email_verification_token=? LIMIT 1',
       [token]
     );
-    const u = rows[0];
     
-    if (!u) {
+    // If token not found, check if user might be already verified (token was deleted by previous verification)
+    if (!rows[0] || rows.length === 0) {
+      // Try to find a user that might have been verified recently (check by looking for users with verified_at but no token)
+      // This handles the case where token was deleted but user is verified
+      // We can't directly match by token since it's deleted, so we'll handle this in the redirect
+      console.log(`[VERIFY] Token not found - may have been used already. Token length: ${token.length}, prefix: ${token.substring(0, 10)}`);
+      
       console.log(`[VERIFY] Token not found in database. Token length: ${token.length}, prefix: ${token.substring(0, 10)}`);
       // Log for debugging - check if token exists in database at all
       const allTokens = await db.query('SELECT id, email, email_verification_token, LENGTH(email_verification_token) as token_len FROM users WHERE email_verification_token IS NOT NULL LIMIT 5');
@@ -207,13 +201,18 @@ router.get('/verify-email', async (req: Request, res: Response) => {
         }
       }
       
-      // Try to find user by partial token match (in case of truncation) or redirect to resend page
+      // Token not found - could be already used (deleted) or invalid
+      // Redirect to login with a message - if user was verified, they can log in
+      // Otherwise, they can request a new verification email
       const frontendUrl = process.env.FRONTEND_URL || process.env.EMAIL_VERIFY_REDIRECT || 'http://localhost:3000';
-      return res.redirect(302, `${frontendUrl}/resend-verification?invalid=true`);
+      return res.redirect(302, `${frontendUrl}/login?token_used=true`);
     }
     
-    // Check if already verified
+    const u = rows[0];
+    
+    // Check if already verified (handle case where token exists but user is already verified)
     if (u.email_verified_at) {
+      console.log(`[VERIFY] User ${u.id} (${u.email}) is already verified. Token may be stale.`);
       const redirect = process.env.EMAIL_VERIFY_REDIRECT || process.env.FRONTEND_URL || 'http://localhost:3000';
       if (redirect) return res.redirect(302, `${redirect}/login?verified=true`);
       return res.json({ success: true, message: 'Email already verified' });
@@ -232,11 +231,21 @@ router.get('/verify-email', async (req: Request, res: Response) => {
     
     console.log(`[VERIFY] Token is valid for user ${u.id} (${u.email}). Proceeding with verification...`);
     
-    // Verify the email
+    // Verify the email using a conditional update (only if not already verified)
+    // This prevents race conditions where multiple requests try to verify simultaneously
     const updateResult = await db.query(
-      'UPDATE users SET email_verified_at=NOW(), email_verification_token=NULL, email_verification_expires_at=NULL WHERE id=?',
+      'UPDATE users SET email_verified_at=NOW(), email_verification_token=NULL, email_verification_expires_at=NULL WHERE id=? AND email_verified_at IS NULL',
       [u.id]
     );
+    
+    // Check if update actually affected a row (user wasn't already verified)
+    if ((updateResult as any).affectedRows === 0) {
+      // User was already verified (race condition - another request verified first)
+      console.log(`[VERIFY] User ${u.id} (${u.email}) was already verified by another request. This is normal for concurrent requests.`);
+      const redirect = process.env.EMAIL_VERIFY_REDIRECT || process.env.FRONTEND_URL || 'http://localhost:3000';
+      if (redirect) return res.redirect(302, `${redirect}/login?verified=true`);
+      return res.json({ success: true, message: 'Email already verified' });
+    }
     
     // Verify the update was successful
     const verifyUpdate = await db.query(
