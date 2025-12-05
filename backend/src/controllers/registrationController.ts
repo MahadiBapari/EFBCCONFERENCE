@@ -354,6 +354,47 @@ export class RegistrationController {
       // Convert the updated row back to Registration object for response
       const updatedRegistration = Registration.fromDatabase(verifyRow);
 
+      // Send confirmation email after update (to user, admin, and secondary email if applicable)
+      try {
+        const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || process.env.SUPPORT_EMAIL || 'planner@efbcconference.org';
+        const eventRow: any = await this.db.findById('events', updatedRegistration.eventId);
+        const evName = eventRow?.name;
+        const evDate = eventRow?.date;
+        const evStartDate = eventRow?.start_date;
+        const toName = updatedRegistration.badgeName || `${updatedRegistration.firstName} ${updatedRegistration.lastName}`.trim();
+        const payload = {
+          name: toName,
+          eventName: evName,
+          eventDate: evDate,
+          eventStartDate: evStartDate,
+          totalPrice: updatedRegistration.totalPrice,
+          registration: updatedRegistration.toJSON ? updatedRegistration.toJSON() : updatedRegistration
+        } as any;
+
+        // Send emails via queue (emails will be sent sequentially with automatic retries)
+        // Primary email (to user)
+        sendRegistrationConfirmationEmail({ to: updatedRegistration.email, ...payload }).catch((e) => 
+          console.warn('Failed to queue registration confirmation (update):', e)
+        );
+
+        // Admin copy (send separately to ensure it's sent)
+        if (adminCopy && adminCopy !== updatedRegistration.email) {
+          sendRegistrationConfirmationEmail({ to: adminCopy, ...payload }).catch((e) => 
+            console.warn('Failed to queue admin confirmation (update):', e)
+          );
+        }
+
+        // Secondary email if provided (no admin copy to avoid duplicates)
+        if ((updatedRegistration as any).secondaryEmail && (updatedRegistration as any).secondaryEmail !== updatedRegistration.email && (updatedRegistration as any).secondaryEmail !== adminCopy) {
+          sendRegistrationConfirmationEmail({ to: (updatedRegistration as any).secondaryEmail, ...payload }).catch((e) => 
+            console.warn('Failed to queue secondary confirmation (update):', e)
+          );
+        }
+      } catch (emailError) {
+        // Don't fail the update if email sending fails
+        console.warn('Failed to send confirmation email after update:', (emailError as any)?.message || emailError);
+      }
+
       const response: ApiResponse = {
         success: true,
         data: updatedRegistration.toJSON(),
