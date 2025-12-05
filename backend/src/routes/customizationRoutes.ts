@@ -75,5 +75,51 @@ router.get('/contact/public', getController, async (req: Request, res: Response)
   await controller.getContactCustomization(req, res);
 });
 
+// Get FAQs (public - for support page)
+router.get('/faq/public', getController, async (req: Request, res: Response) => {
+  const controller = (req as any).customizationController as CustomizationController;
+  await controller.getFaqs(req, res);
+});
+
+// Get FAQs (admin only)
+router.get('/faq', getController, async (req: Request, res: Response) => {
+  const auth = getAuth(req);
+  if (!auth.id || auth.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Admin access required' });
+  }
+  const controller = (req as any).customizationController as CustomizationController;
+  await controller.getFaqsAdmin(req, res);
+});
+
+// Create FAQ (admin only)
+router.post('/faq', getController, async (req: Request, res: Response) => {
+  const auth = getAuth(req);
+  if (!auth.id || auth.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Admin access required' });
+  }
+  const controller = (req as any).customizationController as CustomizationController;
+  await controller.createFaq(req, res);
+});
+
+// Update FAQ (admin only)
+router.put('/faq/:id', getController, async (req: Request, res: Response) => {
+  const auth = getAuth(req);
+  if (!auth.id || auth.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Admin access required' });
+  }
+  const controller = (req as any).customizationController as CustomizationController;
+  await controller.updateFaq(req, res);
+});
+
+// Delete FAQ (admin only)
+router.delete('/faq/:id', getController, async (req: Request, res: Response) => {
+  const auth = getAuth(req);
+  if (!auth.id || auth.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Admin access required' });
+  }
+  const controller = (req as any).customizationController as CustomizationController;
+  await controller.deleteFaq(req, res);
+});
+
 export default router;
 

@@ -150,6 +150,7 @@ const createTables = async () => {
     await migrateEventStartDate();
     await migrateEmailCustomizations();
     await migrateContactCustomizations();
+    await migrateFaqs();
     await migrateAddressFields();
     await migrateGroupAssignedColumn();
     await migrateChildLunchFeature();
@@ -652,6 +653,26 @@ const migrateContactCustomizations = async (): Promise<void> => {
     console.log('🛠️ Contact customizations table created/verified');
   } catch (error: any) {
     console.error('Error migrating contact customizations:', error?.message || error);
+  }
+};
+
+// Migration helper to create faqs table
+const migrateFaqs = async (): Promise<void> => {
+  try {
+    await databaseService.query(`
+      CREATE TABLE IF NOT EXISTS faqs (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        display_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_display_order (display_order)
+      )
+    `);
+    console.log('🛠️ FAQs table created/verified');
+  } catch (error: any) {
+    console.error('Error migrating FAQs:', error?.message || error);
   }
 };
 

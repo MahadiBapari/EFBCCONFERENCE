@@ -2,12 +2,35 @@ import React, { useState, useEffect } from 'react';
 import '../../styles/UserSupport.css';
 import apiClient from '../../services/apiClient';
 
-export const UserSupport: React.FC = () => {
-  const [contactInfo, setContactInfo] = useState<{ contactEmail: string; contactPhone: string }>({
-    contactEmail: 'info@efbcconference.org',
-    contactPhone: '',
-  });
-  const [loading, setLoading] = useState(true);
+interface Faq {
+  id: number;
+  question: string;
+  answer: string;
+  display_order: number;
+}
+
+interface UserSupportProps {
+  initialContactInfo?: { contactEmail: string; contactPhone: string } | null;
+  initialFaqs?: Faq[] | null;
+  onLoadContactInfo?: () => Promise<void>;
+  onLoadFaqs?: () => Promise<void>;
+}
+
+export const UserSupport: React.FC<UserSupportProps> = ({
+  initialContactInfo,
+  initialFaqs,
+  onLoadContactInfo,
+  onLoadFaqs,
+}) => {
+  const [contactInfo, setContactInfo] = useState<{ contactEmail: string; contactPhone: string }>(
+    initialContactInfo || {
+      contactEmail: 'info@efbcconference.org',
+      contactPhone: '',
+    }
+  );
+  const [faqs, setFaqs] = useState<Faq[]>(initialFaqs || []);
+  const [loading, setLoading] = useState(!initialContactInfo);
+  const [faqLoading, setFaqLoading] = useState(!initialFaqs);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -15,24 +38,61 @@ export const UserSupport: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const loadContactInfo = async () => {
-      try {
-        const response = await apiClient.get('/customization/contact/public') as any;
-        if (response.success && response.data) {
-          setContactInfo({
-            contactEmail: response.data.contactEmail || 'info@efbcconference.org',
-            contactPhone: response.data.contactPhone || '',
-          });
+    // Update state when props change
+    if (initialContactInfo) {
+      setContactInfo(initialContactInfo);
+      setLoading(false);
+    } else if (onLoadContactInfo) {
+      // Trigger parent load, which will update cache and re-render with props
+      onLoadContactInfo();
+    } else {
+      // Fallback: load directly if no props or loader provided
+      const loadContactInfo = async () => {
+        try {
+          const response = await apiClient.get('/customization/contact/public') as any;
+          if (response.success && response.data) {
+            setContactInfo({
+              contactEmail: response.data.contactEmail || 'info@efbcconference.org',
+              contactPhone: response.data.contactPhone || '',
+            });
+          }
+        } catch (err) {
+          console.warn('Failed to load contact customization, using defaults:', err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.warn('Failed to load contact customization, using defaults:', err);
-        // Keep default values
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadContactInfo();
-  }, []);
+      };
+      loadContactInfo();
+    }
+  }, [initialContactInfo, onLoadContactInfo]);
+
+  useEffect(() => {
+    // Update state when props change
+    if (initialFaqs !== null && initialFaqs !== undefined) {
+      setFaqs(initialFaqs);
+      setFaqLoading(false);
+    } else if (onLoadFaqs) {
+      // Trigger parent load, which will update cache and re-render with props
+      onLoadFaqs();
+    } else {
+      // Fallback: load directly if no props or loader provided
+      const loadFaqs = async () => {
+        try {
+          setFaqLoading(true);
+          const response = await apiClient.get('/customization/faq/public') as any;
+          if (response.success && response.data) {
+            setFaqs(Array.isArray(response.data) ? response.data : []);
+          }
+        } catch (err) {
+          console.warn('Failed to load FAQs:', err);
+        } finally {
+          setFaqLoading(false);
+        }
+      };
+      loadFaqs();
+    }
+  }, [initialFaqs, onLoadFaqs]);
+
 //   const [formData, setFormData] = useState({
 //     name: '',
 //     email: '',
@@ -239,28 +299,20 @@ export const UserSupport: React.FC = () => {
         {/* FAQ Section */}
         <div className="card faq-section">
           <h2>Frequently Asked Questions</h2>
-          <div className="faq-list">
-            <div className="faq-item">
-              <h3>How do I register for an event?</h3>
-              <p>Navigate to your Dashboard and click "Register Now" on the active event card. Fill out the registration form and complete payment.</p>
+          {faqLoading ? (
+            <div>Loading FAQs...</div>
+          ) : faqs.length === 0 ? (
+            <div className="faq-empty">No FAQs available at this time.</div>
+          ) : (
+            <div className="faq-list">
+              {faqs.map((faq) => (
+                <div key={faq.id} className="faq-item">
+                  <h3>{faq.question}</h3>
+                  <p>{faq.answer}</p>
+                </div>
+              ))}
             </div>
-            <div className="faq-item">
-              <h3>Can I edit my registration after submitting?</h3>
-              <p>Yes, you can edit your registration from the Dashboard by clicking the "Edit" button on your registration card. Note that you cannot add a spouse ticket after initial registration.</p>
-            </div>
-            <div className="faq-item">
-              <h3>What payment methods are accepted?</h3>
-              <p>We accept credit/debit cards (via Square) and checks. If paying by check, please mail it to the address provided before the registration deadline.</p>
-            </div>
-            <div className="faq-item">
-              <h3>How do I cancel my registration?</h3>
-              <p>You can request cancellation from your Dashboard. Click "Request to Cancel" and provide a reason. Your cancellation request will be reviewed by an administrator.</p>
-            </div>
-            <div className="faq-item">
-              <h3>I forgot my password. How do I reset it?</h3>
-              <p>On the login page, click "Forgot Password" and enter your email address. You'll receive a password reset link via email.</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -16,6 +16,15 @@ export interface ContactCustomization {
   updatedAt: string | null;
 }
 
+export interface Faq {
+  id: number;
+  question: string;
+  answer: string;
+  display_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 interface AdminCustomizationProps {
   initialCustomization?: EmailCustomization | null;
   initialContactCustomization?: ContactCustomization | null;
@@ -34,7 +43,7 @@ export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  const [activeTab, setActiveTab] = useState<'email' | 'contact'>('email');
+  const [activeTab, setActiveTab] = useState<'email' | 'contact' | 'faq'>('email');
   const [customization, setCustomization] = useState<EmailCustomization>(
     initialCustomization || {
       id: null,
@@ -55,6 +64,12 @@ export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  
+  // FAQ state
+  const [faqs, setFaqs] = useState<Faq[]>([]);
+  const [faqLoading, setFaqLoading] = useState(false);
+  const [editingFaq, setEditingFaq] = useState<Faq | null>(null);
+  const [newFaq, setNewFaq] = useState({ question: '', answer: '', displayOrder: 0 });
 
   const loadCustomization = useCallback(async () => {
     try {
@@ -166,6 +181,110 @@ export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
     }
   };
 
+  // FAQ functions
+  const loadFaqs = useCallback(async () => {
+    try {
+      setFaqLoading(true);
+      setError(null);
+      const response = await apiClient.get('/customization/faq') as any;
+      if (response.success && response.data) {
+        setFaqs(Array.isArray(response.data) ? response.data : []);
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to load FAQs');
+    } finally {
+      setFaqLoading(false);
+    }
+  }, []);
+
+  const handleCreateFaq = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFaq.question.trim() || !newFaq.answer.trim()) {
+      setError('Question and answer are required');
+      return;
+    }
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+      
+      const response = await apiClient.post('/customization/faq', {
+        question: newFaq.question.trim(),
+        answer: newFaq.answer.trim(),
+        displayOrder: newFaq.displayOrder || 0,
+      }) as any;
+
+      if (response.success) {
+        setSuccess('FAQ created successfully!');
+        setNewFaq({ question: '', answer: '', displayOrder: 0 });
+        await loadFaqs();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(response.error || 'Failed to create FAQ');
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to create FAQ');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateFaq = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFaq) return;
+    if (!editingFaq.question.trim() || !editingFaq.answer.trim()) {
+      setError('Question and answer are required');
+      return;
+    }
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+      
+      const response = await apiClient.put(`/customization/faq/${editingFaq.id}`, {
+        question: editingFaq.question.trim(),
+        answer: editingFaq.answer.trim(),
+        displayOrder: editingFaq.display_order || 0,
+      }) as any;
+
+      if (response.success) {
+        setSuccess('FAQ updated successfully!');
+        setEditingFaq(null);
+        await loadFaqs();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(response.error || 'Failed to update FAQ');
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to update FAQ');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteFaq = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this FAQ?')) return;
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+      
+      const response = await apiClient.delete(`/customization/faq/${id}`) as any;
+
+      if (response.success) {
+        setSuccess('FAQ deleted successfully!');
+        await loadFaqs();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(response.error || 'Failed to delete FAQ');
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to delete FAQ');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container">
@@ -202,6 +321,16 @@ export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
           onClick={() => setActiveTab('contact')}
         >
           Contact
+        </button>
+        <button
+          type="button"
+          className={`customization-tab-btn ${activeTab === 'faq' ? 'active' : ''}`}
+          onClick={() => {
+            setActiveTab('faq');
+            loadFaqs();
+          }}
+        >
+          FAQ
         </button>
       </div>
 
@@ -324,6 +453,143 @@ export const AdminCustomization: React.FC<AdminCustomizationProps> = ({
             </button>
           </div>
         </form>
+      )}
+
+      {activeTab === 'faq' && (
+        <div className="customization-form">
+          <div className="card">
+            <h2>Frequently Asked Questions</h2>
+            <p className="field-description">
+              Manage the FAQ section displayed on the Support & Contact page. You can add, edit, and delete questions and answers.
+            </p>
+
+            {error && (
+              <div className="alert alert-error">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="alert alert-success">
+                {success}
+              </div>
+            )}
+
+            {/* Add New FAQ Form */}
+            <div style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '4px' }}>
+              <h3>{editingFaq ? 'Edit FAQ' : 'Add New FAQ'}</h3>
+              <form onSubmit={editingFaq ? handleUpdateFaq : handleCreateFaq}>
+                <div className="form-group">
+                  <label htmlFor="faqQuestion">Question *</label>
+                  <input
+                    id="faqQuestion"
+                    type="text"
+                    className="form-control"
+                    value={editingFaq ? editingFaq.question : newFaq.question}
+                    onChange={(e) => editingFaq 
+                      ? setEditingFaq({ ...editingFaq, question: e.target.value })
+                      : setNewFaq({ ...newFaq, question: e.target.value })
+                    }
+                    placeholder="Enter the question"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="faqAnswer">Answer *</label>
+                  <textarea
+                    id="faqAnswer"
+                    className="form-control"
+                    rows={4}
+                    value={editingFaq ? editingFaq.answer : newFaq.answer}
+                    onChange={(e) => editingFaq
+                      ? setEditingFaq({ ...editingFaq, answer: e.target.value })
+                      : setNewFaq({ ...newFaq, answer: e.target.value })
+                    }
+                    placeholder="Enter the answer"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="faqOrder">Display Order</label>
+                  <input
+                    id="faqOrder"
+                    type="number"
+                    className="form-control"
+                    value={editingFaq ? editingFaq.display_order : newFaq.displayOrder}
+                    onChange={(e) => editingFaq
+                      ? setEditingFaq({ ...editingFaq, display_order: parseInt(e.target.value) || 0 })
+                      : setNewFaq({ ...newFaq, displayOrder: parseInt(e.target.value) || 0 })
+                    }
+                    placeholder="0"
+                    min="0"
+                  />
+                  <small className="form-text">Lower numbers appear first. Use 0 for default order.</small>
+                </div>
+                <div className="form-actions">
+                  {editingFaq && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setEditingFaq(null)}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={saving}
+                  >
+                    {saving ? 'Saving...' : editingFaq ? 'Update FAQ' : 'Add FAQ'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* FAQ List */}
+            {faqLoading ? (
+              <div>Loading FAQs...</div>
+            ) : faqs.length === 0 ? (
+              <div className="alert alert-info">No FAQs yet. Add your first FAQ above.</div>
+            ) : (
+              <div>
+                <h3>Existing FAQs ({faqs.length})</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {faqs.map((faq) => (
+                    <div key={faq.id} style={{ padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
+                        <div style={{ flex: 1 }}>
+                          <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Q: {faq.question}</strong>
+                          <p style={{ margin: 0, color: 'var(--text-secondary)' }}>A: {faq.answer}</p>
+                          <small style={{ color: 'var(--text-secondary)', marginTop: '0.5rem', display: 'block' }}>
+                            Order: {faq.display_order}
+                          </small>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setEditingFaq(faq)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDeleteFaq(faq.id)}
+                            disabled={saving}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

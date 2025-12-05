@@ -163,5 +163,139 @@ export class CustomizationController {
       });
     }
   }
+
+  // Get all FAQs (public endpoint)
+  async getFaqs(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.db.query(
+        'SELECT id, question, answer, display_order FROM faqs ORDER BY display_order ASC, id ASC'
+      );
+      
+      res.json({
+        success: true,
+        data: Array.isArray(result) ? result : [],
+      });
+    } catch (error: any) {
+      console.error('Error fetching FAQs:', error);
+      res.status(500).json({
+        success: false,
+        error: error?.message || 'Failed to fetch FAQs',
+      });
+    }
+  }
+
+  // Get all FAQs (admin only)
+  async getFaqsAdmin(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.db.query(
+        'SELECT * FROM faqs ORDER BY display_order ASC, id ASC'
+      );
+      
+      res.json({
+        success: true,
+        data: Array.isArray(result) ? result : [],
+      });
+    } catch (error: any) {
+      console.error('Error fetching FAQs:', error);
+      res.status(500).json({
+        success: false,
+        error: error?.message || 'Failed to fetch FAQs',
+      });
+    }
+  }
+
+  // Create FAQ (admin only)
+  async createFaq(req: Request, res: Response): Promise<void> {
+    try {
+      const { question, answer, displayOrder } = req.body;
+
+      if (!question || !answer) {
+        res.status(400).json({
+          success: false,
+          error: 'Question and answer are required',
+        });
+        return;
+      }
+
+      const result: any = await this.db.query(
+        `INSERT INTO faqs (question, answer, display_order, created_at, updated_at) 
+         VALUES (?, ?, ?, NOW(), NOW())`,
+        [question, answer, displayOrder || 0]
+      );
+
+      const insertId = result?.insertId || result?.[0]?.insertId;
+      
+      res.json({
+        success: true,
+        data: {
+          id: insertId,
+          question,
+          answer,
+          displayOrder: displayOrder || 0,
+        },
+        message: 'FAQ created successfully',
+      });
+    } catch (error: any) {
+      console.error('Error creating FAQ:', error);
+      res.status(500).json({
+        success: false,
+        error: error?.message || 'Failed to create FAQ',
+      });
+    }
+  }
+
+  // Update FAQ (admin only)
+  async updateFaq(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { question, answer, displayOrder } = req.body;
+
+      if (!question || !answer) {
+        res.status(400).json({
+          success: false,
+          error: 'Question and answer are required',
+        });
+        return;
+      }
+
+      await this.db.query(
+        `UPDATE faqs 
+         SET question = ?, answer = ?, display_order = ?, updated_at = NOW() 
+         WHERE id = ?`,
+        [question, answer, displayOrder || 0, id]
+      );
+
+      res.json({
+        success: true,
+        message: 'FAQ updated successfully',
+      });
+    } catch (error: any) {
+      console.error('Error updating FAQ:', error);
+      res.status(500).json({
+        success: false,
+        error: error?.message || 'Failed to update FAQ',
+      });
+    }
+  }
+
+  // Delete FAQ (admin only)
+  async deleteFaq(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      await this.db.query('DELETE FROM faqs WHERE id = ?', [id]);
+
+      res.json({
+        success: true,
+        message: 'FAQ deleted successfully',
+      });
+    } catch (error: any) {
+      console.error('Error deleting FAQ:', error);
+      res.status(500).json({
+        success: false,
+        error: error?.message || 'Failed to delete FAQ',
+      });
+    }
+  }
 }
 

@@ -56,6 +56,8 @@ const App: React.FC = () => {
   const [cancellationsLoading, setCancellationsLoading] = useState<boolean>(false);
   const [emailCustomizationCache, setEmailCustomizationCache] = useState<EmailCustomization | null>(null);
   const [contactCustomizationCache, setContactCustomizationCache] = useState<ContactCustomization | null>(null);
+  const [contactInfoCache, setContactInfoCache] = useState<{ contactEmail: string; contactPhone: string } | null>(null);
+  const [faqsCache, setFaqsCache] = useState<any[] | null>(null);
   const [adminUsersCache, setAdminUsersCache] = useState<User[]>([]);
   const [adminUsersPaginationCache, setAdminUsersPaginationCache] = useState<any | null>(null);
 
@@ -576,6 +578,47 @@ const handleLogout = () => {
     }
   };
 
+  const loadContactInfoFromApi = async () => {
+    if (contactInfoCache) return; // Already loaded
+    try {
+      const response = await apiClient.get('/customization/contact/public') as any;
+      if (response.success && response.data) {
+        setContactInfoCache({
+          contactEmail: response.data.contactEmail || 'info@efbcconference.org',
+          contactPhone: response.data.contactPhone || '',
+        });
+      } else {
+        // Set default if no data
+        setContactInfoCache({
+          contactEmail: 'info@efbcconference.org',
+          contactPhone: '',
+        });
+      }
+    } catch (err) {
+      console.warn('Failed to load contact info:', err);
+      // Set default on error
+      setContactInfoCache({
+        contactEmail: 'info@efbcconference.org',
+        contactPhone: '',
+      });
+    }
+  };
+
+  const loadFaqsFromApi = async () => {
+    if (faqsCache !== null) return; // Already loaded
+    try {
+      const response = await apiClient.get('/customization/faq/public') as any;
+      if (response.success && response.data) {
+        setFaqsCache(Array.isArray(response.data) ? response.data : []);
+      } else {
+        setFaqsCache([]);
+      }
+    } catch (err) {
+      console.warn('Failed to load FAQs:', err);
+      setFaqsCache([]);
+    }
+  };
+
   const loadEmailCustomizationFromApi = async () => {
     try {
       const response = await apiClient.get('/customization/email') as any;
@@ -618,6 +661,11 @@ const handleLogout = () => {
         loadContactCustomizationFromApi();
       }
     }
+    if (role === 'user' && newView === 'support') {
+      // Load support page data only once
+      loadContactInfoFromApi();
+      loadFaqsFromApi();
+    }
   };
 
   const renderView = () => {
@@ -636,7 +684,12 @@ const handleLogout = () => {
         case 'profile':
           return <UserProfile user={user} onUpdateProfile={handleUpdateProfile} />;
         case 'support':
-          return <UserSupport />;
+          return <UserSupport 
+            initialContactInfo={contactInfoCache}
+            initialFaqs={faqsCache}
+            onLoadContactInfo={loadContactInfoFromApi}
+            onLoadFaqs={loadFaqsFromApi}
+          />;
         case 'dashboard':
         default:
           return <UserDashboard 
