@@ -316,7 +316,7 @@ router.post('/resend-verification', async (req: Request, res: Response) => {
       console.log(`[RESEND] Replacing old token for user ${u.id}. Old token prefix: ${u.email_verification_token.substring(0, 10)}`);
     }
     
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' '); // 24 hours
+    const expires = new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' '); // 15 minutes
     await db.query('UPDATE users SET email_verification_token=?, email_verification_expires_at=? WHERE id=?', [token, expires, u.id]);
     
     // Verify the token was saved

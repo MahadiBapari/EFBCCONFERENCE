@@ -459,7 +459,7 @@ export class UserController {
       
       // Ensure token is saved before sending email
       const updateResult = await this.db.query(
-        'UPDATE users SET email_verification_token=?, email_verification_expires_at=DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE id=?',
+        'UPDATE users SET email_verification_token=?, email_verification_expires_at=DATE_ADD(NOW(), INTERVAL 30 MINUTE) WHERE id=?',
         [token, user.id]
       );
       

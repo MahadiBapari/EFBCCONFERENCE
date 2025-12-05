@@ -423,7 +423,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
     preheader: 'Confirm your email to finish setting up your account',
     contentHtml: `
       <p style="margin:0 0 12px 0;">Welcome to the EFBC Conference! Please confirm your email address to activate your account.</p>
-      <p style="margin:0;opacity:.8;">This link expires in 24 hours.</p>
+      <p style="margin:0;opacity:.8;">This link expires in 30 minutes.</p>
     `,
     cta: { label: 'Verify Email', url: link },
     footerHtml: '', // No custom footer for verification emails
