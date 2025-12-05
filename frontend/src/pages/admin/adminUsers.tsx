@@ -500,32 +500,59 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
             Previous
           </button>
           <div className="pagination-numbers">
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => {
-              // Show first page, last page, current page, and pages around current
-              const showPage = 
-                pageNum === 1 || 
-                pageNum === pagination.totalPages || 
-                (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
+            {(() => {
+              const pages: (number | string)[] = [];
+              const showEllipsis = pagination.totalPages > 7; // Show ellipsis if more than 7 pages
               
-              if (!showPage) {
-                // Show ellipsis
-                if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-                  return <span key={pageNum} className="pagination-ellipsis">...</span>;
+              if (!showEllipsis) {
+                // Show all pages if 7 or fewer
+                for (let i = 1; i <= pagination.totalPages; i++) {
+                  pages.push(i);
                 }
-                return null;
+              } else {
+                // Always show first page
+                pages.push(1);
+                
+                if (currentPage <= 4) {
+                  // Near the start: show 1, 2, 3, 4, 5, ..., last
+                  for (let i = 2; i <= 5; i++) {
+                    pages.push(i);
+                  }
+                  pages.push('ellipsis-end');
+                  pages.push(pagination.totalPages);
+                } else if (currentPage >= pagination.totalPages - 3) {
+                  // Near the end: show 1, ..., last-4, last-3, last-2, last-1, last
+                  pages.push('ellipsis-start');
+                  for (let i = pagination.totalPages - 4; i <= pagination.totalPages; i++) {
+                    pages.push(i);
+                  }
+                } else {
+                  // In the middle: show 1, ..., current-1, current, current+1, ..., last
+                  pages.push('ellipsis-start');
+                  for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                    pages.push(i);
+                  }
+                  pages.push('ellipsis-end');
+                  pages.push(pagination.totalPages);
+                }
               }
               
-              return (
-                <button
-                  key={pageNum}
-                  className={`btn pagination-number ${pageNum === currentPage ? 'active' : ''}`}
-                  onClick={() => handlePageChange(pageNum)}
-                  disabled={loading}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+              return pages.map((page, idx) => {
+                if (typeof page === 'string') {
+                  return <span key={`${page}-${idx}`} className="pagination-ellipsis">...</span>;
+                }
+                return (
+                  <button
+                    key={page}
+                    className={`btn pagination-number ${page === currentPage ? 'active' : ''}`}
+                    onClick={() => handlePageChange(page)}
+                    disabled={loading}
+                  >
+                    {page}
+                  </button>
+                );
+              });
+            })()}
           </div>
           <button
             className="btn btn-secondary"

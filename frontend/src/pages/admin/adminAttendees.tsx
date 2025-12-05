@@ -809,29 +809,58 @@ const confirmSingleDelete = async () => {
             Previous
           </button>
           <div className="pagination-numbers">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
-              const showPage = 
-                pageNum === 1 || 
-                pageNum === totalPages || 
-                (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
+            {(() => {
+              const pages: (number | string)[] = [];
+              const showEllipsis = totalPages > 7; // Show ellipsis if more than 7 pages
               
-              if (!showPage) {
-                if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-                  return <span key={pageNum} className="pagination-ellipsis">...</span>;
+              if (!showEllipsis) {
+                // Show all pages if 7 or fewer
+                for (let i = 1; i <= totalPages; i++) {
+                  pages.push(i);
                 }
-                return null;
+              } else {
+                // Always show first page
+                pages.push(1);
+                
+                if (currentPage <= 4) {
+                  // Near the start: show 1, 2, 3, 4, 5, ..., last
+                  for (let i = 2; i <= 5; i++) {
+                    pages.push(i);
+                  }
+                  pages.push('ellipsis-end');
+                  pages.push(totalPages);
+                } else if (currentPage >= totalPages - 3) {
+                  // Near the end: show 1, ..., last-4, last-3, last-2, last-1, last
+                  pages.push('ellipsis-start');
+                  for (let i = totalPages - 4; i <= totalPages; i++) {
+                    pages.push(i);
+                  }
+                } else {
+                  // In the middle: show 1, ..., current-1, current, current+1, ..., last
+                  pages.push('ellipsis-start');
+                  for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                    pages.push(i);
+                  }
+                  pages.push('ellipsis-end');
+                  pages.push(totalPages);
+                }
               }
               
-              return (
-                <button
-                  key={pageNum}
-                  className={`btn btn-secondary pagination-number ${pageNum === currentPage ? 'active' : ''}`}
-                  onClick={() => handlePageChange(pageNum)}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+              return pages.map((page, idx) => {
+                if (typeof page === 'string') {
+                  return <span key={`${page}-${idx}`} className="pagination-ellipsis">...</span>;
+                }
+                return (
+                  <button
+                    key={page}
+                    className={`btn btn-secondary pagination-number ${page === currentPage ? 'active' : ''}`}
+                    onClick={() => handlePageChange(page)}
+                  >
+                    {page}
+                  </button>
+                );
+              });
+            })()}
           </div>
           <button
             className="btn btn-secondary"
@@ -842,6 +871,13 @@ const confirmSingleDelete = async () => {
           </button>
         </div>
       )}
+
+      <div className="admin-users-footer">
+        <p>
+          Showing {paginatedRegistrations.length} of {filteredRegistrations.length} attendees
+          {searchQuery && ` matching "${searchQuery}"`}
+        </p>
+      </div>
 
       {previewRegId && (() => {
         const reg = filteredRegistrations.find(r => r.id === previewRegId) || registrations.find(r => r.id === previewRegId);
