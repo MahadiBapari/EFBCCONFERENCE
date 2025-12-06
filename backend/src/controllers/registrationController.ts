@@ -4,6 +4,151 @@ import { ApiResponse, CreateRegistrationRequest, UpdateRegistrationRequest, Regi
 import { DatabaseService } from '../services/databaseService';
 import { sendRegistrationConfirmationEmail } from '../services/emailService';
 
+/**
+ * Helper function to convert a date string (YYYY-MM-DD) to Eastern Time midnight
+ * Florida uses Eastern Time (America/New_York timezone)
+ * Returns the UTC timestamp that represents midnight Eastern Time on the given date
+ * 
+ * This function handles DST automatically by using Intl.DateTimeFormat
+ */
+function getEasternTimeMidnight(dateString: string): number {
+  if (!dateString) return -Infinity;
+  
+  try {
+    // Parse the date string
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
+      // Fallback to UTC parsing
+      return new Date(dateString + 'T00:00:00Z').getTime();
+    }
+    
+    // Strategy: Find the UTC timestamp that, when converted to Eastern Time, equals midnight
+    // We'll use a binary search approach: start with a guess and adjust
+    
+    // Start with UTC midnight on that date
+    let guessUtc = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+    
+    // Check what Eastern time this UTC time represents
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    let easternTime = formatter.format(guessUtc);
+    let [easternHour, easternMinute] = easternTime.split(':').map(Number);
+    
+    // Adjust until we get midnight Eastern (00:00)
+    // Eastern is typically UTC-5 (EST) or UTC-4 (EDT)
+    // So midnight Eastern is around 4-5 AM UTC
+    let iterations = 0;
+    while ((easternHour !== 0 || easternMinute !== 0) && iterations < 10) {
+      // Calculate adjustment needed
+      const hoursToSubtract = easternHour;
+      const minutesToSubtract = easternMinute;
+      const adjustmentMs = (hoursToSubtract * 60 + minutesToSubtract) * 60 * 1000;
+      
+      guessUtc = new Date(guessUtc.getTime() - adjustmentMs);
+      
+      easternTime = formatter.format(guessUtc);
+      [easternHour, easternMinute] = easternTime.split(':').map(Number);
+      iterations++;
+    }
+    
+    // For end dates, we want end of day (23:59:59 Eastern)
+    // But this function is for start dates, so return midnight
+    return guessUtc.getTime();
+  } catch (error) {
+    // Fallback to UTC parsing if Eastern Time conversion fails
+    console.warn(`Failed to parse date ${dateString} as Eastern Time, using UTC:`, error);
+    return new Date(dateString + 'T00:00:00Z').getTime();
+  }
+}
+
+/**
+ * Get Eastern Time end of day (23:59:59) for a date string
+ */
+function getEasternTimeEndOfDay(dateString: string): number {
+  if (!dateString) return Infinity;
+  
+  try {
+    // Get midnight of the next day, then subtract 1 second
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
+      return new Date(dateString + 'T23:59:59Z').getTime();
+    }
+    
+    // Get midnight of next day in Eastern
+    const nextDay = new Date(year, month - 1, day + 1);
+    const nextDayStr = `${nextDay.getFullYear()}-${String(nextDay.getMonth() + 1).padStart(2, '0')}-${String(nextDay.getDate()).padStart(2, '0')}`;
+    const nextDayMidnight = getEasternTimeMidnight(nextDayStr);
+    
+    // Subtract 1 second to get end of current day
+    return nextDayMidnight - 1000;
+  } catch (error) {
+    console.warn(`Failed to parse end date ${dateString} as Eastern Time, using UTC:`, error);
+    return new Date(dateString + 'T23:59:59Z').getTime();
+  }
+}
+
+/**
+ * Get current time converted to Eastern Time for comparison
+ * Returns a UTC timestamp that represents the current Eastern Time
+ * This can be directly compared with Eastern Time midnight timestamps
+ */
+function getCurrentEasternTime(): number {
+  const now = new Date();
+  
+  // Get current time components in Eastern Time
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
+  const month = parseInt(parts.find(p => p.type === 'month')?.value || '0') - 1;
+  const day = parseInt(parts.find(p => p.type === 'day')?.value || '0');
+  const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
+  const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
+  const second = parseInt(parts.find(p => p.type === 'second')?.value || '0');
+  
+  // Create a UTC date with these Eastern Time components
+  // This represents "what UTC time would give us this Eastern Time"
+  let guessUtc = new Date(Date.UTC(year, month, day, hour, minute, second));
+  
+  // Verify: check what Eastern time this UTC time actually represents
+  const checkFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  
+  let checkTime = checkFormatter.format(guessUtc);
+  let [checkH, checkM, checkS] = checkTime.split(':').map(Number);
+  
+  // If there's a mismatch, adjust the UTC time
+  // This handles edge cases where the initial guess is off
+  if (checkH !== hour || checkM !== minute || checkS !== second) {
+    const diffH = hour - checkH;
+    const diffM = minute - checkM;
+    const diffS = second - checkS;
+    const adjustmentMs = (diffH * 3600 + diffM * 60 + diffS) * 1000;
+    guessUtc = new Date(guessUtc.getTime() + adjustmentMs);
+  }
+  
+  return guessUtc.getTime();
+}
+
 export class RegistrationController {
   private db: DatabaseService;
 
@@ -122,10 +267,17 @@ export class RegistrationController {
           const regTiers: any[] = parseJson(ev.registration_pricing);
           const spouseTiers: any[] = parseJson(ev.spouse_pricing);
           const breakfastPrice = Number(ev.breakfast_price ?? 0);
-          const bEnd = ev.breakfast_end_date ? new Date(ev.breakfast_end_date).getTime() : Infinity;
-          const now = Date.now();
+          // Use Eastern Time for breakfast end date
+          const bEnd = ev.breakfast_end_date ? getEasternTimeEndOfDay(ev.breakfast_end_date) : Infinity;
+          // Get current time in Eastern Time (Florida timezone)
+          const now = getCurrentEasternTime();
           const pick = (tiers:any[])=>{
-            const mapped = (tiers||[]).map(t=>({ ...t, s: t.startDate? new Date(t.startDate).getTime(): -Infinity, e: t.endDate? new Date(t.endDate).getTime(): Infinity }));
+            // Convert tier dates to Eastern Time midnight/end-of-day
+            const mapped = (tiers||[]).map(t=>({ 
+              ...t, 
+              s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, 
+              e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity 
+            }));
             return mapped.find((t:any)=> now>=t.s && now<=t.e) || mapped[mapped.length-1] || null;
           };
           const base = pick(regTiers);
