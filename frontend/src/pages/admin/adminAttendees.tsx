@@ -557,10 +557,10 @@ const confirmSingleDelete = async () => {
     return group ? group.name : '-';
   }, [groups]);
 
-  // Helper function to display N/A for empty values
+  // Helper function to display empty string for empty values
   const displayValue = (value: any): string => {
     if (value === null || value === undefined || value === '') {
-      return 'N/A';
+      return '';
     }
     return String(value);
   };
@@ -650,7 +650,7 @@ const confirmSingleDelete = async () => {
     paginatedRegistrations.every(reg => selectedRegIds.includes(reg.id));
 
   return (
-    <div className="container">
+    <div className="container attendees-page">
       <div className="page-header">
         <h1>Attendees</h1>
         <div className="event-selector">
@@ -743,7 +743,7 @@ const confirmSingleDelete = async () => {
       {filteredRegistrations.length > 0 ? (
         showDetailTable ? (
           // Full-page detailed table, based on selected event
-          <div className="table-wrapper detailed-table-wrapper detailed-table-container">
+          <div className="detailed-table-wrapper">
             <table className="table detailed-table">
               <thead>
                 <tr>
@@ -917,7 +917,7 @@ const confirmSingleDelete = async () => {
                     <td>{displayValue(reg.emergencyContactName)}</td>
                     <td>{displayValue(reg.emergencyContactPhone)}</td>
                     <td>{displayValue(reg.wednesdayActivity)}</td>
-                    <td>{displayValue(getGroupForRegistration(reg) === '-' ? 'N/A' : getGroupForRegistration(reg))}</td>
+                    <td>{displayValue(getGroupForRegistration(reg) === '-' ? '' : getGroupForRegistration(reg))}</td>
                     <td>{displayValue((reg as any).clubRentals)}</td>
                     <td>{displayValue(reg.golfHandicap)}</td>
                     <td>{displayValue((reg as any).massageTimeSlot)}</td>
@@ -935,7 +935,7 @@ const confirmSingleDelete = async () => {
                     <td>{displayValue(reg.paymentMethod)}</td>
                     <td>{(reg as any).paid ? 'Yes' : 'No'}</td>
                     <td>{displayValue((reg as any).squarePaymentId)}</td>
-                    <td>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : 'N/A'}</td>
+                    <td>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''}</td>
                     
                   </tr>
                 ))}
@@ -985,6 +985,7 @@ const confirmSingleDelete = async () => {
                     <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
                   )}
                 </th>
+                <th>Payment Type</th>
                 <th className="no-print">Actions</th>
               </tr>
             </thead>
@@ -1002,6 +1003,7 @@ const confirmSingleDelete = async () => {
                   <td>{reg.name}</td>
                   <td>{reg.email}</td>
                   <td>{reg.category}</td>
+                  <td>{reg.paymentMethod === 'Card' ? 'Card' : reg.paymentMethod === 'Check' ? 'Check' : ''}</td>
                   <td className="no-print">
                       <div className="action-buttons">
                     <button 

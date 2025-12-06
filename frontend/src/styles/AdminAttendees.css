@@ -2,6 +2,8 @@
   display: flex;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  flex-wrap: nowrap;
+  width: 100%;
 }
 
 /* Match groups header layout */
@@ -141,19 +143,20 @@
 /* Wider, scrollable layout for bulk attendee detail table */
 .detailed-table-wrapper {
   width: 100%;
-  max-height: calc(100vh - 350px);
-  overflow-x: auto;
+  max-height: calc(100vh - 250px);
+  overflow-x: auto !important; /* Force horizontal scroll */
   overflow-y: auto;
   position: relative;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   background-color: var(--surface-color);
+  margin-top: 1.5rem;
 }
 
 .detailed-table-container {
   margin-top: 1.5rem;
-  max-height: calc(100vh - 400px);
-  overflow-x: auto;
+  max-height: calc(100vh - 300px);
+  overflow-x: auto !important; /* Force horizontal scroll */
   overflow-y: auto;
   position: relative;
   border: 1px solid var(--border-color);
@@ -162,9 +165,9 @@
 }
 
 .detailed-table {
-  min-width: 1200px;
-  table-layout: fixed;
-  width: 100%;
+  min-width: 2000px; /* Increased to accommodate all columns */
+  table-layout: auto; /* Changed from fixed to auto to allow natural column widths */
+  width: auto; /* Changed from 100% to auto to allow table to expand */
   font-size: 0.9rem;
   border-collapse: collapse;
 }
@@ -189,6 +192,14 @@
   padding: 0.5rem 0.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 80px; /* Minimum width for columns */
+}
+
+/* Ensure columns without explicit widths get proper sizing */
+.detailed-table th:not([style*="width"]),
+.detailed-table td:not([style*="width"]) {
+  width: auto;
+  min-width: 100px;
 }
 
 .detailed-table th:nth-child(8),

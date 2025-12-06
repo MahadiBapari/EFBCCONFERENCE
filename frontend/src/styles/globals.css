@@ -178,6 +178,12 @@ body {
   padding: 2rem;
 }
 
+/* Wider container for attendees page to keep buttons aligned */
+.container.attendees-page {
+  max-width: 100%;
+  padding: 2rem;
+}
+
 .page-header {
   margin-bottom: 2rem;
 }
