@@ -310,10 +310,13 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       e.preventDefault();
       const diff = e.pageX - startX;
       const newWidth = Math.max(50, startWidth + diff); // Minimum width 50px
-      setColumnWidths(prev => ({
-        ...prev,
-        [columnKey]: newWidth
-      }));
+      setColumnWidths(prev => {
+        const updated = {
+          ...prev,
+          [columnKey]: newWidth
+        };
+        return updated;
+      });
     };
 
     const handleMouseUp = (e: MouseEvent) => {
@@ -782,7 +785,7 @@ const confirmSingleDelete = async () => {
               <thead>
                 <tr>
                   <th 
-                    style={{ width: columnWidths.badgeName, position: 'relative' }}
+                    style={{ width: `${columnWidths.badgeName}px`, minWidth: `${columnWidths.badgeName}px`, position: 'relative' }}
                     className="sortable-header"
                     onClick={() => handleSort('name')}
                   >
@@ -796,7 +799,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.firstName, position: 'relative' }}
+                    style={{ width: `${columnWidths.firstName}px`, minWidth: `${columnWidths.firstName}px`, position: 'relative' }}
                     className="sortable-header"
                     onClick={() => handleSort('name')}
                   >
@@ -810,7 +813,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.lastName, position: 'relative' }}
+                    style={{ width: `${columnWidths.lastName}px`, minWidth: `${columnWidths.lastName}px`, position: 'relative' }}
                     className="sortable-header"
                     onClick={() => handleSort('name')}
                   >
@@ -824,7 +827,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.email, position: 'relative' }}
+                    style={{ width: `${columnWidths.email}px`, minWidth: `${columnWidths.email}px`, position: 'relative' }}
                     className="sortable-header"
                     onClick={() => handleSort('email')}
                   >
@@ -838,7 +841,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.secondaryEmail, position: 'relative' }}
+                    style={{ width: `${columnWidths.secondaryEmail}px`, minWidth: `${columnWidths.secondaryEmail}px`, position: 'relative' }}
                   >
                     Secondary Email
                     <span 
@@ -847,7 +850,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.organization, position: 'relative' }}
+                    style={{ width: `${columnWidths.organization}px`, minWidth: `${columnWidths.organization}px`, position: 'relative' }}
                     className="sortable-header"
                     onClick={() => handleSort('organization')}
                   >
@@ -861,7 +864,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.jobTitle, position: 'relative' }}
+                    style={{ width: `${columnWidths.jobTitle}px`, minWidth: `${columnWidths.jobTitle}px`, position: 'relative' }}
                   >
                     Job Title
                     <span 
@@ -870,7 +873,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.address, position: 'relative' }}
+                    style={{ width: `${columnWidths.address}px`, minWidth: `${columnWidths.address}px`, position: 'relative' }}
                   >
                     Address
                     <span 
@@ -879,7 +882,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.mobile, position: 'relative' }}
+                    style={{ width: `${columnWidths.mobile}px`, minWidth: `${columnWidths.mobile}px`, position: 'relative' }}
                   >
                     Mobile
                     <span 
@@ -888,7 +891,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.officePhone, position: 'relative' }}
+                    style={{ width: `${columnWidths.officePhone}px`, minWidth: `${columnWidths.officePhone}px`, position: 'relative' }}
                   >
                     Office Phone
                     <span 
@@ -897,7 +900,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.firstTime, position: 'relative' }}
+                    style={{ width: `${columnWidths.firstTime}px`, minWidth: `${columnWidths.firstTime}px`, position: 'relative' }}
                   >
                     First Time?
                     <span 
@@ -906,7 +909,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.companyType, position: 'relative' }}
+                    style={{ width: `${columnWidths.companyType}px`, minWidth: `${columnWidths.companyType}px`, position: 'relative' }}
                   >
                     Company Type
                     <span 
@@ -915,7 +918,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.companyTypeOther, position: 'relative' }}
+                    style={{ width: `${columnWidths.companyTypeOther}px`, minWidth: `${columnWidths.companyTypeOther}px`, position: 'relative' }}
                   >
                     Company Type Other
                     <span 
@@ -924,7 +927,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.emergencyContactName, position: 'relative' }}
+                    style={{ width: `${columnWidths.emergencyContactName}px`, minWidth: `${columnWidths.emergencyContactName}px`, position: 'relative' }}
                   >
                     Emergency Contact Name
                     <span 
@@ -933,7 +936,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.emergencyContactPhone, position: 'relative' }}
+                    style={{ width: `${columnWidths.emergencyContactPhone}px`, minWidth: `${columnWidths.emergencyContactPhone}px`, position: 'relative' }}
                   >
                     Emergency Contact Phone
                     <span 
@@ -942,7 +945,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.activity, position: 'relative' }}
+                    style={{ width: `${columnWidths.activity}px`, minWidth: `${columnWidths.activity}px`, position: 'relative' }}
                   >
                     Activity
                     <span 
@@ -951,7 +954,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.groupAssigned, position: 'relative' }}
+                    style={{ width: `${columnWidths.groupAssigned}px`, minWidth: `${columnWidths.groupAssigned}px`, position: 'relative' }}
                   >
                     Group Assigned
                     <span 
@@ -960,7 +963,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.clubRentals, position: 'relative' }}
+                    style={{ width: `${columnWidths.clubRentals}px`, minWidth: `${columnWidths.clubRentals}px`, position: 'relative' }}
                   >
                     Club Rentals
                     <span 
@@ -969,7 +972,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.golfHandicap, position: 'relative' }}
+                    style={{ width: `${columnWidths.golfHandicap}px`, minWidth: `${columnWidths.golfHandicap}px`, position: 'relative' }}
                   >
                     Golf Handicap
                     <span 
@@ -978,7 +981,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.massageTimeSlot, position: 'relative' }}
+                    style={{ width: `${columnWidths.massageTimeSlot}px`, minWidth: `${columnWidths.massageTimeSlot}px`, position: 'relative' }}
                   >
                     Massage Time Slot
                     <span 
@@ -987,7 +990,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.tuesdayEarlyReception, position: 'relative' }}
+                    style={{ width: `${columnWidths.tuesdayEarlyReception}px`, minWidth: `${columnWidths.tuesdayEarlyReception}px`, position: 'relative' }}
                   >
                     Tuesday Early Reception
                     <span 
@@ -996,7 +999,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.wednesdayReception, position: 'relative' }}
+                    style={{ width: `${columnWidths.wednesdayReception}px`, minWidth: `${columnWidths.wednesdayReception}px`, position: 'relative' }}
                   >
                     Wednesday Reception
                     <span 
@@ -1005,7 +1008,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.thursdayBreakfast, position: 'relative' }}
+                    style={{ width: `${columnWidths.thursdayBreakfast}px`, minWidth: `${columnWidths.thursdayBreakfast}px`, position: 'relative' }}
                   >
                     Thursday Breakfast
                     <span 
@@ -1014,7 +1017,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.thursdayLuncheon, position: 'relative' }}
+                    style={{ width: `${columnWidths.thursdayLuncheon}px`, minWidth: `${columnWidths.thursdayLuncheon}px`, position: 'relative' }}
                   >
                     Thursday Luncheon
                     <span 
@@ -1023,7 +1026,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.thursdayDinner, position: 'relative' }}
+                    style={{ width: `${columnWidths.thursdayDinner}px`, minWidth: `${columnWidths.thursdayDinner}px`, position: 'relative' }}
                   >
                     Thursday Dinner
                     <span 
@@ -1032,7 +1035,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.fridayBreakfast, position: 'relative' }}
+                    style={{ width: `${columnWidths.fridayBreakfast}px`, minWidth: `${columnWidths.fridayBreakfast}px`, position: 'relative' }}
                   >
                     Friday Breakfast
                     <span 
@@ -1041,7 +1044,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.dietaryRestrictions, position: 'relative' }}
+                    style={{ width: `${columnWidths.dietaryRestrictions}px`, minWidth: `${columnWidths.dietaryRestrictions}px`, position: 'relative' }}
                   >
                     Dietary Restrictions
                     <span 
@@ -1050,7 +1053,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.specialRequests, position: 'relative' }}
+                    style={{ width: `${columnWidths.specialRequests}px`, minWidth: `${columnWidths.specialRequests}px`, position: 'relative' }}
                   >
                     Special Requests
                     <span 
@@ -1059,7 +1062,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.spouseFirstName, position: 'relative' }}
+                    style={{ width: `${columnWidths.spouseFirstName}px`, minWidth: `${columnWidths.spouseFirstName}px`, position: 'relative' }}
                   >
                     Spouse First Name
                     <span 
@@ -1068,7 +1071,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.spouseLastName, position: 'relative' }}
+                    style={{ width: `${columnWidths.spouseLastName}px`, minWidth: `${columnWidths.spouseLastName}px`, position: 'relative' }}
                   >
                     Spouse Last Name
                     <span 
@@ -1077,7 +1080,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.spouseDinnerTicket, position: 'relative' }}
+                    style={{ width: `${columnWidths.spouseDinnerTicket}px`, minWidth: `${columnWidths.spouseDinnerTicket}px`, position: 'relative' }}
                   >
                     Spouse Dinner Ticket
                     <span 
@@ -1086,7 +1089,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.paymentMethod, position: 'relative' }}
+                    style={{ width: `${columnWidths.paymentMethod}px`, minWidth: `${columnWidths.paymentMethod}px`, position: 'relative' }}
                   >
                     Payment Method
                     <span 
@@ -1095,7 +1098,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.paid, position: 'relative' }}
+                    style={{ width: `${columnWidths.paid}px`, minWidth: `${columnWidths.paid}px`, position: 'relative' }}
                   >
                     Paid?
                     <span 
@@ -1104,7 +1107,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.paymentId, position: 'relative' }}
+                    style={{ width: `${columnWidths.paymentId}px`, minWidth: `${columnWidths.paymentId}px`, position: 'relative' }}
                   >
                     Payment ID
                     <span 
@@ -1113,7 +1116,7 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
-                    style={{ width: columnWidths.totalPrice, position: 'relative' }}
+                    style={{ width: `${columnWidths.totalPrice}px`, minWidth: `${columnWidths.totalPrice}px`, position: 'relative' }}
                   >
                     Total Price
                     <span 
@@ -1127,41 +1130,41 @@ const confirmSingleDelete = async () => {
               <tbody>
                 {paginatedRegistrations.map(reg => (
                   <tr key={`detail-${reg.id}`}>
-                    <td style={{ width: columnWidths.badgeName }}>{displayValue(reg.badgeName)}</td>
-                    <td style={{ width: columnWidths.firstName }}>{displayValue(reg.firstName)}</td>
-                    <td style={{ width: columnWidths.lastName }}>{displayValue(reg.lastName)}</td>
-                    <td style={{ width: columnWidths.email }}>{displayValue(reg.email)}</td>
-                    <td style={{ width: columnWidths.secondaryEmail }}>{displayValue(reg.secondaryEmail)}</td>
-                    <td style={{ width: columnWidths.organization }}>{displayValue(reg.organization)}</td>
-                    <td style={{ width: columnWidths.jobTitle }}>{displayValue(reg.jobTitle)}</td>
-                    <td style={{ width: columnWidths.address }}>{displayValue(reg.address)}</td>
-                    <td style={{ width: columnWidths.mobile }}>{displayValue(reg.mobile)}</td>
-                    <td style={{ width: columnWidths.officePhone }}>{displayValue(reg.officePhone)}</td>
-                    <td style={{ width: columnWidths.firstTime }}>{reg.isFirstTimeAttending ? 'Yes' : 'No'}</td>
-                    <td style={{ width: columnWidths.companyType }}>{displayValue(reg.companyType)}</td>
-                    <td style={{ width: columnWidths.companyTypeOther }}>{displayValue(reg.companyTypeOther)}</td>
-                    <td style={{ width: columnWidths.emergencyContactName }}>{displayValue(reg.emergencyContactName)}</td>
-                    <td style={{ width: columnWidths.emergencyContactPhone }}>{displayValue(reg.emergencyContactPhone)}</td>
-                    <td style={{ width: columnWidths.activity }}>{displayValue(reg.wednesdayActivity)}</td>
-                    <td style={{ width: columnWidths.groupAssigned }}>{displayValue(getGroupForRegistration(reg) === '-' ? '' : getGroupForRegistration(reg))}</td>
-                    <td style={{ width: columnWidths.clubRentals }}>{displayValue((reg as any).clubRentals)}</td>
-                    <td style={{ width: columnWidths.golfHandicap }}>{displayValue(reg.golfHandicap)}</td>
-                    <td style={{ width: columnWidths.massageTimeSlot }}>{displayValue((reg as any).massageTimeSlot)}</td>
-                    <td style={{ width: columnWidths.tuesdayEarlyReception }}>{displayValue((reg as any).tuesdayEarlyReception)}</td>
-                    <td style={{ width: columnWidths.wednesdayReception }}>{displayValue(reg.wednesdayReception)}</td>
-                    <td style={{ width: columnWidths.thursdayBreakfast }}>{displayValue(reg.thursdayBreakfast)}</td>
-                    <td style={{ width: columnWidths.thursdayLuncheon }}>{displayValue(reg.thursdayLuncheon)}</td>
-                    <td style={{ width: columnWidths.thursdayDinner }}>{displayValue(reg.thursdayDinner)}</td>
-                    <td style={{ width: columnWidths.fridayBreakfast }}>{displayValue(reg.fridayBreakfast)}</td>
-                    <td style={{ width: columnWidths.dietaryRestrictions }}>{displayValue(reg.dietaryRestrictions)}</td>
-                    <td style={{ width: columnWidths.specialRequests }}>{displayValue((reg as any).specialRequests)}</td>
-                    <td style={{ width: columnWidths.spouseFirstName }}>{displayValue(reg.spouseFirstName)}</td>
-                    <td style={{ width: columnWidths.spouseLastName }}>{displayValue(reg.spouseLastName)}</td>
-                    <td style={{ width: columnWidths.spouseDinnerTicket }}>{reg.spouseDinnerTicket ? 'Yes' : 'No'}</td>
-                    <td style={{ width: columnWidths.paymentMethod }}>{displayValue(reg.paymentMethod)}</td>
-                    <td style={{ width: columnWidths.paid }}>{(reg as any).paid ? 'Yes' : 'No'}</td>
-                    <td style={{ width: columnWidths.paymentId }}>{displayValue((reg as any).squarePaymentId)}</td>
-                    <td style={{ width: columnWidths.totalPrice }}>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''}</td>
+                    <td style={{ width: `${columnWidths.badgeName}px`, minWidth: `${columnWidths.badgeName}px` }}>{displayValue(reg.badgeName)}</td>
+                    <td style={{ width: `${columnWidths.firstName}px`, minWidth: `${columnWidths.firstName}px` }}>{displayValue(reg.firstName)}</td>
+                    <td style={{ width: `${columnWidths.lastName}px`, minWidth: `${columnWidths.lastName}px` }}>{displayValue(reg.lastName)}</td>
+                    <td style={{ width: `${columnWidths.email}px`, minWidth: `${columnWidths.email}px` }}>{displayValue(reg.email)}</td>
+                    <td style={{ width: `${columnWidths.secondaryEmail}px`, minWidth: `${columnWidths.secondaryEmail}px` }}>{displayValue(reg.secondaryEmail)}</td>
+                    <td style={{ width: `${columnWidths.organization}px`, minWidth: `${columnWidths.organization}px` }}>{displayValue(reg.organization)}</td>
+                    <td style={{ width: `${columnWidths.jobTitle}px`, minWidth: `${columnWidths.jobTitle}px` }}>{displayValue(reg.jobTitle)}</td>
+                    <td style={{ width: `${columnWidths.address}px`, minWidth: `${columnWidths.address}px` }}>{displayValue(reg.address)}</td>
+                    <td style={{ width: `${columnWidths.mobile}px`, minWidth: `${columnWidths.mobile}px` }}>{displayValue(reg.mobile)}</td>
+                    <td style={{ width: `${columnWidths.officePhone}px`, minWidth: `${columnWidths.officePhone}px` }}>{displayValue(reg.officePhone)}</td>
+                    <td style={{ width: `${columnWidths.firstTime}px`, minWidth: `${columnWidths.firstTime}px` }}>{reg.isFirstTimeAttending ? 'Yes' : 'No'}</td>
+                    <td style={{ width: `${columnWidths.companyType}px`, minWidth: `${columnWidths.companyType}px` }}>{displayValue(reg.companyType)}</td>
+                    <td style={{ width: `${columnWidths.companyTypeOther}px`, minWidth: `${columnWidths.companyTypeOther}px` }}>{displayValue(reg.companyTypeOther)}</td>
+                    <td style={{ width: `${columnWidths.emergencyContactName}px`, minWidth: `${columnWidths.emergencyContactName}px` }}>{displayValue(reg.emergencyContactName)}</td>
+                    <td style={{ width: `${columnWidths.emergencyContactPhone}px`, minWidth: `${columnWidths.emergencyContactPhone}px` }}>{displayValue(reg.emergencyContactPhone)}</td>
+                    <td style={{ width: `${columnWidths.activity}px`, minWidth: `${columnWidths.activity}px` }}>{displayValue(reg.wednesdayActivity)}</td>
+                    <td style={{ width: `${columnWidths.groupAssigned}px`, minWidth: `${columnWidths.groupAssigned}px` }}>{displayValue(getGroupForRegistration(reg) === '-' ? '' : getGroupForRegistration(reg))}</td>
+                    <td style={{ width: `${columnWidths.clubRentals}px`, minWidth: `${columnWidths.clubRentals}px` }}>{displayValue((reg as any).clubRentals)}</td>
+                    <td style={{ width: `${columnWidths.golfHandicap}px`, minWidth: `${columnWidths.golfHandicap}px` }}>{displayValue(reg.golfHandicap)}</td>
+                    <td style={{ width: `${columnWidths.massageTimeSlot}px`, minWidth: `${columnWidths.massageTimeSlot}px` }}>{displayValue((reg as any).massageTimeSlot)}</td>
+                    <td style={{ width: `${columnWidths.tuesdayEarlyReception}px`, minWidth: `${columnWidths.tuesdayEarlyReception}px` }}>{displayValue((reg as any).tuesdayEarlyReception)}</td>
+                    <td style={{ width: `${columnWidths.wednesdayReception}px`, minWidth: `${columnWidths.wednesdayReception}px` }}>{displayValue(reg.wednesdayReception)}</td>
+                    <td style={{ width: `${columnWidths.thursdayBreakfast}px`, minWidth: `${columnWidths.thursdayBreakfast}px` }}>{displayValue(reg.thursdayBreakfast)}</td>
+                    <td style={{ width: `${columnWidths.thursdayLuncheon}px`, minWidth: `${columnWidths.thursdayLuncheon}px` }}>{displayValue(reg.thursdayLuncheon)}</td>
+                    <td style={{ width: `${columnWidths.thursdayDinner}px`, minWidth: `${columnWidths.thursdayDinner}px` }}>{displayValue(reg.thursdayDinner)}</td>
+                    <td style={{ width: `${columnWidths.fridayBreakfast}px`, minWidth: `${columnWidths.fridayBreakfast}px` }}>{displayValue(reg.fridayBreakfast)}</td>
+                    <td style={{ width: `${columnWidths.dietaryRestrictions}px`, minWidth: `${columnWidths.dietaryRestrictions}px` }}>{displayValue(reg.dietaryRestrictions)}</td>
+                    <td style={{ width: `${columnWidths.specialRequests}px`, minWidth: `${columnWidths.specialRequests}px` }}>{displayValue((reg as any).specialRequests)}</td>
+                    <td style={{ width: `${columnWidths.spouseFirstName}px`, minWidth: `${columnWidths.spouseFirstName}px` }}>{displayValue(reg.spouseFirstName)}</td>
+                    <td style={{ width: `${columnWidths.spouseLastName}px`, minWidth: `${columnWidths.spouseLastName}px` }}>{displayValue(reg.spouseLastName)}</td>
+                    <td style={{ width: `${columnWidths.spouseDinnerTicket}px`, minWidth: `${columnWidths.spouseDinnerTicket}px` }}>{reg.spouseDinnerTicket ? 'Yes' : 'No'}</td>
+                    <td style={{ width: `${columnWidths.paymentMethod}px`, minWidth: `${columnWidths.paymentMethod}px` }}>{displayValue(reg.paymentMethod)}</td>
+                    <td style={{ width: `${columnWidths.paid}px`, minWidth: `${columnWidths.paid}px` }}>{(reg as any).paid ? 'Yes' : 'No'}</td>
+                    <td style={{ width: `${columnWidths.paymentId}px`, minWidth: `${columnWidths.paymentId}px` }}>{displayValue((reg as any).squarePaymentId)}</td>
+                    <td style={{ width: `${columnWidths.totalPrice}px`, minWidth: `${columnWidths.totalPrice}px` }}>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''}</td>
                     
                   </tr>
                 ))}

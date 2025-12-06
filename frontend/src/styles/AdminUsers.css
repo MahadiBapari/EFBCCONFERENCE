@@ -59,7 +59,7 @@
 }
 
 .admin-users-table thead {
-  background: var(--bg-tertiary);
+  background: white;
   position: sticky;
   top: 0;
   z-index: 10;

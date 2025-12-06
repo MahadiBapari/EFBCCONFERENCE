@@ -166,8 +166,8 @@
 
 .detailed-table {
   min-width: 2000px; /* Increased to accommodate all columns */
-  table-layout: auto; /* Changed from fixed to auto to allow natural column widths */
-  width: auto; /* Changed from 100% to auto to allow table to expand */
+  table-layout: fixed; /* Fixed layout to respect width styles for resizing */
+  width: 100%; /* Use 100% width to fill container */
   font-size: 0.9rem;
   border-collapse: collapse;
 }
@@ -184,7 +184,7 @@
   box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: visible; /* Ensure resize handle is not clipped */
-  border-right: 2px solid transparent; /* Reserve space for resize handle */
+  border-right: 1px solid transparent; /* Reserve space for resize handle */
   transition: border-right-color 0.2s ease;
 }
 
@@ -200,9 +200,16 @@
   overflow: visible; /* Changed from hidden to visible to show wrapped content */
   word-wrap: break-word; /* Enable word wrapping */
   word-break: break-word; /* Break long words if needed */
-  min-width: 80px; /* Minimum width for columns */
+  min-width: 50px; /* Minimum width for columns */
+  max-width: none; /* Remove max-width restrictions */
   vertical-align: top; /* Align content to top for multi-line cells */
   height: auto; /* Allow row height to adjust based on content */
+}
+
+/* Force width styles to be respected for resizable columns */
+.detailed-table th[style*="width"],
+.detailed-table td[style*="width"] {
+  width: inherit !important; /* Inherit from inline style */
 }
 
 /* Allow table rows to expand vertically based on content */
