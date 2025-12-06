@@ -120,7 +120,13 @@ const sanitizeSubjectLine = (subject: string): string => {
   });
   
   // Remove excessive capitalization (more than 3 consecutive uppercase letters)
+  // But preserve common acronyms like EFBC
   sanitized = sanitized.replace(/([A-Z]{4,})/g, (match) => {
+    // Preserve EFBC and other common acronyms
+    const commonAcronyms = ['EFBC', 'API', 'HTTP', 'HTTPS', 'SMTP', 'URL', 'PDF', 'HTML', 'CSS', 'JS', 'JSON', 'XML'];
+    if (commonAcronyms.includes(match)) {
+      return match;
+    }
     return match.charAt(0) + match.slice(1).toLowerCase();
   });
   
@@ -519,6 +525,7 @@ const formatEventDateRange = (startDate?: string | null, endDate?: string | null
   }
 };
 
+//Registration confirmation email
 export async function sendRegistrationConfirmationEmail(params: {
   to: string;
   name: string;

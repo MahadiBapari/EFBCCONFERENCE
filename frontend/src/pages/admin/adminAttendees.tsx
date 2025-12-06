@@ -49,6 +49,31 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const attendeesPerPage = 30;
+  
+  // Sorting state
+  const [sortField, setSortField] = useState<string>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  
+  // Column widths state for resizable columns
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
+    badgeName: 120,
+    firstName: 100,
+    lastName: 100,
+    email: 180,
+    secondaryEmail: 180,
+    organization: 150,
+    jobTitle: 120,
+    address: 200,
+    mobile: 120,
+    officePhone: 120,
+    companyType: 120,
+    city: 100,
+    state: 80,
+    zipCode: 80,
+    country: 100,
+  });
+  
+  const [, setResizingColumn] = useState<string | null>(null);
 
   // State for Add Attendee (select user) modal
   interface SimpleUser {
@@ -174,16 +199,99 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     return results;
   }, [filter, registrations, searchQuery, selectedEventId]);
 
-  // Paginated registrations
-  const totalPages = Math.max(1, Math.ceil(filteredRegistrations.length / attendeesPerPage));
+  // Sort registrations
+  const sortedRegistrations = useMemo(() => {
+    const sorted = [...filteredRegistrations].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+      
+      switch (sortField) {
+        case 'name':
+          aValue = a.name?.toLowerCase() || '';
+          bValue = b.name?.toLowerCase() || '';
+          break;
+        case 'email':
+          aValue = a.email?.toLowerCase() || '';
+          bValue = b.email?.toLowerCase() || '';
+          break;
+        case 'organization':
+          aValue = a.organization?.toLowerCase() || '';
+          bValue = b.organization?.toLowerCase() || '';
+          break;
+        case 'city':
+          aValue = (a as any).city?.toLowerCase() || '';
+          bValue = (b as any).city?.toLowerCase() || '';
+          break;
+        case 'state':
+          aValue = (a as any).state?.toLowerCase() || '';
+          bValue = (b as any).state?.toLowerCase() || '';
+          break;
+        case 'country':
+          aValue = (a as any).country?.toLowerCase() || '';
+          bValue = (b as any).country?.toLowerCase() || '';
+          break;
+        case 'category':
+          aValue = a.category?.toLowerCase() || '';
+          bValue = b.category?.toLowerCase() || '';
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    return sorted;
+  }, [filteredRegistrations, sortField, sortDirection]);
+
+  // Paginated registrations (use sortedRegistrations)
+  const totalPages = Math.max(1, Math.ceil(sortedRegistrations.length / attendeesPerPage));
   const startIndex = (currentPage - 1) * attendeesPerPage;
   const endIndex = startIndex + attendeesPerPage;
-  const paginatedRegistrations = filteredRegistrations.slice(startIndex, endIndex);
+  const paginatedRegistrations = sortedRegistrations.slice(startIndex, endIndex);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters or sorting change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter, searchQuery, selectedEventId]);
+  }, [filter, searchQuery, selectedEventId, sortField, sortDirection]);
+
+  // Sorting handler
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Column resizing handlers
+  const handleResizeStart = (e: React.MouseEvent, columnKey: string) => {
+    e.preventDefault();
+    setResizingColumn(columnKey);
+    const startX = e.pageX;
+    const startWidth = columnWidths[columnKey] || 120;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const diff = e.pageX - startX;
+      const newWidth = Math.max(50, startWidth + diff); // Minimum width 50px
+      setColumnWidths(prev => ({
+        ...prev,
+        [columnKey]: newWidth
+      }));
+    };
+
+    const handleMouseUp = () => {
+      setResizingColumn(null);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -639,18 +747,131 @@ const confirmSingleDelete = async () => {
             <table className="table detailed-table">
               <thead>
                 <tr>
-                  <th>Badge Name</th>
-                  <th>First Name</th>
-                  <th>Last Name</th>
-                  <th>Email</th>
-                  <th>Secondary Email</th>
-                  <th>Organization</th>
-                  <th>Job Title</th>
-                  <th>Address</th>
-                  <th>Mobile</th>
-                  <th>Office Phone</th>
+                  <th 
+                    style={{ width: columnWidths.badgeName, position: 'relative' }}
+                    className="sortable-header"
+                    onClick={() => handleSort('name')}
+                  >
+                    Badge Name
+                    {sortField === 'name' && (
+                      <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                    )}
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'badgeName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.firstName, position: 'relative' }}
+                    className="sortable-header"
+                    onClick={() => handleSort('name')}
+                  >
+                    First Name
+                    {sortField === 'name' && (
+                      <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                    )}
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'firstName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.lastName, position: 'relative' }}
+                    className="sortable-header"
+                    onClick={() => handleSort('name')}
+                  >
+                    Last Name
+                    {sortField === 'name' && (
+                      <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                    )}
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'lastName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.email, position: 'relative' }}
+                    className="sortable-header"
+                    onClick={() => handleSort('email')}
+                  >
+                    Email
+                    {sortField === 'email' && (
+                      <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                    )}
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'email')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.secondaryEmail, position: 'relative' }}
+                  >
+                    Secondary Email
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'secondaryEmail')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.organization, position: 'relative' }}
+                    className="sortable-header"
+                    onClick={() => handleSort('organization')}
+                  >
+                    Organization
+                    {sortField === 'organization' && (
+                      <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                    )}
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'organization')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.jobTitle, position: 'relative' }}
+                  >
+                    Job Title
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'jobTitle')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.address, position: 'relative' }}
+                  >
+                    Address
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'address')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.mobile, position: 'relative' }}
+                  >
+                    Mobile
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'mobile')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.officePhone, position: 'relative' }}
+                  >
+                    Office Phone
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'officePhone')}
+                    />
+                  </th>
                   <th>First Time?</th>
-                  <th>Company Type</th>
+                  <th 
+                    style={{ width: columnWidths.companyType, position: 'relative' }}
+                  >
+                    Company Type
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'companyType')}
+                    />
+                  </th>
                   <th>Company Type Other</th>
                   <th>Emergency Contact Name</th>
                   <th>Emergency Contact Phone</th>
@@ -680,18 +901,18 @@ const confirmSingleDelete = async () => {
               <tbody>
                 {paginatedRegistrations.map(reg => (
                   <tr key={`detail-${reg.id}`}>
-                    <td>{displayValue(reg.badgeName)}</td>
-                    <td>{displayValue(reg.firstName)}</td>
-                    <td>{displayValue(reg.lastName)}</td>
-                    <td>{displayValue(reg.email)}</td>
-                    <td>{displayValue(reg.secondaryEmail)}</td>
-                    <td>{displayValue(reg.organization)}</td>
-                    <td>{displayValue(reg.jobTitle)}</td>
-                    <td>{displayValue(reg.address)}</td>
-                    <td>{displayValue(reg.mobile)}</td>
-                    <td>{displayValue(reg.officePhone)}</td>
+                    <td style={{ width: columnWidths.badgeName }}>{displayValue(reg.badgeName)}</td>
+                    <td style={{ width: columnWidths.firstName }}>{displayValue(reg.firstName)}</td>
+                    <td style={{ width: columnWidths.lastName }}>{displayValue(reg.lastName)}</td>
+                    <td style={{ width: columnWidths.email }}>{displayValue(reg.email)}</td>
+                    <td style={{ width: columnWidths.secondaryEmail }}>{displayValue(reg.secondaryEmail)}</td>
+                    <td style={{ width: columnWidths.organization }}>{displayValue(reg.organization)}</td>
+                    <td style={{ width: columnWidths.jobTitle }}>{displayValue(reg.jobTitle)}</td>
+                    <td style={{ width: columnWidths.address }}>{displayValue(reg.address)}</td>
+                    <td style={{ width: columnWidths.mobile }}>{displayValue(reg.mobile)}</td>
+                    <td style={{ width: columnWidths.officePhone }}>{displayValue(reg.officePhone)}</td>
                     <td>{reg.isFirstTimeAttending ? 'Yes' : 'No'}</td>
-                    <td>{displayValue(reg.companyType)}</td>
+                    <td style={{ width: columnWidths.companyType }}>{displayValue(reg.companyType)}</td>
                     <td>{displayValue(reg.companyTypeOther)}</td>
                     <td>{displayValue(reg.emergencyContactName)}</td>
                     <td>{displayValue(reg.emergencyContactPhone)}</td>
@@ -734,7 +955,37 @@ const confirmSingleDelete = async () => {
                     aria-label="Select all attendees"
                   />
                 </th>
-                <th>Name</th><th>Email</th><th>Category</th><th className="no-print">Actions</th>
+                <th 
+                  className="sortable-header"
+                  onClick={() => handleSort('name')}
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
+                >
+                  Name
+                  {sortField === 'name' && (
+                    <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                  )}
+                </th>
+                <th 
+                  className="sortable-header"
+                  onClick={() => handleSort('email')}
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
+                >
+                  Email
+                  {sortField === 'email' && (
+                    <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                  )}
+                </th>
+                <th 
+                  className="sortable-header"
+                  onClick={() => handleSort('category')}
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
+                >
+                  Category
+                  {sortField === 'category' && (
+                    <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                  )}
+                </th>
+                <th className="no-print">Actions</th>
               </tr>
             </thead>
             <tbody>
