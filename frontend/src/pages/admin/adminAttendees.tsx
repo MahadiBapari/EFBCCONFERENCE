@@ -38,7 +38,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   const [selectedRegIds, setSelectedRegIds] = useState<number[]>([]);
   const [previewRegId, setPreviewRegId] = useState<number | null>(null);
   const [showDetailTable, setShowDetailTable] = useState(false);
-  const [resendingEmailId, setResendingEmailId] = useState<number | null>(null);
+ // const [resendingEmailId, setResendingEmailId] = useState<number | null>(null);
   const [emailMessage, setEmailMessage] = useState<{ regId: number; type: 'success' | 'error'; text: string } | null>(null);
   
   // Scroll to top when component mounts
@@ -551,25 +551,25 @@ const confirmSingleDelete = async () => {
     e.target.value = ""; // Reset dropdown
   };
 
-  const handleResendConfirmation = async (regId: number) => {
-    setResendingEmailId(regId);
-    setEmailMessage(null);
+  // const handleResendConfirmation = async (regId: number) => {
+  //   setResendingEmailId(regId);
+  //   setEmailMessage(null);
     
-    try {
-      const response = await registrationsApi.resendConfirmation(regId);
-      if (response.success) {
-        setEmailMessage({ regId, type: 'success', text: 'Confirmation email sent successfully!' });
-      } else {
-        setEmailMessage({ regId, type: 'error', text: response.error || 'Failed to send email' });
-      }
-    } catch (error: any) {
-      setEmailMessage({ regId, type: 'error', text: error?.response?.data?.error || 'Failed to send email' });
-    } finally {
-      setResendingEmailId(null);
-      // Clear message after 5 seconds
-      setTimeout(() => setEmailMessage(null), 5000);
-    }
-  };
+  //   try {
+  //     const response = await registrationsApi.resendConfirmation(regId);
+  //     if (response.success) {
+  //       setEmailMessage({ regId, type: 'success', text: 'Confirmation email sent successfully!' });
+  //     } else {
+  //       setEmailMessage({ regId, type: 'error', text: response.error || 'Failed to send email' });
+  //     }
+  //   } catch (error: any) {
+  //     setEmailMessage({ regId, type: 'error', text: error?.response?.data?.error || 'Failed to send email' });
+  //   } finally {
+  //     setResendingEmailId(null);
+  //     // Clear message after 5 seconds
+  //     setTimeout(() => setEmailMessage(null), 5000);
+  //   }
+  // };
 
   const groupsByCategory = useMemo(() => {
     return groups.reduce<Record<string, Group[]>>((acc, group) => {
