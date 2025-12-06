@@ -38,8 +38,8 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   const [selectedRegIds, setSelectedRegIds] = useState<number[]>([]);
   const [previewRegId, setPreviewRegId] = useState<number | null>(null);
   const [showDetailTable, setShowDetailTable] = useState(false);
- // const [resendingEmailId, setResendingEmailId] = useState<number | null>(null);
-  const [emailMessage, setEmailMessage] = useState<{ regId: number; type: 'success' | 'error'; text: string } | null>(null);
+  // const [resendingEmailId, setResendingEmailId] = useState<number | null>(null);
+  // const [emailMessage, setEmailMessage] = useState<{ regId: number; type: 'success' | 'error'; text: string } | null>(null);
   
   // Scroll to top when component mounts
   useEffect(() => {
@@ -1273,11 +1273,11 @@ const confirmSingleDelete = async () => {
                           Delete
                         </button>
                       </div>
-                      {emailMessage && emailMessage.regId === reg.id && (
+                      {/* {emailMessage && emailMessage.regId === reg.id && (
                         <div className={`email-message-small ${emailMessage.type === 'success' ? 'success' : 'error'}`}>
                           {emailMessage.text}
                         </div>
-                      )}
+                      )} */}
                   </td>
                 </tr>
               ))}
