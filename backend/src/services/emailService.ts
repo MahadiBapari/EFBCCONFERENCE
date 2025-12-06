@@ -575,21 +575,47 @@ export async function sendRegistrationConfirmationEmail(params: {
         ? registration.is_first_time_attending 
         : null);
   const companyType = registration?.companyType || registration?.company_type || '';
+  const companyTypeOther = registration?.companyTypeOther || registration?.company_type_other || '';
   const officePhone = registration?.officePhone || registration?.office_phone || '';
+  
+  // Get full name
+  const firstName = registration?.firstName || registration?.first_name || '';
+  const lastName = registration?.lastName || registration?.last_name || '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  
+  // Get separate address fields
+  const addressStreet = registration?.addressStreet || registration?.address_street || '';
+  const city = registration?.city || '';
+  const state = registration?.state || '';
+  const zipCode = registration?.zipCode || registration?.zip_code || '';
+  const country = registration?.country || '';
+  
+  // Get spouse information
+  const spouseFirstName = registration?.spouseFirstName || registration?.spouse_first_name || '';
+  const spouseLastName = registration?.spouseLastName || registration?.spouse_last_name || '';
+  const spouseDinnerTicket = registration?.spouseDinnerTicket !== undefined 
+    ? registration.spouseDinnerTicket 
+    : (registration?.spouse_dinner_ticket !== undefined ? registration.spouse_dinner_ticket : false);
 
   const detailsHtml = registration
     ? `
       <table role="presentation" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:14px;">
+        ${fullName ? `<tr><td style="color:#6b7280;">Name</td><td><strong>${fullName}</strong></td></tr>`:''}
         ${registration.badgeName ? `<tr><td style="color:#6b7280;">Badge Name</td><td><strong>${registration.badgeName}</strong></td></tr>`:''}
         ${registration.email ? `<tr><td style="color:#6b7280;">Email</td><td>${registration.email}</td></tr>`:''}
         ${registration.secondaryEmail ? `<tr><td style="color:#6b7280;">Secondary Email</td><td>${registration.secondaryEmail}</td></tr>`:''}
         ${registration.organization ? `<tr><td style="color:#6b7280;">Organization</td><td>${registration.organization}</td></tr>`:''}
         ${registration.jobTitle ? `<tr><td style="color:#6b7280;">Job Title</td><td>${registration.jobTitle}</td></tr>`:''}
-        ${registration.address ? `<tr><td style="color:#6b7280;">Address</td><td>${String(registration.address).replace(/\n/g,'<br/>')}</td></tr>`:''}
+        ${addressStreet || registration.address ? `<tr><td style="color:#6b7280;">Address</td><td>${addressStreet || String(registration.address || '').replace(/\n/g,'<br/>')}</td></tr>`:''}
+        ${city ? `<tr><td style="color:#6b7280;">City</td><td>${city}</td></tr>`:''}
+        ${state ? `<tr><td style="color:#6b7280;">State</td><td>${state}</td></tr>`:''}
+        ${zipCode ? `<tr><td style="color:#6b7280;">Zip Code</td><td>${zipCode}</td></tr>`:''}
+        ${country ? `<tr><td style="color:#6b7280;">Country</td><td>${country}</td></tr>`:''}
         ${registration.mobile ? `<tr><td style="color:#6b7280;">Mobile</td><td>${registration.mobile}</td></tr>`:''}
         ${officePhone ? `<tr><td style="color:#6b7280;">Office Phone</td><td>${officePhone}</td></tr>`:''}
         ${isFirstTimeAttending !== null ? `<tr><td style="color:#6b7280;">First Time Attending?</td><td>${isFirstTimeAttending ? 'Yes' : 'No'}</td></tr>`:''}
         ${companyType ? `<tr><td style="color:#6b7280;">Company Type</td><td>${companyType}</td></tr>`:''}
+        ${companyTypeOther ? `<tr><td style="color:#6b7280;">Company Type (Other)</td><td>${companyTypeOther}</td></tr>`:''}
         ${wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${wednesdayActivity}</td></tr>`:''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && golfHandicap ? `<tr><td style="color:#6b7280;">Golf Handicap</td><td>${golfHandicap}</td></tr>`:''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && clubRentals ? `<tr><td style="color:#6b7280;">Golf Club Preference</td><td>${clubRentals}</td></tr>`:''}
@@ -603,10 +629,18 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${registration.fridayBreakfast ? `<tr><td style="color:#6b7280;">Friday Breakfast</td><td>${registration.fridayBreakfast}</td></tr>`:''}
         ${dietaryRestrictions ? `<tr><td style="color:#6b7280;">Dietary Restrictions</td><td>${dietaryRestrictions}</td></tr>`:''}
         ${specialRequests ? `<tr><td style="color:#6b7280;">Special Requests</td><td>${specialRequests}</td></tr>`:''}
-        ${emergencyContactName || emergencyContactPhone ? `<tr><td style="color:#6b7280;">Emergency Contact</td><td>${emergencyContactName || ''}${emergencyContactName && emergencyContactPhone ? ' - ' : ''}${emergencyContactPhone || ''}</td></tr>`:''}
+        ${emergencyContactName ? `<tr><td style="color:#6b7280;">Emergency Contact Name</td><td>${emergencyContactName}</td></tr>`:''}
+        ${emergencyContactPhone ? `<tr><td style="color:#6b7280;">Emergency Contact Phone</td><td>${emergencyContactPhone}</td></tr>`:''}
+        ${spouseDinnerTicket ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Spouse/Guest Information</strong></td></tr>`:''}
+        ${spouseDinnerTicket ? `<tr><td style="color:#6b7280;">Spouse Dinner Ticket</td><td>Yes</td></tr>`:''}
+        ${spouseFirstName ? `<tr><td style="color:#6b7280;">Spouse First Name</td><td>${spouseFirstName}</td></tr>`:''}
+        ${spouseLastName ? `<tr><td style="color:#6b7280;">Spouse Last Name</td><td>${spouseLastName}</td></tr>`:''}
+        ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Payment Information</strong></td></tr>`:''}
         ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;">Payment Amount</td><td><strong style="color:#111827;font-size:16px;">$${paymentAmount.toFixed(2)}</strong></td></tr>`:''}
         ${paymentMethod ? `<tr><td style="color:#6b7280;">Payment Method</td><td>${paymentMethod}</td></tr>` : ''}
         ${paymentMethod === 'Card' && squarePaymentId ? `<tr><td style="color:#6b7280;">Square Payment ID</td><td><code>${squarePaymentId}</code></td></tr>` : ''}
+        ${paymentMethod === 'Card' && registration?.spousePaymentId ? `<tr><td style="color:#6b7280;">Spouse Payment ID</td><td><code>${registration.spousePaymentId}</code></td></tr>` : ''}
+        ${paymentMethod === 'Card' && registration?.paidAt ? `<tr><td style="color:#6b7280;">Payment Date/Time</td><td>${new Date(registration.paidAt).toLocaleString()}</td></tr>` : ''}
       </table>
     `
     : '';
