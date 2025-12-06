@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import '../../styles/AdminUsers.css';
 import { apiClient, usersApi } from '../../services/apiClient';
 
@@ -55,6 +55,10 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
   );
   const usersPerPage = 30; // Users per page
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Sorting state
+  const [sortField, setSortField] = useState<string>('createdAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc'); // Default: most recent first
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -198,6 +202,75 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
     const lastName = parts[parts.length - 1];
     const firstName = parts.slice(0, -1).join(' ');
     return { firstName, lastName };
+  };
+
+  // Sort users
+  const sortedUsers = useMemo(() => {
+    const sorted = [...users].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+      
+      switch (sortField) {
+        case 'id':
+          aValue = a.id;
+          bValue = b.id;
+          break;
+        case 'name':
+          aValue = a.name?.toLowerCase() || '';
+          bValue = b.name?.toLowerCase() || '';
+          break;
+        case 'firstName':
+          const aName = splitName(a.name || '');
+          const bName = splitName(b.name || '');
+          aValue = aName.firstName?.toLowerCase() || '';
+          bValue = bName.firstName?.toLowerCase() || '';
+          break;
+        case 'lastName':
+          const aName2 = splitName(a.name || '');
+          const bName2 = splitName(b.name || '');
+          aValue = aName2.lastName?.toLowerCase() || '';
+          bValue = bName2.lastName?.toLowerCase() || '';
+          break;
+        case 'email':
+          aValue = a.email?.toLowerCase() || '';
+          bValue = b.email?.toLowerCase() || '';
+          break;
+        case 'role':
+          aValue = (a.role || 'user').toLowerCase();
+          bValue = (b.role || 'user').toLowerCase();
+          break;
+        case 'createdAt':
+          // Sort by creation date (most recent first in desc, oldest first in asc)
+          aValue = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bValue = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+      
+      // Handle numeric comparisons
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      }
+      
+      // Handle string comparisons
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    return sorted;
+  }, [users, sortField, sortDirection]);
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -414,20 +487,75 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         ) : (
           <>
             <div className={`table-wrapper ${loading ? 'loading-overlay' : ''}`}>
-              {users.length > 0 ? (
+              {sortedUsers.length > 0 ? (
                 <table className="admin-users-table">
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>First Name</th>
-                      <th>Last Name</th>
-                      <th>Email</th>
-                      <th>Role</th>
+                      <th 
+                        className="sortable-header"
+                        onClick={() => handleSort('id')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        ID
+                        {sortField === 'id' && (
+                          <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                        )}
+                      </th>
+                      <th 
+                        className="sortable-header"
+                        onClick={() => handleSort('firstName')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        First Name
+                        {sortField === 'firstName' && (
+                          <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                        )}
+                      </th>
+                      <th 
+                        className="sortable-header"
+                        onClick={() => handleSort('lastName')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        Last Name
+                        {sortField === 'lastName' && (
+                          <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                        )}
+                      </th>
+                      <th 
+                        className="sortable-header"
+                        onClick={() => handleSort('email')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        Email
+                        {sortField === 'email' && (
+                          <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                        )}
+                      </th>
+                      <th 
+                        className="sortable-header"
+                        onClick={() => handleSort('role')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        Role
+                        {sortField === 'role' && (
+                          <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                        )}
+                      </th>
+                      <th 
+                        className="sortable-header"
+                        onClick={() => handleSort('createdAt')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        Date Created
+                        {sortField === 'createdAt' && (
+                          <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                        )}
+                      </th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((user) => {
+                    {sortedUsers.map((user) => {
                       const { firstName, lastName } = splitName(user.name);
                       return (
                         <tr key={user.id}>
@@ -439,6 +567,15 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
                             <span className={`role-badge role-${user.role || 'user'}`}>
                               {user.role || 'user'}
                             </span>
+                          </td>
+                          <td>
+                            {user.createdAt 
+                              ? new Date(user.createdAt).toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'short', 
+                                  day: 'numeric' 
+                                })
+                              : ''}
                           </td>
                           <td>
                             <div className="admin-users-row-actions">

@@ -187,12 +187,25 @@
 
 .detailed-table th,
 .detailed-table td {
-  white-space: nowrap;
+  white-space: normal; /* Changed from nowrap to normal to allow wrapping */
   border: 1px solid rgba(0, 0, 0, 0.1);
   padding: 0.5rem 0.75rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible; /* Changed from hidden to visible to show wrapped content */
+  word-wrap: break-word; /* Enable word wrapping */
+  word-break: break-word; /* Break long words if needed */
   min-width: 80px; /* Minimum width for columns */
+  vertical-align: top; /* Align content to top for multi-line cells */
+  height: auto; /* Allow row height to adjust based on content */
+}
+
+/* Allow table rows to expand vertically based on content */
+.detailed-table tr {
+  height: auto;
+  min-height: 2.5rem; /* Minimum row height */
+}
+
+.detailed-table td {
+  max-height: none; /* Remove any height restrictions */
 }
 
 /* Ensure columns without explicit widths get proper sizing */
@@ -202,16 +215,7 @@
   min-width: 100px;
 }
 
-.detailed-table th:nth-child(8),
-.detailed-table td:nth-child(8) {
-  white-space: normal;
-  word-wrap: break-word;
-}
-
-.detailed-table th:nth-child(9),
-.detailed-table td:nth-child(9) {
-  white-space: normal;
-}
+/* Enable wrapping for all cells - removed specific nth-child rules as all cells now wrap */
 
 /* Sortable header styles */
 .sortable-header {

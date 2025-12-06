@@ -71,6 +71,30 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     state: 80,
     zipCode: 80,
     country: 100,
+    firstTime: 100,
+    companyTypeOther: 150,
+    emergencyContactName: 150,
+    emergencyContactPhone: 150,
+    activity: 120,
+    groupAssigned: 150,
+    clubRentals: 120,
+    golfHandicap: 120,
+    massageTimeSlot: 150,
+    tuesdayEarlyReception: 150,
+    wednesdayReception: 150,
+    thursdayBreakfast: 150,
+    thursdayLuncheon: 150,
+    thursdayDinner: 150,
+    fridayBreakfast: 150,
+    dietaryRestrictions: 200,
+    specialRequests: 200,
+    spouseFirstName: 120,
+    spouseLastName: 120,
+    spouseDinnerTicket: 150,
+    paymentMethod: 120,
+    paid: 80,
+    paymentId: 200,
+    totalPrice: 100,
   });
   
   const [, setResizingColumn] = useState<string | null>(null);
@@ -233,6 +257,13 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
         case 'category':
           aValue = a.category?.toLowerCase() || '';
           bValue = b.category?.toLowerCase() || '';
+          break;
+        case 'paymentMethod':
+          // Sort by payment method: Card, Check, or empty
+          const aMethod = a.paymentMethod === 'Card' ? 'card' : a.paymentMethod === 'Check' ? 'check' : '';
+          const bMethod = b.paymentMethod === 'Card' ? 'card' : b.paymentMethod === 'Check' ? 'check' : '';
+          aValue = aMethod;
+          bValue = bMethod;
           break;
         default:
           return 0;
@@ -862,7 +893,15 @@ const confirmSingleDelete = async () => {
                       onMouseDown={(e) => handleResizeStart(e, 'officePhone')}
                     />
                   </th>
-                  <th>First Time?</th>
+                  <th 
+                    style={{ width: columnWidths.firstTime, position: 'relative' }}
+                  >
+                    First Time?
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'firstTime')}
+                    />
+                  </th>
                   <th 
                     style={{ width: columnWidths.companyType, position: 'relative' }}
                   >
@@ -872,29 +911,213 @@ const confirmSingleDelete = async () => {
                       onMouseDown={(e) => handleResizeStart(e, 'companyType')}
                     />
                   </th>
-                  <th>Company Type Other</th>
-                  <th>Emergency Contact Name</th>
-                  <th>Emergency Contact Phone</th>
-                  <th>Activity</th>
-                  <th>Group Assigned</th>
-                  <th>Club Rentals</th>
-                  <th>Golf Handicap</th>
-                  <th>Massage Time Slot</th>
-                  <th>Tuesday Early Reception</th>
-                  <th>Wednesday Reception</th>
-                  <th>Thursday Breakfast</th>
-                  <th>Thursday Luncheon</th>
-                  <th>Thursday Dinner</th>
-                  <th>Friday Breakfast</th>
-                  <th>Dietary Restrictions</th>
-                  <th>Special Requests</th>
-                  <th>Spouse First Name</th>
-                  <th>Spouse Last Name</th>
-                  <th>Spouse Dinner Ticket</th>
-                  <th>Payment Method</th>
-                  <th>Paid?</th>
-                  <th>Payment ID</th>
-                  <th>Total Price</th>
+                  <th 
+                    style={{ width: columnWidths.companyTypeOther, position: 'relative' }}
+                  >
+                    Company Type Other
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'companyTypeOther')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.emergencyContactName, position: 'relative' }}
+                  >
+                    Emergency Contact Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'emergencyContactName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.emergencyContactPhone, position: 'relative' }}
+                  >
+                    Emergency Contact Phone
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'emergencyContactPhone')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.activity, position: 'relative' }}
+                  >
+                    Activity
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'activity')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.groupAssigned, position: 'relative' }}
+                  >
+                    Group Assigned
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'groupAssigned')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.clubRentals, position: 'relative' }}
+                  >
+                    Club Rentals
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'clubRentals')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.golfHandicap, position: 'relative' }}
+                  >
+                    Golf Handicap
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'golfHandicap')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.massageTimeSlot, position: 'relative' }}
+                  >
+                    Massage Time Slot
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'massageTimeSlot')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.tuesdayEarlyReception, position: 'relative' }}
+                  >
+                    Tuesday Early Reception
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'tuesdayEarlyReception')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.wednesdayReception, position: 'relative' }}
+                  >
+                    Wednesday Reception
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'wednesdayReception')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.thursdayBreakfast, position: 'relative' }}
+                  >
+                    Thursday Breakfast
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'thursdayBreakfast')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.thursdayLuncheon, position: 'relative' }}
+                  >
+                    Thursday Luncheon
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'thursdayLuncheon')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.thursdayDinner, position: 'relative' }}
+                  >
+                    Thursday Dinner
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'thursdayDinner')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.fridayBreakfast, position: 'relative' }}
+                  >
+                    Friday Breakfast
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'fridayBreakfast')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.dietaryRestrictions, position: 'relative' }}
+                  >
+                    Dietary Restrictions
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'dietaryRestrictions')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.specialRequests, position: 'relative' }}
+                  >
+                    Special Requests
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'specialRequests')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.spouseFirstName, position: 'relative' }}
+                  >
+                    Spouse First Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'spouseFirstName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.spouseLastName, position: 'relative' }}
+                  >
+                    Spouse Last Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'spouseLastName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.spouseDinnerTicket, position: 'relative' }}
+                  >
+                    Spouse Dinner Ticket
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'spouseDinnerTicket')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.paymentMethod, position: 'relative' }}
+                  >
+                    Payment Method
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'paymentMethod')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.paid, position: 'relative' }}
+                  >
+                    Paid?
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'paid')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.paymentId, position: 'relative' }}
+                  >
+                    Payment ID
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'paymentId')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: columnWidths.totalPrice, position: 'relative' }}
+                  >
+                    Total Price
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'totalPrice')}
+                    />
+                  </th>
                   
                 </tr>
               </thead>
@@ -911,31 +1134,31 @@ const confirmSingleDelete = async () => {
                     <td style={{ width: columnWidths.address }}>{displayValue(reg.address)}</td>
                     <td style={{ width: columnWidths.mobile }}>{displayValue(reg.mobile)}</td>
                     <td style={{ width: columnWidths.officePhone }}>{displayValue(reg.officePhone)}</td>
-                    <td>{reg.isFirstTimeAttending ? 'Yes' : 'No'}</td>
+                    <td style={{ width: columnWidths.firstTime }}>{reg.isFirstTimeAttending ? 'Yes' : 'No'}</td>
                     <td style={{ width: columnWidths.companyType }}>{displayValue(reg.companyType)}</td>
-                    <td>{displayValue(reg.companyTypeOther)}</td>
-                    <td>{displayValue(reg.emergencyContactName)}</td>
-                    <td>{displayValue(reg.emergencyContactPhone)}</td>
-                    <td>{displayValue(reg.wednesdayActivity)}</td>
-                    <td>{displayValue(getGroupForRegistration(reg) === '-' ? '' : getGroupForRegistration(reg))}</td>
-                    <td>{displayValue((reg as any).clubRentals)}</td>
-                    <td>{displayValue(reg.golfHandicap)}</td>
-                    <td>{displayValue((reg as any).massageTimeSlot)}</td>
-                    <td>{displayValue((reg as any).tuesdayEarlyReception)}</td>
-                    <td>{displayValue(reg.wednesdayReception)}</td>
-                    <td>{displayValue(reg.thursdayBreakfast)}</td>
-                    <td>{displayValue(reg.thursdayLuncheon)}</td>
-                    <td>{displayValue(reg.thursdayDinner)}</td>
-                    <td>{displayValue(reg.fridayBreakfast)}</td>
-                    <td>{displayValue(reg.dietaryRestrictions)}</td>
-                    <td>{displayValue((reg as any).specialRequests)}</td>
-                    <td>{displayValue(reg.spouseFirstName)}</td>
-                    <td>{displayValue(reg.spouseLastName)}</td>
-                    <td>{reg.spouseDinnerTicket ? 'Yes' : 'No'}</td>
-                    <td>{displayValue(reg.paymentMethod)}</td>
-                    <td>{(reg as any).paid ? 'Yes' : 'No'}</td>
-                    <td>{displayValue((reg as any).squarePaymentId)}</td>
-                    <td>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''}</td>
+                    <td style={{ width: columnWidths.companyTypeOther }}>{displayValue(reg.companyTypeOther)}</td>
+                    <td style={{ width: columnWidths.emergencyContactName }}>{displayValue(reg.emergencyContactName)}</td>
+                    <td style={{ width: columnWidths.emergencyContactPhone }}>{displayValue(reg.emergencyContactPhone)}</td>
+                    <td style={{ width: columnWidths.activity }}>{displayValue(reg.wednesdayActivity)}</td>
+                    <td style={{ width: columnWidths.groupAssigned }}>{displayValue(getGroupForRegistration(reg) === '-' ? '' : getGroupForRegistration(reg))}</td>
+                    <td style={{ width: columnWidths.clubRentals }}>{displayValue((reg as any).clubRentals)}</td>
+                    <td style={{ width: columnWidths.golfHandicap }}>{displayValue(reg.golfHandicap)}</td>
+                    <td style={{ width: columnWidths.massageTimeSlot }}>{displayValue((reg as any).massageTimeSlot)}</td>
+                    <td style={{ width: columnWidths.tuesdayEarlyReception }}>{displayValue((reg as any).tuesdayEarlyReception)}</td>
+                    <td style={{ width: columnWidths.wednesdayReception }}>{displayValue(reg.wednesdayReception)}</td>
+                    <td style={{ width: columnWidths.thursdayBreakfast }}>{displayValue(reg.thursdayBreakfast)}</td>
+                    <td style={{ width: columnWidths.thursdayLuncheon }}>{displayValue(reg.thursdayLuncheon)}</td>
+                    <td style={{ width: columnWidths.thursdayDinner }}>{displayValue(reg.thursdayDinner)}</td>
+                    <td style={{ width: columnWidths.fridayBreakfast }}>{displayValue(reg.fridayBreakfast)}</td>
+                    <td style={{ width: columnWidths.dietaryRestrictions }}>{displayValue(reg.dietaryRestrictions)}</td>
+                    <td style={{ width: columnWidths.specialRequests }}>{displayValue((reg as any).specialRequests)}</td>
+                    <td style={{ width: columnWidths.spouseFirstName }}>{displayValue(reg.spouseFirstName)}</td>
+                    <td style={{ width: columnWidths.spouseLastName }}>{displayValue(reg.spouseLastName)}</td>
+                    <td style={{ width: columnWidths.spouseDinnerTicket }}>{reg.spouseDinnerTicket ? 'Yes' : 'No'}</td>
+                    <td style={{ width: columnWidths.paymentMethod }}>{displayValue(reg.paymentMethod)}</td>
+                    <td style={{ width: columnWidths.paid }}>{(reg as any).paid ? 'Yes' : 'No'}</td>
+                    <td style={{ width: columnWidths.paymentId }}>{displayValue((reg as any).squarePaymentId)}</td>
+                    <td style={{ width: columnWidths.totalPrice }}>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''}</td>
                     
                   </tr>
                 ))}
@@ -985,7 +1208,16 @@ const confirmSingleDelete = async () => {
                     <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
                   )}
                 </th>
-                <th>Payment Type</th>
+                <th 
+                  className="sortable-header"
+                  onClick={() => handleSort('paymentMethod')}
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
+                >
+                  Payment Type
+                  {sortField === 'paymentMethod' && (
+                    <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                  )}
+                </th>
                 <th className="no-print">Actions</th>
               </tr>
             </thead>
