@@ -167,7 +167,7 @@
 .detailed-table {
   min-width: 2000px; /* Increased to accommodate all columns */
   table-layout: fixed; /* Fixed layout to respect width styles for resizing */
-  width: 100%; /* Use 100% width to fill container */
+  width: auto; /* Use auto width to allow columns to control their own widths */
   font-size: 0.9rem;
   border-collapse: collapse;
 }
@@ -188,6 +188,16 @@
   transition: border-right-color 0.2s ease;
 }
 
+/* Prevent sort handler from interfering with resize */
+.detailed-table th.sortable-header {
+  position: relative;
+}
+
+.detailed-table th.sortable-header .resize-handle {
+  pointer-events: auto;
+  z-index: 1000; /* Even higher z-index */
+}
+
 .detailed-table th:hover {
   border-right-color: rgba(0, 0, 0, 0.1); /* Show border on hover to indicate resize area */
 }
@@ -204,12 +214,14 @@
   max-width: none; /* Remove max-width restrictions */
   vertical-align: top; /* Align content to top for multi-line cells */
   height: auto; /* Allow row height to adjust based on content */
+  box-sizing: border-box; /* Include padding and border in width calculation */
 }
 
 /* Force width styles to be respected for resizable columns */
 .detailed-table th[style*="width"],
 .detailed-table td[style*="width"] {
-  width: inherit !important; /* Inherit from inline style */
+  /* Width is set via inline style, ensure it's respected */
+  overflow-wrap: break-word;
 }
 
 /* Allow table rows to expand vertically based on content */
@@ -253,15 +265,21 @@
 .resize-handle {
   position: absolute;
   top: 0;
-  right: -4px; /* Extend slightly beyond column edge for easier grabbing */
-  width: 8px; /* Increased from 4px for better clickability */
+  right: 0; /* Position at the edge of the column */
+  width: 4px; /* Wider for easier clicking */
   height: 100%;
   cursor: col-resize;
   background-color: transparent;
-  z-index: 10; /* Increased z-index to ensure it's above other elements */
+  z-index: 1000; /* Very high z-index to ensure it's above all other elements */
   -webkit-user-select: none;
   user-select: none;
   touch-action: none; /* Prevent touch scrolling during resize */
+  pointer-events: auto; /* Ensure it can receive mouse events */
+}
+
+/* Make resize handle more visible on hover */
+.resize-handle:hover {
+  background-color: rgba(0, 123, 255, 0.2); /* Blue tint on hover */
 }
 
 .resize-handle:hover {

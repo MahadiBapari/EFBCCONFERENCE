@@ -303,31 +303,30 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     e.preventDefault();
     e.stopPropagation(); // Prevent triggering sort handler on parent th
     setResizingColumn(columnKey);
-    const startX = e.pageX;
+    const startX = e.clientX; // Use clientX instead of pageX for more accurate positioning
     const startWidth = columnWidths[columnKey] || 120;
 
     const handleMouseMove = (e: MouseEvent) => {
       e.preventDefault();
-      const diff = e.pageX - startX;
+      e.stopPropagation();
+      const diff = e.clientX - startX;
       const newWidth = Math.max(50, startWidth + diff); // Minimum width 50px
-      setColumnWidths(prev => {
-        const updated = {
-          ...prev,
-          [columnKey]: newWidth
-        };
-        return updated;
-      });
+      setColumnWidths(prev => ({
+        ...prev,
+        [columnKey]: newWidth
+      }));
     };
 
     const handleMouseUp = (e: MouseEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       setResizingColumn(null);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove, { passive: false });
+    document.addEventListener('mouseup', handleMouseUp, { passive: false });
   };
 
   const handlePageChange = (page: number) => {
