@@ -650,7 +650,7 @@ const confirmSingleDelete = async () => {
     paginatedRegistrations.every(reg => selectedRegIds.includes(reg.id));
 
   return (
-    <div className="container attendees-page">
+    <div className="container">
       <div className="page-header">
         <h1>Attendees</h1>
         <div className="event-selector">
