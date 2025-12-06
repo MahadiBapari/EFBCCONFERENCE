@@ -383,9 +383,18 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         return;
       }
       
-      const res = await card.tokenize();
+      // Attempt tokenization with improved error handling
+      let res;
+      try {
+        res = await card.tokenize();
+      } catch (tokenizeError: any) {
+        console.error('Tokenization exception (spouse):', tokenizeError);
+        throw new Error('Failed to process card information. Please check your card details and try again.');
+      }
+      
       if (res.status !== 'OK') {
-        throw new Error(res.errors?.[0]?.detail || 'Card tokenize failed');
+        const userFriendlyMessage = getTokenizationErrorMessage(res);
+        throw new Error(userFriendlyMessage);
       }
       const nonce = res.token;
       
@@ -498,11 +507,89 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       alert('Spouse ticket payment successful! Registration updated.');
       onBack();
     } catch (err: any) {
-      console.error('Spouse payment error:', err);
-      const errorMessage = err?.message || err?.response?.data?.error || 'Payment failed. Please check your card details and try again.';
+      console.error('Spouse payment error:', {
+        message: err?.message,
+        error: err,
+        response: err?.response,
+        stack: err?.stack
+      });
+      
+      // Extract error message with priority: user-friendly message > Square error > generic message
+      let errorMessage = err?.message || err?.response?.data?.error || 'Payment failed. Please check your card details and try again.';
+      
+      // If it's a tokenization error, it should already have a user-friendly message
+      // Otherwise, provide a generic helpful message
+      if (!errorMessage.includes('tokenization') && !errorMessage.includes('card') && !errorMessage.includes('declined')) {
+        errorMessage = 'Payment failed. Please check your card details and try again, or contact support if the problem persists.';
+      }
+      
       alert(`Payment Error: ${errorMessage}`);
       setIsSubmitting(false);
     }
+  };
+
+  // Helper function to parse Square tokenization errors and provide user-friendly messages
+  const getTokenizationErrorMessage = (tokenizeResult: any): string => {
+    if (!tokenizeResult || !tokenizeResult.errors || tokenizeResult.errors.length === 0) {
+      return 'Card tokenization failed. Please check your card details and try again.';
+    }
+
+    const error = tokenizeResult.errors[0];
+    const errorCode = error?.code || '';
+    const errorDetail = error?.detail || '';
+    
+    // Log full error for debugging
+    console.error('Square tokenization error:', {
+      status: tokenizeResult.status,
+      errors: tokenizeResult.errors,
+      code: errorCode,
+      detail: errorDetail
+    });
+
+    // Map Square error codes to user-friendly messages
+    const errorMessages: Record<string, string> = {
+      'INVALID_EXPIRATION': 'The card expiration date is invalid. Please check and try again.',
+      'INVALID_EXPIRATION_YEAR': 'The card expiration year is invalid. Please check and try again.',
+      'INVALID_EXPIRATION_DATE': 'The card expiration date is invalid. Please check and try again.',
+      'INVALID_POSTAL_CODE': 'The postal code is invalid. Please enter a valid postal code.',
+      'INVALID_CARD': 'The card number is invalid. Please check and try again.',
+      'CARD_DECLINED': 'Your card was declined. Please try a different card or contact your bank.',
+      'INSUFFICIENT_FUNDS': 'Insufficient funds. Please use a different payment method.',
+      'CVV_FAILURE': 'The CVV (security code) is incorrect. Please check and try again.',
+      'ADDRESS_VERIFICATION_FAILURE': 'The billing address could not be verified. Please check your address and try again.',
+      'INVALID_CARD_DATA': 'Invalid card information. Please check all card details and try again.',
+      'CARD_NOT_SUPPORTED': 'This card type is not supported. Please use a different payment method.',
+      'PAYMENT_METHOD_ERROR': 'There was an error processing your card. Please try again or use a different payment method.',
+    };
+
+    // Check for specific error codes first
+    if (errorCode && errorMessages[errorCode]) {
+      return errorMessages[errorCode];
+    }
+
+    // Check error detail for common patterns
+    const detailLower = errorDetail.toLowerCase();
+    if (detailLower.includes('expiration') || detailLower.includes('expiry')) {
+      return 'The card expiration date is invalid. Please check and try again.';
+    }
+    if (detailLower.includes('cvv') || detailLower.includes('security code') || detailLower.includes('cvc')) {
+      return 'The CVV (security code) is incorrect. Please check and try again.';
+    }
+    if (detailLower.includes('card number') || detailLower.includes('invalid card')) {
+      return 'The card number is invalid. Please check and try again.';
+    }
+    if (detailLower.includes('postal code') || detailLower.includes('zip code')) {
+      return 'The postal code is invalid. Please enter a valid postal code.';
+    }
+    if (detailLower.includes('declined')) {
+      return 'Your card was declined. Please try a different card or contact your bank.';
+    }
+    if (detailLower.includes('insufficient') || detailLower.includes('funds')) {
+      return 'Insufficient funds. Please use a different payment method.';
+    }
+
+    // Return the Square error detail if available, otherwise generic message
+    return errorDetail || 'Card tokenization failed. Please check your card details and try again.';
   };
 
   const handleCardPay = async () => {
@@ -517,14 +604,24 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         card = await ensureCardMounted();
       } catch (error: any) {
         const errorMsg = error?.message || 'Failed to initialize payment form';
+        console.error('Card mount error:', error);
         alert(`Payment Error: ${errorMsg}`);
         setIsSubmitting(false);
         return;
       }
       
-      const res = await card.tokenize();
+      // Attempt tokenization with improved error handling
+      let res;
+      try {
+        res = await card.tokenize();
+      } catch (tokenizeError: any) {
+        console.error('Tokenization exception:', tokenizeError);
+        throw new Error('Failed to process card information. Please check your card details and try again.');
+      }
+      
       if (res.status !== 'OK') {
-        throw new Error(res.errors?.[0]?.detail || 'Card tokenize failed');
+        const userFriendlyMessage = getTokenizationErrorMessage(res);
+        throw new Error(userFriendlyMessage);
       }
       const nonce = res.token;
       const baseTotal = Number(formData.totalPrice || 0);
@@ -632,8 +729,22 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       alert('Thank you. Your Registration has been successfully submitted! A copy will be emailed to you.');
       onBack();
     } catch (err: any) {
-      console.error('Payment error:', err);
-      const errorMessage = err?.message || err?.response?.data?.error || 'Payment failed. Please check your card details and try again.';
+      console.error('Payment error:', {
+        message: err?.message,
+        error: err,
+        response: err?.response,
+        stack: err?.stack
+      });
+      
+      // Extract error message with priority: user-friendly message > Square error > generic message
+      let errorMessage = err?.message || err?.response?.data?.error || 'Payment failed. Please check your card details and try again.';
+      
+      // If it's a tokenization error, it should already have a user-friendly message
+      // Otherwise, provide a generic helpful message
+      if (!errorMessage.includes('tokenization') && !errorMessage.includes('card') && !errorMessage.includes('declined')) {
+        errorMessage = 'Payment failed. Please check your card details and try again, or contact support if the problem persists.';
+      }
+      
       alert(`Payment Error: ${errorMessage}`);
       setIsSubmitting(false);
     }
