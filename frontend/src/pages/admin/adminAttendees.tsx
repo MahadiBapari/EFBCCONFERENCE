@@ -1257,14 +1257,14 @@ const confirmSingleDelete = async () => {
                         >
                           Edit
                         </button>
-                        <button 
+                        {/* <button 
                           className="btn btn-outline btn-sm" 
                           onClick={() => handleResendConfirmation(reg.id)}
                           disabled={resendingEmailId === reg.id}
                           title="Resend Confirmation Email"
                         >
                           {resendingEmailId === reg.id ? 'Sending...' : 'Resend Email'}
-                        </button>
+                        </button> */}
                         <button
                           className="btn btn-danger btn-sm"
                           onClick={() => handleOpenSingleDelete(reg)}
