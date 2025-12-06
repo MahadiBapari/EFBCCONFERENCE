@@ -301,11 +301,13 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   // Column resizing handlers
   const handleResizeStart = (e: React.MouseEvent, columnKey: string) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent triggering sort handler on parent th
     setResizingColumn(columnKey);
     const startX = e.pageX;
     const startWidth = columnWidths[columnKey] || 120;
 
     const handleMouseMove = (e: MouseEvent) => {
+      e.preventDefault();
       const diff = e.pageX - startX;
       const newWidth = Math.max(50, startWidth + diff); // Minimum width 50px
       setColumnWidths(prev => ({
@@ -314,7 +316,8 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       }));
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: MouseEvent) => {
+      e.preventDefault();
       setResizingColumn(null);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);

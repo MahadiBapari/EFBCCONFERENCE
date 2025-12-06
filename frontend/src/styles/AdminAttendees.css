@@ -183,6 +183,13 @@
   background-color: var(--background-color);
   box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
   position: relative;
+  overflow: visible; /* Ensure resize handle is not clipped */
+  border-right: 2px solid transparent; /* Reserve space for resize handle */
+  transition: border-right-color 0.2s ease;
+}
+
+.detailed-table th:hover {
+  border-right-color: rgba(0, 0, 0, 0.1); /* Show border on hover to indicate resize area */
 }
 
 .detailed-table th,
@@ -239,17 +246,29 @@
 .resize-handle {
   position: absolute;
   top: 0;
-  right: 0;
-  width: 4px;
+  right: -4px; /* Extend slightly beyond column edge for easier grabbing */
+  width: 8px; /* Increased from 4px for better clickability */
   height: 100%;
   cursor: col-resize;
   background-color: transparent;
-  z-index: 1;
+  z-index: 10; /* Increased z-index to ensure it's above other elements */
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none; /* Prevent touch scrolling during resize */
 }
 
 .resize-handle:hover {
   background-color: var(--primary-color);
-  opacity: 0.5;
+  opacity: 0.6;
+  width: 10px; /* Slightly wider on hover */
+  right: -5px; /* Adjust position on hover */
+}
+
+.resize-handle:active {
+  background-color: var(--primary-color);
+  opacity: 0.8;
+  width: 10px;
+  right: -5px;
 }
 
 .resize-handle:active {
