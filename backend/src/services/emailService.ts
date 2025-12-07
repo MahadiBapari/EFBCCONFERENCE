@@ -649,7 +649,7 @@ export async function sendRegistrationConfirmationEmail(params: {
     heading: 'Registration Confirmed',
     preheader: 'Your EFBC Conference registration is confirmed',
     contentHtml: `
-      <p style="margin:0 0 12px 0;">Hi ${name || 'Attendee'},</p>
+      <p style="margin:0 0 12px 0;">Hi ${fullName || 'Attendee'},</p>
       <p style="margin:0 0 8px 0;">Thank you for registering for the EFBC Conference.</p>
       ${eventName ? `<p style=\"margin:0;\"><strong>Event:</strong> ${eventName}</p>` : ''}
       ${formattedEventDate ? `<p style=\"margin:4px 0 0 0;\"><strong>Date:</strong> ${formattedEventDate}</p>` : ''}
