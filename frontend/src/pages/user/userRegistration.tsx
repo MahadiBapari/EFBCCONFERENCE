@@ -11,6 +11,143 @@ import {
 import { formatDateShort } from '../../utils/dateUtils';
 import '../../styles/RegistrationModal.css';
 
+/**
+ * Helper function to convert a date string (YYYY-MM-DD) to Eastern Time midnight
+ * Florida uses Eastern Time (America/New_York timezone)
+ * Returns the UTC timestamp that represents midnight Eastern Time on the given date
+ * 
+ * This function handles DST automatically by using Intl.DateTimeFormat
+ */
+function getEasternTimeMidnight(dateString: string): number {
+  if (!dateString) return -Infinity;
+  
+  try {
+    // Parse the date string
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
+      // Fallback to UTC parsing
+      return new Date(dateString + 'T00:00:00Z').getTime();
+    }
+    
+    // Strategy: Find the UTC timestamp that, when converted to Eastern Time, equals midnight
+    // Start with UTC midnight on that date
+    let guessUtc = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+    
+    // Check what Eastern time this UTC time represents
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    let easternTime = formatter.format(guessUtc);
+    let [easternHour, easternMinute] = easternTime.split(':').map(Number);
+    
+    // Adjust until we get midnight Eastern (00:00)
+    let iterations = 0;
+    while ((easternHour !== 0 || easternMinute !== 0) && iterations < 10) {
+      // Calculate adjustment needed
+      const hoursToSubtract = easternHour;
+      const minutesToSubtract = easternMinute;
+      const adjustmentMs = (hoursToSubtract * 60 + minutesToSubtract) * 60 * 1000;
+      
+      guessUtc = new Date(guessUtc.getTime() - adjustmentMs);
+      
+      easternTime = formatter.format(guessUtc);
+      [easternHour, easternMinute] = easternTime.split(':').map(Number);
+      iterations++;
+    }
+    
+    return guessUtc.getTime();
+  } catch (error) {
+    // Fallback to UTC parsing if Eastern Time conversion fails
+    console.warn(`Failed to parse date ${dateString} as Eastern Time, using UTC:`, error);
+    return new Date(dateString + 'T00:00:00Z').getTime();
+  }
+}
+
+/**
+ * Get Eastern Time end of day (23:59:59) for a date string
+ */
+function getEasternTimeEndOfDay(dateString: string): number {
+  if (!dateString) return Infinity;
+  
+  try {
+    // Get midnight of the next day, then subtract 1 second
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
+      return new Date(dateString + 'T23:59:59Z').getTime();
+    }
+    
+    // Get midnight of next day in Eastern
+    const nextDay = new Date(year, month - 1, day + 1);
+    const nextDayStr = `${nextDay.getFullYear()}-${String(nextDay.getMonth() + 1).padStart(2, '0')}-${String(nextDay.getDate()).padStart(2, '0')}`;
+    const nextDayMidnight = getEasternTimeMidnight(nextDayStr);
+    
+    // Subtract 1 second to get end of current day
+    return nextDayMidnight - 1000;
+  } catch (error) {
+    console.warn(`Failed to parse end date ${dateString} as Eastern Time, using UTC:`, error);
+    return new Date(dateString + 'T23:59:59Z').getTime();
+  }
+}
+
+/**
+ * Get current time converted to Eastern Time for comparison
+ * Returns a UTC timestamp that represents the current Eastern Time
+ * This can be directly compared with Eastern Time midnight timestamps
+ */
+function getCurrentEasternTime(): number {
+  const now = new Date();
+  
+  // Get current time components in Eastern Time
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
+  const month = parseInt(parts.find(p => p.type === 'month')?.value || '0') - 1;
+  const day = parseInt(parts.find(p => p.type === 'day')?.value || '0');
+  const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
+  const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
+  const second = parseInt(parts.find(p => p.type === 'second')?.value || '0');
+  
+  // Create a UTC date with these Eastern Time components
+  let guessUtc = new Date(Date.UTC(year, month, day, hour, minute, second));
+  
+  // Verify: check what Eastern time this UTC time actually represents
+  const checkFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  
+  let checkTime = checkFormatter.format(guessUtc);
+  let [checkH, checkM, checkS] = checkTime.split(':').map(Number);
+  
+  // If there's a mismatch, adjust the UTC time
+  if (checkH !== hour || checkM !== minute || checkS !== second) {
+    const diffH = hour - checkH;
+    const diffM = minute - checkM;
+    const diffS = second - checkS;
+    const adjustmentMs = (diffH * 3600 + diffM * 60 + diffS) * 1000;
+    guessUtc = new Date(guessUtc.getTime() + adjustmentMs);
+  }
+  
+  return guessUtc.getTime();
+}
+
 interface UserRegistrationProps {
   events: Event[];
   registrations: Registration[];
@@ -179,13 +316,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   }, [hadSpousePayment, formData.spouseDinnerTicket]);
 
   useEffect(() => {
-    const now = Date.now();
+    // Use Eastern Time (Florida timezone) for tier date comparisons to match backend
+    const now = getCurrentEasternTime();
     const withBounds = (arr: any[] = []) =>
       arr
         .map((t: any) => ({
           ...t,
-          s: t.startDate ? new Date(t.startDate).getTime() : -Infinity,
-          e: t.endDate ? new Date(t.endDate).getTime() : Infinity,
+          // Convert tier dates to Eastern Time midnight/end-of-day to match backend
+          s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+          e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity,
         }))
         .sort((a: any, b: any) => a.s - b.s);
     const pickTier = (tiers: any[]) => {
@@ -398,12 +537,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       }
       const nonce = res.token;
       
-      // Calculate spouse-only price
-      const now = Date.now();
+      // Calculate spouse-only price using Eastern Time to match backend
+      const now = getCurrentEasternTime();
       const tiers = (event.spousePricing || []).map((t: any) => ({
         ...t,
-        s: t.startDate ? new Date(t.startDate).getTime() : -Infinity,
-        e: t.endDate ? new Date(t.endDate).getTime() : Infinity
+        s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+        e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
       })).sort((a: any, b: any) => a.s - b.s);
       const active = tiers.find((t: any) => now >= t.s && now <= t.e) ||
         (now < tiers[0]?.s ? tiers[0] : (now > tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
@@ -1522,11 +1661,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
                 const spousePrice = (() => {
                   if (!formData.spouseDinnerTicket) return 0;
-                  const now = Date.now();
+                  // Use Eastern Time to match backend
+                  const now = getCurrentEasternTime();
                   const tiers = (event?.spousePricing || []).map((t: any) => ({
                     ...t,
-                    s: t.startDate ? new Date(t.startDate).getTime() : -Infinity,
-                    e: t.endDate ? new Date(t.endDate).getTime() : Infinity
+                    s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+                    e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
                   })).sort((a: any, b: any) => a.s - b.s);
                   const active = tiers.find((t: any) => now >= t.s && now <= t.e) ||
                     (now < tiers[0]?.s ? tiers[0] : (now > tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
@@ -1570,12 +1710,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 <div className="payment-summary">
                   <div className="payment-item">
                     <span>Conference Registration:</span>
-                    <span>${(event.registrationPricing && event.registrationPricing.length ? (function () { const now = Date.now(); const tiers = (event.registrationPricing || []).map((t: any) => ({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
+                    <span>${(event.registrationPricing && event.registrationPricing.length ? (function () { const now = getCurrentEasternTime(); const tiers = (event.registrationPricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
                   </div>
                   {formData.spouseDinnerTicket && (
                     <div className="payment-item">
                       <span>Spouse Dinner Ticket:</span>
-                      <span>${(function () { const now = Date.now(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
+                      <span>${(function () { const now = getCurrentEasternTime(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
                     </div>
                   )}
                   <div className="payment-total">
