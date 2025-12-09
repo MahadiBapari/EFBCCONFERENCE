@@ -230,6 +230,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     // Payment Information
     totalPrice: registration?.totalPrice || 675,
     paymentMethod: registration?.paymentMethod || 'Card',
+    paid: registration?.paid ?? false,
 
     // Legacy fields
     name: registration?.name || user.name,
@@ -1651,6 +1652,64 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               )}
             </div>
           )} */}
+
+          {/* Payment section for admins */}
+          {isAdminEdit && (
+            <div className="form-section">
+              <h3 className="section-title">Payment Information</h3>
+              <div className="form-group">
+                <label className="form-label">Payment Method</label>
+                <div className="segmented-group">
+                  <label className="segmented-label">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={(formData.paymentMethod || 'Card') === 'Card'}
+                      onChange={() => handleInputChange('paymentMethod', 'Card')}
+                    />
+                    <span>Card</span>
+                  </label>
+                  <label className="segmented-label">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={formData.paymentMethod === 'Check'}
+                      onChange={() => handleInputChange('paymentMethod', 'Check')}
+                    />
+                    <span>Check</span>
+                  </label>
+                </div>
+              </div>
+              {formData.paymentMethod === 'Check' && (
+                <div className="form-group">
+                  <label className="form-label">Paid</label>
+                  <div className="segmented-group">
+                    <label className="segmented-label">
+                      <input
+                        type="radio"
+                        name="paid"
+                        checked={formData.paid === true}
+                        onChange={() => handleInputChange('paid', true)}
+                      />
+                      <span>Yes</span>
+                    </label>
+                    <label className="segmented-label">
+                      <input
+                        type="radio"
+                        name="paid"
+                        checked={formData.paid === false || formData.paid === undefined}
+                        onChange={() => handleInputChange('paid', false)}
+                      />
+                      <span>No</span>
+                    </label>
+                  </div>
+                  <p className="form-hint" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                    Mark as "Yes" when the check has been received and processed.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Payment section: Hide in admin edit mode, show in user mode */}
           {!isAdminEdit && (
