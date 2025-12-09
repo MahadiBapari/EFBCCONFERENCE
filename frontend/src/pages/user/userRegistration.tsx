@@ -1683,24 +1683,24 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               {formData.paymentMethod === 'Check' && (
                 <div className="form-group">
                   <label className="form-label">Paid</label>
-                  <div className="segmented-group">
-                    <label className="segmented-label">
+                  <div className="radio-group">
+                    <label className="radio-label">
                       <input
                         type="radio"
                         name="paid"
                         checked={formData.paid === true}
                         onChange={() => handleInputChange('paid', true)}
                       />
-                      <span>Yes</span>
+                      Yes
                     </label>
-                    <label className="segmented-label">
+                    <label className="radio-label">
                       <input
                         type="radio"
                         name="paid"
                         checked={formData.paid === false || formData.paid === undefined}
                         onChange={() => handleInputChange('paid', false)}
                       />
-                      <span>No</span>
+                      No
                     </label>
                   </div>
                   <p className="form-hint" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
