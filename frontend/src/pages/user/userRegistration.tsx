@@ -548,15 +548,18 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const active = tiers.find((t: any) => now >= t.s && now <= t.e) ||
         (now < tiers[0]?.s ? tiers[0] : (now > tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
       const spousePrice = active?.price ?? 0;
-      const amountCents = Math.round(spousePrice * 100);
-      
+      // Calculate 3.5% convenience fee for display
+      const convenienceFee = spousePrice * 0.035;
+      const totalWithFee = spousePrice + convenienceFee;
+      const baseAmountCents = Math.round(spousePrice * 100);
+      // Backend will calculate the final amount with fee when applyCardFee is true
       const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amountCents,
-          baseAmountCents: amountCents,
-          applyCardFee: false,
+          amountCents: baseAmountCents, // Backend will add fee
+          baseAmountCents,
+          applyCardFee: true, // Backend will apply 3.5% fee
           currency: 'USD',
           eventName: `${event?.name || 'EFBC Conference'} - Spouse Ticket`,
           nonce,
@@ -765,15 +768,18 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       }
       const nonce = res.token;
       const baseTotal = Number(formData.totalPrice || 0);
-      // Charge only the base amount (no processing fee added)
-      const amountCents = Math.round(baseTotal * 100);
+      // Calculate 3.5% convenience fee for display
+      const convenienceFee = baseTotal * 0.035;
+      const totalWithFee = baseTotal + convenienceFee;
+      const baseAmountCents = Math.round(baseTotal * 100);
+      // Backend will calculate the final amount with fee when applyCardFee is true
       const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amountCents,
-          baseAmountCents: Math.round(baseTotal * 100),
-          applyCardFee: false, // No fee added
+          amountCents: baseAmountCents, // Backend will add fee
+          baseAmountCents,
+          applyCardFee: true, // Backend will apply 3.5% fee
           currency: 'USD',
           eventName: event?.name || 'EFBC Conference Registration',
           nonce,
@@ -1765,6 +1771,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 {(() => {
                   const baseTotal = Number(formData.totalPrice || 0);
                   const isCard = (formData.paymentMethod || 'Card') === 'Card';
+                  // Calculate 3.5% convenience fee for card payments
+                  const convenienceFee = isCard ? baseTotal * 0.035 : 0;
+                  const totalWithFee = baseTotal + convenienceFee;
                   return (
                 <div className="payment-summary">
                   <div className="payment-item">
@@ -1777,13 +1786,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       <span>${(function () { const now = getCurrentEasternTime(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
                     </div>
                   )}
+                  {isCard && convenienceFee > 0 && (
+                    <div className="payment-item" style={{ color: '#6b7280', fontSize: '0.9rem' }}>
+                      <span>Convenience Fee (3.5%):</span>
+                      <span>${convenienceFee.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="payment-total">
-                    <span>Total Due:</span>
-                    <span>${baseTotal.toFixed(2)} USD</span>
+                    <span>Total {isCard ? 'Charged' : 'Due'}:</span>
+                    <span>${totalWithFee.toFixed(2)} USD</span>
                   </div>
                   {isCard && (
-                    <div className="payment-fee-note">
-                      3.5% convenience fee will be added
+                    <div className="payment-fee-note" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                      Base amount: ${baseTotal.toFixed(2)} + ${convenienceFee.toFixed(2)} fee = ${totalWithFee.toFixed(2)} total
                     </div>
                   )}
                 </div>
