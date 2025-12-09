@@ -548,9 +548,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const active = tiers.find((t: any) => now >= t.s && now <= t.e) ||
         (now < tiers[0]?.s ? tiers[0] : (now > tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
       const spousePrice = active?.price ?? 0;
-      // Calculate 3.5% convenience fee for display
-      const convenienceFee = spousePrice * 0.035;
-      const totalWithFee = spousePrice + convenienceFee;
       const baseAmountCents = Math.round(spousePrice * 100);
       // Backend will calculate the final amount with fee when applyCardFee is true
       const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
@@ -768,9 +765,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       }
       const nonce = res.token;
       const baseTotal = Number(formData.totalPrice || 0);
-      // Calculate 3.5% convenience fee for display
-      const convenienceFee = baseTotal * 0.035;
-      const totalWithFee = baseTotal + convenienceFee;
       const baseAmountCents = Math.round(baseTotal * 100);
       // Backend will calculate the final amount with fee when applyCardFee is true
       const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
