@@ -437,10 +437,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const fieldId = fieldIdMap[firstErrorField];
       
       if (fieldId) {
-        // Use setTimeout to ensure the DOM has updated with error classes and error messages are rendered
-        setTimeout(() => {
+        // Function to scroll to error field
+        const scrollToError = () => {
           let element: HTMLElement | null = null;
           let focusableElement: HTMLElement | null = null;
+          let errorMessageElement: HTMLElement | null = null;
           
           // Special handling for pickleballEquipment (radio buttons)
           if (firstErrorField === 'pickleballEquipment') {
@@ -450,6 +451,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               const formGroup = radioButtons[0].closest('.form-group') as HTMLElement;
               element = formGroup;
               focusableElement = radioButtons[0] as HTMLElement;
+              // Find the error message element
+              errorMessageElement = formGroup?.querySelector('.error-message') as HTMLElement;
             }
           } else {
             // Try to find the element by ID
@@ -459,19 +462,26 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               const formGroup = fieldElement.closest('.form-group') as HTMLElement;
               element = formGroup || fieldElement;
               focusableElement = fieldElement;
+              // Find the error message element within the form-group
+              errorMessageElement = formGroup?.querySelector('.error-message') as HTMLElement;
             }
           }
           
-          if (element) {
+          // Scroll to the error message if it exists, otherwise scroll to the form-group
+          const scrollTarget = errorMessageElement || element;
+          
+          if (scrollTarget) {
             // Get the element's position relative to the viewport
-            const rect = element.getBoundingClientRect();
+            const rect = scrollTarget.getBoundingClientRect();
             const scrollY = window.scrollY || window.pageYOffset || 0;
             const absoluteElementTop = rect.top + scrollY;
-            const middle = absoluteElementTop - (window.innerHeight / 2) + (rect.height / 2);
+            // Add some offset to ensure the error message is fully visible
+            const offset = 100;
+            const scrollPosition = absoluteElementTop - offset;
             
-            // Scroll the window to center the element with smooth behavior
+            // Scroll the window to show the error message
             window.scrollTo({
-              top: Math.max(0, middle),
+              top: Math.max(0, scrollPosition),
               behavior: 'smooth'
             });
             
@@ -483,10 +493,25 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     focusableElement instanceof HTMLTextAreaElement) {
                   focusableElement.focus();
                 }
-              }, 500);
+              }, 600);
             }
+            return true;
           }
-        }, 150);
+          return false;
+        };
+        
+        // Try to scroll immediately, then retry after React has updated the DOM
+        requestAnimationFrame(() => {
+          // First attempt after a short delay
+          setTimeout(() => {
+            if (!scrollToError()) {
+              // If first attempt failed, retry after a longer delay to ensure React has rendered
+              setTimeout(() => {
+                scrollToError();
+              }, 300);
+            }
+          }, 100);
+        });
       }
     }
     
@@ -1257,7 +1282,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       </div>
 
       <div className="card" style={{ padding: '1rem' }}>
-        <form id="registration-form" onSubmit={handleSubmit} className="registration-form">
+        <form id="registration-form" onSubmit={handleSubmit} className="registration-form" noValidate>
           <div className="form-section">
             <h3 className="section-title">Registration Information</h3>
             <div className="pricing-info">
