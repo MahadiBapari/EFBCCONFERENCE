@@ -129,17 +129,10 @@ select {
   font-size: 0.875rem;
   font-weight: 600;
   margin-top: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   padding: 0.5rem;
   background-color: rgba(231, 77, 60, 0.068);
+  border-left: 3px solid #e74c3c;
   border-radius: 4px;
-}
-
-.error-message::before {
-  font-size: 1rem;
-  flex-shrink: 0;
 }
 
 /* Radio and Checkbox Styles */
