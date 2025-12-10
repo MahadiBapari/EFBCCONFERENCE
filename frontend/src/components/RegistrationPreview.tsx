@@ -340,6 +340,26 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       doc.text('Spouse Payment ID:', margin, yPos);
       doc.setFont('helvetica', 'normal');
       doc.text((registration as any).spousePaymentId, margin + 60, yPos);
+      yPos += 6;
+    }
+    if ((registration as any).paidAt) {
+      const paidAtDate = new Date((registration as any).paidAt);
+      const formattedDate = paidAtDate.toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+        timeZoneName: 'short'
+      });
+      doc.setFont('helvetica', 'bold');
+      doc.text('Payment Date/Time (EST):', margin, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(formattedDate, margin + 60, yPos);
+      yPos += 6;
     }
 
     // Save PDF
@@ -526,6 +546,22 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
           )}
           {(registration as any).spousePaymentId && (
             <Line label="Spouse Payment ID" value={(registration as any).spousePaymentId} />
+          )}
+          {(registration as any).paidAt && (
+            <Line 
+              label="Payment Date/Time (EST)" 
+              value={new Date((registration as any).paidAt).toLocaleString('en-US', {
+                timeZone: 'America/New_York',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+                timeZoneName: 'short'
+              })} 
+            />
           )}
         </div>
       </div>

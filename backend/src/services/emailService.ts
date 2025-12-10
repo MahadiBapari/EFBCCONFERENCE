@@ -471,6 +471,22 @@ export async function sendVerificationCompleteEmail(to: string, userName?: strin
 }
 
 // Helper function to format date range as "12 to 15 May" or "DD Month to DD Month"
+// Helper function to format date/time in Eastern Time (EST/EDT)
+const formatDateInEST = (dateString: string | Date): string => {
+  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  return date.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+    timeZoneName: 'short'
+  });
+};
+
 const formatEventDateRange = (startDate?: string | null, endDate?: string | null): string => {
   if (!startDate && !endDate) return '';
   if (startDate && !endDate) {
@@ -640,7 +656,7 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${paymentMethod ? `<tr><td style="color:#6b7280;">Payment Method</td><td>${paymentMethod}</td></tr>` : ''}
         ${paymentMethod === 'Card' && squarePaymentId ? `<tr><td style="color:#6b7280;">Square Payment ID</td><td><code>${squarePaymentId}</code></td></tr>` : ''}
         ${paymentMethod === 'Card' && registration?.spousePaymentId ? `<tr><td style="color:#6b7280;">Spouse Payment ID</td><td><code>${registration.spousePaymentId}</code></td></tr>` : ''}
-        ${paymentMethod === 'Card' && registration?.paidAt ? `<tr><td style="color:#6b7280;">Payment Date/Time</td><td>${new Date(registration.paidAt).toLocaleString()}</td></tr>` : ''}
+        ${paymentMethod === 'Card' && registration?.paidAt ? `<tr><td style="color:#6b7280;">Payment Date/Time (EST)</td><td>${formatDateInEST(registration.paidAt)}</td></tr>` : ''}
       </table>
     `
     : '';
@@ -800,7 +816,7 @@ export async function sendRegistrationUpdateEmail(params: {
         ${paymentMethod ? `<tr><td style="color:#6b7280;">Payment Method</td><td>${paymentMethod}</td></tr>` : ''}
         ${paymentMethod === 'Card' && squarePaymentId ? `<tr><td style="color:#6b7280;">Square Payment ID</td><td><code>${squarePaymentId}</code></td></tr>` : ''}
         ${paymentMethod === 'Card' && registration?.spousePaymentId ? `<tr><td style="color:#6b7280;">Spouse Payment ID</td><td><code>${registration.spousePaymentId}</code></td></tr>` : ''}
-        ${paymentMethod === 'Card' && registration?.paidAt ? `<tr><td style="color:#6b7280;">Payment Date/Time</td><td>${new Date(registration.paidAt).toLocaleString()}</td></tr>` : ''}
+        ${paymentMethod === 'Card' && registration?.paidAt ? `<tr><td style="color:#6b7280;">Payment Date/Time (EST)</td><td>${formatDateInEST(registration.paidAt)}</td></tr>` : ''}
       </table>
     `
     : '';
