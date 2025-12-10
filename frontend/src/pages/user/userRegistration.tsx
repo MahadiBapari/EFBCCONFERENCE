@@ -400,6 +400,78 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       }
     });
     setErrors(newErrors);
+    
+    // If there are errors, scroll to the first error field
+    if (Object.keys(newErrors).length > 0) {
+      // Map error field names to their HTML element IDs
+      const fieldIdMap: Record<string, string> = {
+        firstName: 'firstName',
+        lastName: 'lastName',
+        badgeName: 'badgeName',
+        email: 'email',
+        organization: 'organization',
+        jobTitle: 'jobTitle',
+        address: 'addrStreet', // address error maps to addrStreet ID
+        city: 'addrCity',
+        state: 'addrState',
+        zip: 'addrZip',
+        country: 'addrCountry',
+        mobile: 'mobile',
+        companyType: 'companyType',
+        wednesdayActivity: 'wednesdayActivity',
+        golfClubPreference: 'golfClubPreference',
+        massageTimeSlot: 'massageTimeSlot',
+        pickleballEquipment: 'pickleballEquipment', // Will need special handling for radio buttons
+        spouseFirstName: 'spouseFirstName',
+        spouseLastName: 'spouseLastName',
+        tuesdayEarlyReception: 'tuesdayEarly',
+        wednesdayReception: 'wednesdayReception',
+        thursdayBreakfast: 'thursdayBreakfast',
+        thursdayLuncheon: 'thursdayLuncheon',
+        thursdayDinner: 'thursdayDinner',
+        fridayBreakfast: 'fridayBreakfast'
+      };
+      
+      // Find the first error field
+      const firstErrorField = Object.keys(newErrors)[0];
+      const fieldId = fieldIdMap[firstErrorField];
+      
+      if (fieldId) {
+        // Use setTimeout to ensure the DOM has updated with error classes
+        setTimeout(() => {
+          let element: HTMLElement | null = null;
+          
+          // Special handling for pickleballEquipment (radio buttons)
+          if (firstErrorField === 'pickleballEquipment') {
+            // Find the first radio button or the parent form-group
+            const radioButtons = document.querySelectorAll('input[name="pickleballEquipment"]');
+            if (radioButtons.length > 0) {
+              element = radioButtons[0].closest('.form-group') as HTMLElement;
+            }
+          } else {
+            // Try to find the element by ID
+            element = document.getElementById(fieldId);
+          }
+          
+          if (element) {
+            // Scroll to the element with smooth behavior
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Focus the element if it's focusable (input, select, textarea)
+            if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) {
+              element.focus();
+            } else if (element.querySelector('input, select, textarea')) {
+              // If it's a container, try to focus the first input/select/textarea inside
+              const focusable = element.querySelector('input, select, textarea') as HTMLElement;
+              if (focusable) {
+                focusable.focus();
+              }
+            }
+          }
+        }, 100);
+      }
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
 
