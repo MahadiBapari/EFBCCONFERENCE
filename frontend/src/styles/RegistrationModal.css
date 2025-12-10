@@ -133,13 +133,11 @@ select {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  background-color: rgba(231, 76, 60, 0.1);
-  border-left: 3px solid #e74c3c;
+  background-color: rgba(231, 77, 60, 0.068);
   border-radius: 4px;
 }
 
 .error-message::before {
-  content: "⚠️";
   font-size: 1rem;
   flex-shrink: 0;
 }

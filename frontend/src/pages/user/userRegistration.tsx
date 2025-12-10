@@ -196,7 +196,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     address: registration?.address || '',
     mobile: registration?.mobile || '',
     officePhone: registration?.officePhone || '',
-    isFirstTimeAttending: registration?.isFirstTimeAttending ?? true,
+    isFirstTimeAttending: registration?.isFirstTimeAttending !== undefined ? registration.isFirstTimeAttending : undefined,
     companyType: registration?.companyType || '',
     companyTypeOther: registration?.companyTypeOther || '',
     emergencyContactName: registration?.emergencyContactName || '',
@@ -359,22 +359,26 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (!addrZip.trim()) newErrors.zip = 'Zip code is required';
     if (!addrCountry.trim()) newErrors.country = 'Country is required';
     if (!formData.mobile?.trim()) newErrors.mobile = 'Mobile number is required';
-    if (!formData.companyType?.trim()) newErrors.companyType = 'Company type is required';
-    if (!formData.wednesdayActivity?.trim()) newErrors.wednesdayActivity = 'Wednesday activity is required';
+    if (!formData.companyType?.trim()) newErrors.companyType = 'Please choose an option';
+    if (!formData.wednesdayActivity?.trim()) newErrors.wednesdayActivity = 'Please choose an option';
+    // Validate first time attending
+    if (formData.isFirstTimeAttending === undefined || formData.isFirstTimeAttending === null) {
+      (newErrors as any).isFirstTimeAttending = 'Please choose an option';
+    }
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
     // Validate golf club preference if rentals are needed
     if (needsClubRentals && !golfClubPreference?.trim()) {
-      newErrors.golfClubPreference = 'Please select a club preference';
+      newErrors.golfClubPreference = 'Please choose an option';
     }
     // Validate massage time slot if Massage is selected
     if ((formData.wednesdayActivity || '').toLowerCase().includes('massage') && !(formData as any).massageTimeSlot?.trim()) {
-      newErrors.massageTimeSlot = 'Please select a preferred time slot';
+      newErrors.massageTimeSlot = 'Please choose an option';
     }
     // Validate pickleball equipment if Pickleball is selected
     if ((formData.wednesdayActivity || '').toLowerCase().includes('pickleball') && (formData as any).pickleballEquipment === undefined) {
-      (newErrors as any).pickleballEquipment = 'Please select whether you will bring your own equipment';
+      (newErrors as any).pickleballEquipment = 'Please choose an option';
     }
     if (formData.spouseDinnerTicket) {
       if (!formData.spouseFirstName?.trim()) newErrors.spouseFirstName = 'Spouse first name is required';
@@ -396,7 +400,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     mealFields.forEach(({ field, label }) => {
       const value = (formData as any)[field];
       if (!value || !value.trim() || value === '') {
-        (newErrors as any)[field] = `${label} is required. Please select an option.`;
+        (newErrors as any)[field] = 'Please choose an option';
       }
     });
     setErrors(newErrors);
@@ -422,6 +426,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         golfClubPreference: 'golfClubPreference',
         massageTimeSlot: 'massageTimeSlot',
         pickleballEquipment: 'pickleballEquipment', // Will need special handling for radio buttons
+        isFirstTimeAttending: 'isFirstTimeAttending', // Will need special handling for radio buttons
         spouseFirstName: 'spouseFirstName',
         spouseLastName: 'spouseLastName',
         tuesdayEarlyReception: 'tuesdayEarly',
@@ -443,10 +448,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           let focusableElement: HTMLElement | null = null;
           let errorMessageElement: HTMLElement | null = null;
           
-          // Special handling for pickleballEquipment (radio buttons)
-          if (firstErrorField === 'pickleballEquipment') {
+          // Special handling for radio button fields (pickleballEquipment, isFirstTimeAttending)
+          if (firstErrorField === 'pickleballEquipment' || firstErrorField === 'isFirstTimeAttending') {
             // Find the first radio button or the parent form-group
-            const radioButtons = document.querySelectorAll('input[name="pickleballEquipment"]');
+            const radioButtons = document.querySelectorAll(`input[name="${firstErrorField}"]`);
             if (radioButtons.length > 0) {
               const formGroup = radioButtons[0].closest('.form-group') as HTMLElement;
               element = formGroup;
@@ -1431,6 +1436,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   No
                 </label>
               </div>
+              {(errors as any).isFirstTimeAttending && <div className="error-message">{(errors as any).isFirstTimeAttending}</div>}
             </div>
             <div className="form-group">
               <label htmlFor="companyType" className="form-label">Company Type <span className="required-asterisk">*</span></label>
