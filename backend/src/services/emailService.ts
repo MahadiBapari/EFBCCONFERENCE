@@ -697,7 +697,7 @@ export async function sendRegistrationUpdateEmail(params: {
 }): Promise<void> {
   const { to, name, eventName, eventDate, eventStartDate, totalPrice, registration } = params;
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
-  const subject = sanitizeSubjectLine('Your EFBC registration has been updated');
+  const subject = sanitizeSubjectLine('Your EFBC Conference registration has been updated');
   
   // Get totalPrice from params or registration object, convert to number
   const paymentAmount = totalPrice !== undefined && totalPrice !== null 
