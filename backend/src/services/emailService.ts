@@ -686,6 +686,164 @@ export async function sendRegistrationConfirmationEmail(params: {
   queueEmail({ to, subject, text, html });
 }
 
+export async function sendRegistrationUpdateEmail(params: {
+  to: string;
+  name: string;
+  eventName?: string;
+  eventDate?: string;
+  eventStartDate?: string;
+  totalPrice?: number;
+  registration?: any;
+}): Promise<void> {
+  const { to, name, eventName, eventDate, eventStartDate, totalPrice, registration } = params;
+  const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
+  const subject = sanitizeSubjectLine('Your EFBC registration has been updated');
+  
+  // Get totalPrice from params or registration object, convert to number
+  const paymentAmount = totalPrice !== undefined && totalPrice !== null 
+    ? Number(totalPrice) 
+    : (registration?.totalPrice !== undefined && registration?.totalPrice !== null 
+        ? Number(registration.totalPrice) 
+        : (registration?.total_price !== undefined && registration?.total_price !== null 
+            ? Number(registration.total_price) 
+            : 0));
+  
+  const priceText = paymentAmount > 0 ? `Total: $${paymentAmount.toFixed(2)}` : '';
+  const paymentMethod = registration?.paymentMethod || registration?.payment_method || '';
+  const squarePaymentId = registration?.squarePaymentId || registration?.square_payment_id || '';
+  
+  // Format event date range as "12 to 15 May"
+  const formattedEventDate = formatEventDateRange(eventStartDate || null, eventDate || null);
+  
+  // Get activity-specific details
+  const wednesdayActivity = registration?.wednesdayActivity || registration?.wednesday_activity || '';
+  const clubRentals = registration?.clubRentals || registration?.club_rentals || '';
+  const golfHandicap = registration?.golfHandicap || registration?.golf_handicap || '';
+  const massageTimeSlot = registration?.massageTimeSlot || registration?.massage_time_slot || '';
+  const pickleballEquipment = registration?.pickleballEquipment || registration?.pickleball_equipment;
+  
+  // Get additional fields
+  const dietaryRestrictions = registration?.dietaryRestrictions || registration?.dietary_restrictions || '';
+  const specialRequests = registration?.specialRequests || registration?.special_requests || '';
+  const emergencyContactName = registration?.emergencyContactName || registration?.emergency_contact_name || '';
+  const emergencyContactPhone = registration?.emergencyContactPhone || registration?.emergency_contact_phone || '';
+  
+  // Get missing fields
+  const isFirstTimeAttending = registration?.isFirstTimeAttending !== undefined 
+    ? registration.isFirstTimeAttending 
+    : (registration?.is_first_time_attending !== undefined 
+        ? registration.is_first_time_attending 
+        : null);
+  const companyType = registration?.companyType || registration?.company_type || '';
+  const companyTypeOther = registration?.companyTypeOther || registration?.company_type_other || '';
+  const officePhone = registration?.officePhone || registration?.office_phone || '';
+  
+  // Get full name
+  const firstName = registration?.firstName || registration?.first_name || '';
+  const lastName = registration?.lastName || registration?.last_name || '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  
+  // Get separate address fields
+  const addressStreet = registration?.addressStreet || registration?.address_street || '';
+  const city = registration?.city || '';
+  const state = registration?.state || '';
+  const zipCode = registration?.zipCode || registration?.zip_code || '';
+  const country = registration?.country || '';
+  
+  // Get spouse information
+  const spouseFirstName = registration?.spouseFirstName || registration?.spouse_first_name || '';
+  const spouseLastName = registration?.spouseLastName || registration?.spouse_last_name || '';
+  const spouseDinnerTicket = registration?.spouseDinnerTicket !== undefined 
+    ? registration.spouseDinnerTicket 
+    : (registration?.spouse_dinner_ticket !== undefined ? registration.spouse_dinner_ticket : false);
+
+  const detailsHtml = registration
+    ? `
+      <table role="presentation" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:14px;">
+        ${fullName ? `<tr><td style="color:#6b7280;">Full Name</td><td><strong>${fullName}</strong></td></tr>`:''}
+        ${registration.badgeName ? `<tr><td style="color:#6b7280;">Badge Name</td><td><strong>${registration.badgeName}</strong></td></tr>`:''}
+        ${registration.email ? `<tr><td style="color:#6b7280;">Email</td><td>${registration.email}</td></tr>`:''}
+        ${registration.secondaryEmail ? `<tr><td style="color:#6b7280;">Secondary Email</td><td>${registration.secondaryEmail}</td></tr>`:''}
+        ${registration.organization ? `<tr><td style="color:#6b7280;">Organization</td><td>${registration.organization}</td></tr>`:''}
+        ${registration.jobTitle ? `<tr><td style="color:#6b7280;">Job Title</td><td>${registration.jobTitle}</td></tr>`:''}
+        ${addressStreet || registration.address ? `<tr><td style="color:#6b7280;">Address</td><td>${addressStreet || String(registration.address || '').replace(/\n/g,'<br/>')}</td></tr>`:''}
+        ${city ? `<tr><td style="color:#6b7280;">City</td><td>${city}</td></tr>`:''}
+        ${state ? `<tr><td style="color:#6b7280;">State</td><td>${state}</td></tr>`:''}
+        ${zipCode ? `<tr><td style="color:#6b7280;">Zip Code</td><td>${zipCode}</td></tr>`:''}
+        ${country ? `<tr><td style="color:#6b7280;">Country</td><td>${country}</td></tr>`:''}
+        ${registration.mobile ? `<tr><td style="color:#6b7280;">Mobile</td><td>${registration.mobile}</td></tr>`:''}
+        ${officePhone ? `<tr><td style="color:#6b7280;">Office Phone</td><td>${officePhone}</td></tr>`:''}
+        ${isFirstTimeAttending !== null ? `<tr><td style="color:#6b7280;">First Time Attending?</td><td>${isFirstTimeAttending ? 'Yes' : 'No'}</td></tr>`:''}
+        ${companyType ? `<tr><td style="color:#6b7280;">Company Type</td><td>${companyType}</td></tr>`:''}
+        ${companyTypeOther ? `<tr><td style="color:#6b7280;">Company Type (Other)</td><td>${companyTypeOther}</td></tr>`:''}
+        ${wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${wednesdayActivity}</td></tr>`:''}
+        ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && golfHandicap ? `<tr><td style="color:#6b7280;">Golf Handicap</td><td>${golfHandicap}</td></tr>`:''}
+        ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && clubRentals ? `<tr><td style="color:#6b7280;">Golf Club Preference</td><td>${clubRentals}</td></tr>`:''}
+        ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('massage') && massageTimeSlot ? `<tr><td style="color:#6b7280;">Massage Time Slot</td><td>${massageTimeSlot}</td></tr>`:''}
+        ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('pickleball') && pickleballEquipment !== undefined ? `<tr><td style="color:#6b7280;">Pickleball Equipment</td><td>${pickleballEquipment ? 'I will bring my own' : 'I need equipment'}</td></tr>`:''}
+        ${registration.tuesdayEarlyReception ? `<tr><td style="color:#6b7280;">Tuesday Early Arrivals Reception</td><td>${registration.tuesdayEarlyReception}</td></tr>`:''}
+        ${registration.wednesdayReception ? `<tr><td style="color:#6b7280;">Wednesday Reception</td><td>${registration.wednesdayReception}</td></tr>`:''}
+        ${registration.thursdayBreakfast ? `<tr><td style="color:#6b7280;">Thursday Breakfast</td><td>${registration.thursdayBreakfast}</td></tr>`:''}
+        ${registration.thursdayLuncheon ? `<tr><td style="color:#6b7280;">Thursday Luncheon</td><td>${registration.thursdayLuncheon}</td></tr>`:''}
+        ${registration.thursdayDinner ? `<tr><td style="color:#6b7280;">Thursday Dinner</td><td>${registration.thursdayDinner}</td></tr>`:''}
+        ${registration.fridayBreakfast ? `<tr><td style="color:#6b7280;">Friday Breakfast</td><td>${registration.fridayBreakfast}</td></tr>`:''}
+        ${dietaryRestrictions ? `<tr><td style="color:#6b7280;">Dietary Restrictions</td><td>${dietaryRestrictions}</td></tr>`:''}
+        ${specialRequests ? `<tr><td style="color:#6b7280;">Special Requests</td><td>${specialRequests}</td></tr>`:''}
+        ${emergencyContactName ? `<tr><td style="color:#6b7280;">Emergency Contact Name</td><td>${emergencyContactName}</td></tr>`:''}
+        ${emergencyContactPhone ? `<tr><td style="color:#6b7280;">Emergency Contact Phone</td><td>${emergencyContactPhone}</td></tr>`:''}
+        ${spouseDinnerTicket ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Spouse/Guest Information</strong></td></tr>`:''}
+        ${spouseDinnerTicket ? `<tr><td style="color:#6b7280;">Spouse Dinner Ticket</td><td>Yes</td></tr>`:''}
+        ${spouseFirstName ? `<tr><td style="color:#6b7280;">Spouse First Name</td><td>${spouseFirstName}</td></tr>`:''}
+        ${spouseLastName ? `<tr><td style="color:#6b7280;">Spouse Last Name</td><td>${spouseLastName}</td></tr>`:''}
+        ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Payment Information</strong></td></tr>`:''}
+        ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;">Payment Amount</td><td><strong style="color:#111827;font-size:16px;">$${paymentAmount.toFixed(2)}</strong></td></tr>`:''}
+        ${paymentMethod ? `<tr><td style="color:#6b7280;">Payment Method</td><td>${paymentMethod}</td></tr>` : ''}
+        ${paymentMethod === 'Card' && squarePaymentId ? `<tr><td style="color:#6b7280;">Square Payment ID</td><td><code>${squarePaymentId}</code></td></tr>` : ''}
+        ${paymentMethod === 'Card' && registration?.spousePaymentId ? `<tr><td style="color:#6b7280;">Spouse Payment ID</td><td><code>${registration.spousePaymentId}</code></td></tr>` : ''}
+        ${paymentMethod === 'Card' && registration?.paidAt ? `<tr><td style="color:#6b7280;">Payment Date/Time</td><td>${new Date(registration.paidAt).toLocaleString()}</td></tr>` : ''}
+      </table>
+    `
+    : '';
+  const html = await renderEmailTemplate({
+    subject,
+    heading: 'Registration Updated',
+    preheader: 'Your EFBC Conference registration has been updated',
+    contentHtml: `
+      <p style="margin:0 0 12px 0;">Hi ${fullName || 'Attendee'},</p>
+      ${eventName ? `<p style=\"margin:0;\"><strong>Event:</strong> ${eventName}</p>` : ''}
+      ${formattedEventDate ? `<p style=\"margin:4px 0 0 0;\"><strong>Date:</strong> ${formattedEventDate}</p>` : ''}
+      ${paymentAmount > 0 ? `<p style=\"margin:12px 0 8px 0;padding:12px;background:#f0f9ff;border-left:4px solidrgba(59, 131, 246, 0);border-radius:4px;\"><strong style=\"color:#111827;font-size:16px;\">Payment Amount: $${paymentAmount.toFixed(2)}</strong></p>` : ''}
+      ${detailsHtml}
+      ${paymentMethod === 'Check' ? `
+        <div style="margin:20px 0;padding:16px;background:#f9fafb;border-left:4px solidrgba(59, 131, 246, 0);border-radius:4px;">
+          <p style="margin:0;color:#374151;">Please mail check prior to deadline to:</p>
+          <p style="margin:8px 0 0 0;color:#111827;font-weight:500;">
+            EFBC Conference Inc<br/>
+            127 Low Country Lane<br/>
+            The Woodlands, TX 77380, USA
+          </p>
+        </div>
+      ` : ''}
+      
+    `,
+  });
+  const parts: string[] = [];
+  if (eventName) parts.push(`Event: ${eventName}.`);
+  if (formattedEventDate) parts.push(`Date: ${formattedEventDate}.`);
+  if (paymentAmount > 0) parts.push(`Payment Amount: $${paymentAmount.toFixed(2)}.`);
+  if (paymentMethod) parts.push(`Payment method: ${paymentMethod}.`);
+  if (paymentMethod === 'Card' && squarePaymentId) {
+    parts.push(`Square payment ID: ${squarePaymentId}.`);
+  }
+  if (paymentMethod === 'Check') {
+    parts.push('\n\nIf you prefer by check, please mail check prior to deadline to:\nEFBC Conference Inc\n127 Low Country Lane\nThe Woodlands, TX 77380, USA');
+  }
+  const text = parts.join(' ').trim();
+
+  // Send to user (admin copy will be handled by the caller if needed)
+  queueEmail({ to, subject, text, html });
+}
+
 // Email sent when an admin creates a user account on behalf of someone
 export async function sendAdminCreatedUserEmail(params: {
   to: string;

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { Registration } from '../models/Registration';
 import { ApiResponse, CreateRegistrationRequest, UpdateRegistrationRequest, RegistrationQuery } from '../types';
 import { DatabaseService } from '../services/databaseService';
-import { sendRegistrationConfirmationEmail } from '../services/emailService';
+import { sendRegistrationConfirmationEmail, sendRegistrationUpdateEmail } from '../services/emailService';
 
 /**
  * Helper function to convert a date string (YYYY-MM-DD) to Eastern Time midnight
@@ -506,7 +506,7 @@ export class RegistrationController {
       // Convert the updated row back to Registration object for response
       const updatedRegistration = Registration.fromDatabase(verifyRow);
 
-      // Send confirmation email after update (to user, admin, and secondary email if applicable)
+      // Send update email after registration is updated (to user, admin, and secondary email if applicable)
       try {
         const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || process.env.SUPPORT_EMAIL || 'planner@efbcconference.org';
         const eventRow: any = await this.db.findById('events', updatedRegistration.eventId);
@@ -523,28 +523,28 @@ export class RegistrationController {
           registration: updatedRegistration.toJSON ? updatedRegistration.toJSON() : updatedRegistration
         } as any;
 
-        // Send emails via queue (emails will be sent sequentially with automatic retries)
+        // Send update emails via queue (emails will be sent sequentially with automatic retries)
         // Primary email (to user)
-        sendRegistrationConfirmationEmail({ to: updatedRegistration.email, ...payload }).catch((e) => 
-          console.warn('Failed to queue registration confirmation (update):', e)
+        sendRegistrationUpdateEmail({ to: updatedRegistration.email, ...payload }).catch((e) => 
+          console.warn('Failed to queue registration update email:', e)
         );
 
         // Admin copy (send separately to ensure it's sent)
         if (adminCopy && adminCopy !== updatedRegistration.email) {
-          sendRegistrationConfirmationEmail({ to: adminCopy, ...payload }).catch((e) => 
-            console.warn('Failed to queue admin confirmation (update):', e)
+          sendRegistrationUpdateEmail({ to: adminCopy, ...payload }).catch((e) => 
+            console.warn('Failed to queue admin update email:', e)
           );
         }
 
         // Secondary email if provided (no admin copy to avoid duplicates)
         if ((updatedRegistration as any).secondaryEmail && (updatedRegistration as any).secondaryEmail !== updatedRegistration.email && (updatedRegistration as any).secondaryEmail !== adminCopy) {
-          sendRegistrationConfirmationEmail({ to: (updatedRegistration as any).secondaryEmail, ...payload }).catch((e) => 
-            console.warn('Failed to queue secondary confirmation (update):', e)
+          sendRegistrationUpdateEmail({ to: (updatedRegistration as any).secondaryEmail, ...payload }).catch((e) => 
+            console.warn('Failed to queue secondary update email:', e)
           );
         }
       } catch (emailError) {
         // Don't fail the update if email sending fails
-        console.warn('Failed to send confirmation email after update:', (emailError as any)?.message || emailError);
+        console.warn('Failed to send update email after registration update:', (emailError as any)?.message || emailError);
       }
 
       const response: ApiResponse = {
@@ -671,7 +671,6 @@ export class RegistrationController {
       }
 
       // Prepare email payload
-      const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || process.env.SUPPORT_EMAIL || 'planner@efbcconference.org';
       const toName = registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim();
       const evName = eventRow?.name;
       const evDate = eventRow?.date;
@@ -685,23 +684,16 @@ export class RegistrationController {
         registration: registration.toJSON ? registration.toJSON() : registration
       } as any;
 
-      // Send emails via queue (emails will be sent sequentially with automatic retries)
-      // Primary email
+      // Send emails via queue - only to user (primary and secondary), NOT to admin
+      // Primary email (to user)
       sendRegistrationConfirmationEmail({ to: registration.email, ...payload }).catch((e) => 
-        console.warn('⚠️ Failed to queue registration confirmation:', e)
+        console.warn('⚠️ Failed to queue registration confirmation (resend):', e)
       );
 
-      // Admin copy (send separately to ensure it's sent)
-      if (adminCopy && adminCopy !== registration.email) {
-        sendRegistrationConfirmationEmail({ to: adminCopy, ...payload }).catch((e) => 
-          console.warn('⚠️ Failed to queue admin confirmation:', e)
-        );
-      }
-
-      // Secondary email if provided (no admin copy to avoid duplicates)
-      if ((registration as any).secondaryEmail && (registration as any).secondaryEmail !== registration.email && (registration as any).secondaryEmail !== adminCopy) {
+      // Secondary email if provided (only to user's secondary email)
+      if ((registration as any).secondaryEmail && (registration as any).secondaryEmail !== registration.email) {
         sendRegistrationConfirmationEmail({ to: (registration as any).secondaryEmail, ...payload }).catch((e) => 
-          console.warn('⚠️ Failed to queue secondary confirmation:', e)
+          console.warn('⚠️ Failed to queue secondary confirmation (resend):', e)
         );
       }
 
