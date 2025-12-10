@@ -437,38 +437,56 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const fieldId = fieldIdMap[firstErrorField];
       
       if (fieldId) {
-        // Use setTimeout to ensure the DOM has updated with error classes
+        // Use setTimeout to ensure the DOM has updated with error classes and error messages are rendered
         setTimeout(() => {
           let element: HTMLElement | null = null;
+          let focusableElement: HTMLElement | null = null;
           
           // Special handling for pickleballEquipment (radio buttons)
           if (firstErrorField === 'pickleballEquipment') {
             // Find the first radio button or the parent form-group
             const radioButtons = document.querySelectorAll('input[name="pickleballEquipment"]');
             if (radioButtons.length > 0) {
-              element = radioButtons[0].closest('.form-group') as HTMLElement;
+              const formGroup = radioButtons[0].closest('.form-group') as HTMLElement;
+              element = formGroup;
+              focusableElement = radioButtons[0] as HTMLElement;
             }
           } else {
             // Try to find the element by ID
-            element = document.getElementById(fieldId);
+            const fieldElement = document.getElementById(fieldId);
+            if (fieldElement) {
+              // Find the parent form-group to scroll to (includes label and error message)
+              const formGroup = fieldElement.closest('.form-group') as HTMLElement;
+              element = formGroup || fieldElement;
+              focusableElement = fieldElement;
+            }
           }
           
           if (element) {
-            // Scroll to the element with smooth behavior
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Get the element's position relative to the viewport
+            const rect = element.getBoundingClientRect();
+            const scrollY = window.scrollY || window.pageYOffset || 0;
+            const absoluteElementTop = rect.top + scrollY;
+            const middle = absoluteElementTop - (window.innerHeight / 2) + (rect.height / 2);
             
-            // Focus the element if it's focusable (input, select, textarea)
-            if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) {
-              element.focus();
-            } else if (element.querySelector('input, select, textarea')) {
-              // If it's a container, try to focus the first input/select/textarea inside
-              const focusable = element.querySelector('input, select, textarea') as HTMLElement;
-              if (focusable) {
-                focusable.focus();
-              }
+            // Scroll the window to center the element with smooth behavior
+            window.scrollTo({
+              top: Math.max(0, middle),
+              behavior: 'smooth'
+            });
+            
+            // Focus the input/select/textarea after scroll animation
+            if (focusableElement) {
+              setTimeout(() => {
+                if (focusableElement instanceof HTMLInputElement || 
+                    focusableElement instanceof HTMLSelectElement || 
+                    focusableElement instanceof HTMLTextAreaElement) {
+                  focusableElement.focus();
+                }
+              }, 500);
             }
           }
-        }, 100);
+        }, 150);
       }
     }
     
