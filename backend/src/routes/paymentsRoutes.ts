@@ -144,12 +144,29 @@ router.post('/charge', async (req: Request, res: Response) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const validEmail = buyerEmail && emailRegex.test(buyerEmail) ? buyerEmail : undefined;
     
+    // Build payer name from billing address
+    const payerFirstName = billingAddress.firstName?.trim() || '';
+    const payerLastName = billingAddress.lastName?.trim() || '';
+    const payerName = `${payerFirstName} ${payerLastName}`.trim();
+    
+    // Build payment note with payer information for reconciliation
+    // Format: "EFBC Conference. Paid by [Name](email@example.com)"
+    let paymentNote = eventName;
+    if (payerName || validEmail) {
+      const payerInfo = payerName 
+        ? (validEmail ? `${payerName}(${validEmail})` : payerName)
+        : (validEmail ? `(${validEmail})` : '');
+      if (payerInfo) {
+        paymentNote = `${eventName}. Paid by ${payerInfo}`;
+      }
+    }
+    
     const respRaw = await sq.payments.create({
       sourceId: nonce,
       idempotencyKey,
       amountMoney: { amount: BigInt(Number(finalCents)), currency },
       locationId: process.env.SQUARE_LOCATION_ID || undefined,
-      note: eventName,
+      note: paymentNote,
       // Billing address is required for AVS (Address Verification System)
       billingAddress: {
         addressLine1: billingAddress.addressLine1.trim(),
