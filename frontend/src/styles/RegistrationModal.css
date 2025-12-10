@@ -135,6 +135,22 @@ select {
   border-radius: 4px;
 }
 
+/* Remove warning icon from error messages - use !important to override any other styles */
+.error-message::before,
+.registration-form .error-message::before,
+.form-group .error-message::before,
+.form-section .error-message::before,
+.container .error-message::before,
+#registration-form .error-message::before {
+  content: none !important;
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 /* Radio and Checkbox Styles */
 .radio-group {
   display: flex;
