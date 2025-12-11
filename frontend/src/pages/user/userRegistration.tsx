@@ -308,72 +308,83 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   }, [hadSpousePayment, formData.spouseDinnerTicket]);
 
   useEffect(() => {
+    // If registration is already paid and spouse status hasn't changed, preserve the original totalPrice
+    // Only recalculate for new registrations, unpaid registrations, or when adding spouse to paid registration
+    if (isAlreadyPaid && formData.spouseDinnerTicket === hadSpouseTicket) {
+      // Registration is paid and spouse status unchanged - preserve original price
+      const originalPrice = registration?.totalPrice || 675;
+      setFormData(prev => {
+        if (prev.totalPrice !== originalPrice) {
+          return { ...prev, totalPrice: originalPrice };
+        }
+        return prev;
+      });
+      return;
+    }
+
+    // For paid registrations where spouse is being added, preserve original registration price
+    // and only calculate spouse tier price
+    if (isAlreadyPaid && formData.spouseDinnerTicket && !hadSpouseTicket) {
+      // Adding spouse to paid registration - preserve original reg price, calculate spouse price
+      const originalRegPrice = registration?.totalPrice || 675;
+      const now = getCurrentEasternTime();
+      const withBounds = (arr: any[] = []) =>
+        arr
+          .map((t: any) => ({
+            ...t,
+            s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+            e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity,
+          }))
+          .sort((a: any, b: any) => a.s - b.s);
+      const pickTier = (tiers: any[]) => {
+        if (!tiers || tiers.length === 0) return null;
+        const active = tiers.find(t => now >= t.s && now < t.e);
+        if (active) return active;
+        if (now < tiers[0].s) return tiers[0];
+        if (now >= tiers[tiers.length - 1].e) return tiers[tiers.length - 1];
+        const upcoming = tiers.find(t => now < t.s);
+        return upcoming || tiers[tiers.length - 1];
+      };
+      const spouseActive = pickTier(withBounds(spouseTiers));
+      const spousePrice = spouseActive?.price ?? 200;
+      const total = originalRegPrice + spousePrice;
+      setFormData(prev => ({ ...prev, totalPrice: total }));
+      return;
+    }
+
+    // For new registrations or unpaid registrations, calculate price based on current tier
     // Use Eastern Time (Florida timezone) for tier date comparisons to match backend
     const now = getCurrentEasternTime();
     
-    // Debug: Log current Eastern Time
-    const nowEastern = new Date(now).toLocaleString('en-US', { timeZone: 'America/New_York' });
-    console.log('[TIER DEBUG] Current Eastern Time:', nowEastern, 'Timestamp:', now);
-    
     const withBounds = (arr: any[] = []) =>
       arr
-        .map((t: any) => {
-          const startTs = t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity;
-          const endTs = t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity;
-          const startEastern = startTs !== -Infinity ? new Date(startTs).toLocaleString('en-US', { timeZone: 'America/New_York' }) : '-Infinity';
-          const endEastern = endTs !== Infinity ? new Date(endTs).toLocaleString('en-US', { timeZone: 'America/New_York' }) : 'Infinity';
-          console.log(`[TIER DEBUG] Tier "${t.label || t.name}": ${t.startDate} to ${t.endDate}`, {
-            startTs,
-            endTs,
-            startEastern,
-            endEastern,
-            price: t.price
-          });
-          return {
-            ...t,
-            // Convert tier dates to Eastern Time midnight/end-of-day to match backend
-            s: startTs,
-            e: endTs,
-          };
-        })
+        .map((t: any) => ({
+          ...t,
+          // Convert tier dates to Eastern Time midnight/end-of-day to match backend
+          s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+          e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity,
+        }))
         .sort((a: any, b: any) => a.s - b.s);
     const pickTier = (tiers: any[]) => {
       if (!tiers || tiers.length === 0) return null;
       // Find active tier: now >= startDate AND now < endDate (end date is exclusive - start of next day)
-      // Example: Priority ends Dec 11, so endDate = Dec 12 00:00:00 (exclusive)
-      // Any time on Dec 11 will be < Dec 12 00:00:00, so it matches
-      for (const t of tiers) {
-        const matches = now >= t.s && now < t.e;
-        console.log(`[TIER DEBUG] Checking tier "${t.label || t.name}": now >= ${t.s} (${now >= t.s}) && now < ${t.e} (${now < t.e}) = ${matches}`);
-        if (matches) {
-          console.log(`[TIER DEBUG] Selected tier: "${t.label || t.name}" with price $${t.price}`);
-          return t;
-        }
-      }
+      const active = tiers.find(t => now >= t.s && now < t.e);
+      if (active) return active;
       // If before first tier, return first tier
-      if (now < tiers[0].s) {
-        console.log(`[TIER DEBUG] Before first tier, returning first tier: "${tiers[0].label || tiers[0].name}"`);
-        return tiers[0];
-      }
+      if (now < tiers[0].s) return tiers[0];
       // If after last tier, return last tier
-      if (now >= tiers[tiers.length - 1].e) {
-        console.log(`[TIER DEBUG] After last tier, returning last tier: "${tiers[tiers.length - 1].label || tiers[tiers.length - 1].name}"`);
-        return tiers[tiers.length - 1];
-      }
+      if (now >= tiers[tiers.length - 1].e) return tiers[tiers.length - 1];
       // Find next upcoming tier
       const upcoming = tiers.find(t => now < t.s);
-      const selected = upcoming || tiers[tiers.length - 1];
-      console.log(`[TIER DEBUG] Returning upcoming/default tier: "${selected?.label || selected?.name}"`);
-      return selected;
+      return upcoming || tiers[tiers.length - 1];
     };
     const regActive = pickTier(withBounds(regTiers));
     const spouseActive = pickTier(withBounds(spouseTiers));
     let total = regActive?.price ?? 675;
     if (spouseDinnerSelected) total += spouseActive?.price ?? 200;
     // if (childLunchSelected) total += childLunchPrice;
-    console.log(`[TIER DEBUG] Final total price: $${total}`);
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [isEditing, hadSpouseTicket, formData.spouseDinnerTicket, spouseDinnerSelected, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers]);
+  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, spouseDinnerSelected, registration?.totalPrice, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
