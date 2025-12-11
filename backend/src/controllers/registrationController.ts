@@ -67,28 +67,33 @@ function getEasternTimeMidnight(dateString: string): number {
 }
 
 /**
- * Get Eastern Time end of day (23:59:59) for a date string
+ * Get Eastern Time end of day for a date string
+ * Returns the start of the next day (exclusive) to ensure the full end date is included
+ * Example: For Dec 11, returns Dec 12 00:00:00 Eastern Time
+ * This way, any time on Dec 11 will be < Dec 12 00:00:00, so it's included
  */
 function getEasternTimeEndOfDay(dateString: string): number {
   if (!dateString) return Infinity;
   
   try {
-    // Get midnight of the next day, then subtract 1 second
     const [year, month, day] = dateString.split('-').map(Number);
     if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
-      return new Date(dateString + 'T23:59:59Z').getTime();
+      // Fallback: add 1 day and get midnight
+      const fallbackDate = new Date(dateString + 'T00:00:00Z');
+      fallbackDate.setUTCDate(fallbackDate.getUTCDate() + 1);
+      return getEasternTimeMidnight(`${fallbackDate.getUTCFullYear()}-${String(fallbackDate.getUTCMonth() + 1).padStart(2, '0')}-${String(fallbackDate.getUTCDate()).padStart(2, '0')}`);
     }
     
-    // Get midnight of next day in Eastern
+    // Get midnight of next day in Eastern Time
+    // This makes the end date exclusive, so Dec 11 includes all of Dec 11 up to (but not including) Dec 12
     const nextDay = new Date(year, month - 1, day + 1);
     const nextDayStr = `${nextDay.getFullYear()}-${String(nextDay.getMonth() + 1).padStart(2, '0')}-${String(nextDay.getDate()).padStart(2, '0')}`;
-    const nextDayMidnight = getEasternTimeMidnight(nextDayStr);
-    
-    // Subtract 1 second to get end of current day
-    return nextDayMidnight - 1000;
+    return getEasternTimeMidnight(nextDayStr);
   } catch (error) {
     console.warn(`Failed to parse end date ${dateString} as Eastern Time, using UTC:`, error);
-    return new Date(dateString + 'T23:59:59Z').getTime();
+    const fallbackDate = new Date(dateString + 'T00:00:00Z');
+    fallbackDate.setUTCDate(fallbackDate.getUTCDate() + 1);
+    return fallbackDate.getTime();
   }
 }
 
@@ -278,7 +283,10 @@ export class RegistrationController {
               s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, 
               e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity 
             }));
-            return mapped.find((t:any)=> now>=t.s && now<=t.e) || mapped[mapped.length-1] || null;
+            // Find active tier: now >= startDate AND now < endDate (end date is exclusive - start of next day)
+            // Example: Priority ends Dec 11, so endDate = Dec 12 00:00:00 (exclusive)
+            // Any time on Dec 11 will be < Dec 12 00:00:00, so it matches
+            return mapped.find((t:any)=> now>=t.s && now<t.e) || mapped[mapped.length-1] || null;
           };
           const base = pick(regTiers);
           const spouse = registration.spouseDinnerTicket ? pick(spouseTiers) : null;

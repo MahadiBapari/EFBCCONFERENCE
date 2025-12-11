@@ -68,28 +68,33 @@ function getEasternTimeMidnight(dateString: string): number {
 }
 
 /**
- * Get Eastern Time end of day (23:59:59) for a date string
+ * Get Eastern Time end of day for a date string
+ * Returns the start of the next day (exclusive) to ensure the full end date is included
+ * Example: For Dec 11, returns Dec 12 00:00:00 Eastern Time
+ * This way, any time on Dec 11 will be < Dec 12 00:00:00, so it's included
  */
 function getEasternTimeEndOfDay(dateString: string): number {
   if (!dateString) return Infinity;
   
   try {
-    // Get midnight of the next day, then subtract 1 second
     const [year, month, day] = dateString.split('-').map(Number);
     if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
-      return new Date(dateString + 'T23:59:59Z').getTime();
+      // Fallback: add 1 day and get midnight
+      const fallbackDate = new Date(dateString + 'T00:00:00Z');
+      fallbackDate.setUTCDate(fallbackDate.getUTCDate() + 1);
+      return getEasternTimeMidnight(`${fallbackDate.getUTCFullYear()}-${String(fallbackDate.getUTCMonth() + 1).padStart(2, '0')}-${String(fallbackDate.getUTCDate()).padStart(2, '0')}`);
     }
     
-    // Get midnight of next day in Eastern
+    // Get midnight of next day in Eastern Time
+    // This makes the end date exclusive, so Dec 11 includes all of Dec 11 up to (but not including) Dec 12
     const nextDay = new Date(year, month - 1, day + 1);
     const nextDayStr = `${nextDay.getFullYear()}-${String(nextDay.getMonth() + 1).padStart(2, '0')}-${String(nextDay.getDate()).padStart(2, '0')}`;
-    const nextDayMidnight = getEasternTimeMidnight(nextDayStr);
-    
-    // Subtract 1 second to get end of current day
-    return nextDayMidnight - 1000;
+    return getEasternTimeMidnight(nextDayStr);
   } catch (error) {
     console.warn(`Failed to parse end date ${dateString} as Eastern Time, using UTC:`, error);
-    return new Date(dateString + 'T23:59:59Z').getTime();
+    const fallbackDate = new Date(dateString + 'T00:00:00Z');
+    fallbackDate.setUTCDate(fallbackDate.getUTCDate() + 1);
+    return fallbackDate.getTime();
   }
 }
 
@@ -330,10 +335,16 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         .sort((a: any, b: any) => a.s - b.s);
     const pickTier = (tiers: any[]) => {
       if (!tiers || tiers.length === 0) return null;
-      const active = tiers.find(t => now >= t.s && now <= t.e);
+      // Find active tier: now >= startDate AND now < endDate (end date is exclusive - start of next day)
+      // Example: Priority ends Dec 11, so endDate = Dec 12 00:00:00 (exclusive)
+      // Any time on Dec 11 will be < Dec 12 00:00:00, so it matches
+      const active = tiers.find(t => now >= t.s && now < t.e);
       if (active) return active;
+      // If before first tier, return first tier
       if (now < tiers[0].s) return tiers[0];
-      if (now > tiers[tiers.length - 1].e) return tiers[tiers.length - 1];
+      // If after last tier, return last tier
+      if (now >= tiers[tiers.length - 1].e) return tiers[tiers.length - 1];
+      // Find next upcoming tier
       const upcoming = tiers.find(t => now < t.s);
       return upcoming || tiers[tiers.length - 1];
     };
@@ -665,8 +676,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
         e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
       })).sort((a: any, b: any) => a.s - b.s);
-      const active = tiers.find((t: any) => now >= t.s && now <= t.e) ||
-        (now < tiers[0]?.s ? tiers[0] : (now > tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
+      // Find active tier: now >= startDate AND now < endDate (end date is exclusive - start of next day)
+      const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
+        (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
       const spousePrice = active?.price ?? 0;
       const baseAmountCents = Math.round(spousePrice * 100);
       // Backend will calculate the final amount with fee when applyCardFee is true
@@ -1848,8 +1860,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
                     e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
                   })).sort((a: any, b: any) => a.s - b.s);
-                  const active = tiers.find((t: any) => now >= t.s && now <= t.e) ||
-                    (now < tiers[0]?.s ? tiers[0] : (now > tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
+                  const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
+                    (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
                   return active?.price ?? 0;
                 })();
 
@@ -1893,12 +1905,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 <div className="payment-summary">
                   <div className="payment-item">
                     <span>Conference Registration:</span>
-                    <span>${(event.registrationPricing && event.registrationPricing.length ? (function () { const now = getCurrentEasternTime(); const tiers = (event.registrationPricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
+                    <span>${(event.registrationPricing && event.registrationPricing.length ? (function () { const now = getCurrentEasternTime(); const tiers = (event.registrationPricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0].s ? tiers[0] : (now >= tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
                   </div>
                   {formData.spouseDinnerTicket && (
                     <div className="payment-item">
                       <span>Spouse Dinner Ticket:</span>
-                      <span>${(function () { const now = getCurrentEasternTime(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now <= t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
+                      <span>${(function () { const now = getCurrentEasternTime(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0].s ? tiers[0] : (now >= tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
                     </div>
                   )}
                   {isCard && convenienceFee > 0 && (
