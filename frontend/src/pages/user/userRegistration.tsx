@@ -1926,23 +1926,45 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 return (
               <>
                 {(() => {
-                  const baseTotal = Number(formData.totalPrice || 0);
+                  // Check if this is a spouse-only payment (adding spouse to already-paid registration)
+                  const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
+                  
+                  // If adding spouse to paid registration, only calculate spouse price
+                  let baseTotal: number;
+                  if (isAddingSpouse) {
+                    // Calculate only spouse price using current tier
+                    const now = getCurrentEasternTime();
+                    const tiers = (event.spousePricing || []).map((t: any) => ({
+                      ...t,
+                      s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+                      e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+                    })).sort((a: any, b: any) => a.s - b.s);
+                    const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
+                      (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
+                    baseTotal = active?.price ?? 0;
+                  } else {
+                    // Normal flow: show full registration price
+                    baseTotal = Number(formData.totalPrice || 0);
+                  }
+                  
                   const isCard = (formData.paymentMethod || 'Card') === 'Card';
                   // Calculate 3.5% convenience fee for card payments
                   const convenienceFee = isCard ? baseTotal * 0.035 : 0;
                   const totalWithFee = baseTotal + convenienceFee;
                   return (
                 <div className="payment-summary">
-                  <div className="payment-item">
-                    <span>Conference Registration:</span>
-                    <span>${(event.registrationPricing && event.registrationPricing.length ? (function () { const now = getCurrentEasternTime(); const tiers = (event.registrationPricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0].s ? tiers[0] : (now >= tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
-                  </div>
-                  {formData.spouseDinnerTicket && (
+                  {!isAddingSpouse && (
                     <div className="payment-item">
-                      <span>Spouse Dinner Ticket:</span>
-                      <span>${(function () { const now = getCurrentEasternTime(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0].s ? tiers[0] : (now >= tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
+                      <span>Conference Registration:</span>
+                      <span>${(event.registrationPricing && event.registrationPricing.length ? (function () { const now = getCurrentEasternTime(); const tiers = (event.registrationPricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0].s ? tiers[0] : (now >= tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
                     </div>
                   )}
+                  {(formData.spouseDinnerTicket && !isAddingSpouse) || isAddingSpouse ? (
+                    <div className="payment-item">
+                      <span>Spouse Dinner Ticket:</span>
+                      <span>${(function () { const now = getCurrentEasternTime(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
+                    </div>
+                  ) : null}
                   {isCard && convenienceFee > 0 && (
                     <div className="payment-item" style={{ color: '#6b7280', fontSize: '0.9rem' }}>
                       <span>Convenience Fee (3.5%):</span>

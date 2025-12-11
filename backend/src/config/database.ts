@@ -6,7 +6,7 @@ const connectDB = async (): Promise<mysql.Connection> => {
       host: process.env.DB_HOST || '127.0.0.1',
       user: process.env.DB_USER || 'efbcuser',
       password: process.env.DB_PASSWORD || 'efbcpassword',
-      database: process.env.DB_NAME || 'efbctestdb',
+      database: process.env.DB_NAME || 'railway',
       port: parseInt(process.env.DB_PORT || '3306')
     });
 
