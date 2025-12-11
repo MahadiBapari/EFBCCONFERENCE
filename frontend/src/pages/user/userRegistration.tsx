@@ -106,7 +106,7 @@ function getEasternTimeEndOfDay(dateString: string): number {
 function getCurrentEasternTime(): number {
   const now = new Date();
   
-  // Get current time components in Eastern Time
+  // Get current date/time components in Eastern Time
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
     year: 'numeric',
@@ -126,31 +126,17 @@ function getCurrentEasternTime(): number {
   const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
   const second = parseInt(parts.find(p => p.type === 'second')?.value || '0');
   
-  // Create a UTC date with these Eastern Time components
-  let guessUtc = new Date(Date.UTC(year, month, day, hour, minute, second));
+  // Get the Eastern Time midnight for today's date
+  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const easternMidnight = getEasternTimeMidnight(dateStr);
   
-  // Verify: check what Eastern time this UTC time actually represents
-  const checkFormatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  });
+  // Add the hours, minutes, seconds to get the current time in Eastern Time
+  // This gives us a UTC timestamp that represents the current Eastern Time
+  const hoursMs = hour * 60 * 60 * 1000;
+  const minutesMs = minute * 60 * 1000;
+  const secondsMs = second * 1000;
   
-  let checkTime = checkFormatter.format(guessUtc);
-  let [checkH, checkM, checkS] = checkTime.split(':').map(Number);
-  
-  // If there's a mismatch, adjust the UTC time
-  if (checkH !== hour || checkM !== minute || checkS !== second) {
-    const diffH = hour - checkH;
-    const diffM = minute - checkM;
-    const diffS = second - checkS;
-    const adjustmentMs = (diffH * 3600 + diffM * 60 + diffS) * 1000;
-    guessUtc = new Date(guessUtc.getTime() + adjustmentMs);
-  }
-  
-  return guessUtc.getTime();
+  return easternMidnight + hoursMs + minutesMs + secondsMs;
 }
 
 interface UserRegistrationProps {
@@ -324,35 +310,68 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   useEffect(() => {
     // Use Eastern Time (Florida timezone) for tier date comparisons to match backend
     const now = getCurrentEasternTime();
+    
+    // Debug: Log current Eastern Time
+    const nowEastern = new Date(now).toLocaleString('en-US', { timeZone: 'America/New_York' });
+    console.log('[TIER DEBUG] Current Eastern Time:', nowEastern, 'Timestamp:', now);
+    
     const withBounds = (arr: any[] = []) =>
       arr
-        .map((t: any) => ({
-          ...t,
-          // Convert tier dates to Eastern Time midnight/end-of-day to match backend
-          s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
-          e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity,
-        }))
+        .map((t: any) => {
+          const startTs = t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity;
+          const endTs = t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity;
+          const startEastern = startTs !== -Infinity ? new Date(startTs).toLocaleString('en-US', { timeZone: 'America/New_York' }) : '-Infinity';
+          const endEastern = endTs !== Infinity ? new Date(endTs).toLocaleString('en-US', { timeZone: 'America/New_York' }) : 'Infinity';
+          console.log(`[TIER DEBUG] Tier "${t.label || t.name}": ${t.startDate} to ${t.endDate}`, {
+            startTs,
+            endTs,
+            startEastern,
+            endEastern,
+            price: t.price
+          });
+          return {
+            ...t,
+            // Convert tier dates to Eastern Time midnight/end-of-day to match backend
+            s: startTs,
+            e: endTs,
+          };
+        })
         .sort((a: any, b: any) => a.s - b.s);
     const pickTier = (tiers: any[]) => {
       if (!tiers || tiers.length === 0) return null;
       // Find active tier: now >= startDate AND now < endDate (end date is exclusive - start of next day)
       // Example: Priority ends Dec 11, so endDate = Dec 12 00:00:00 (exclusive)
       // Any time on Dec 11 will be < Dec 12 00:00:00, so it matches
-      const active = tiers.find(t => now >= t.s && now < t.e);
-      if (active) return active;
+      for (const t of tiers) {
+        const matches = now >= t.s && now < t.e;
+        console.log(`[TIER DEBUG] Checking tier "${t.label || t.name}": now >= ${t.s} (${now >= t.s}) && now < ${t.e} (${now < t.e}) = ${matches}`);
+        if (matches) {
+          console.log(`[TIER DEBUG] Selected tier: "${t.label || t.name}" with price $${t.price}`);
+          return t;
+        }
+      }
       // If before first tier, return first tier
-      if (now < tiers[0].s) return tiers[0];
+      if (now < tiers[0].s) {
+        console.log(`[TIER DEBUG] Before first tier, returning first tier: "${tiers[0].label || tiers[0].name}"`);
+        return tiers[0];
+      }
       // If after last tier, return last tier
-      if (now >= tiers[tiers.length - 1].e) return tiers[tiers.length - 1];
+      if (now >= tiers[tiers.length - 1].e) {
+        console.log(`[TIER DEBUG] After last tier, returning last tier: "${tiers[tiers.length - 1].label || tiers[tiers.length - 1].name}"`);
+        return tiers[tiers.length - 1];
+      }
       // Find next upcoming tier
       const upcoming = tiers.find(t => now < t.s);
-      return upcoming || tiers[tiers.length - 1];
+      const selected = upcoming || tiers[tiers.length - 1];
+      console.log(`[TIER DEBUG] Returning upcoming/default tier: "${selected?.label || selected?.name}"`);
+      return selected;
     };
     const regActive = pickTier(withBounds(regTiers));
     const spouseActive = pickTier(withBounds(spouseTiers));
     let total = regActive?.price ?? 675;
     if (spouseDinnerSelected) total += spouseActive?.price ?? 200;
     // if (childLunchSelected) total += childLunchPrice;
+    console.log(`[TIER DEBUG] Final total price: $${total}`);
     setFormData(prev => ({ ...prev, totalPrice: total }));
   }, [isEditing, hadSpouseTicket, formData.spouseDinnerTicket, spouseDinnerSelected, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers]);
 
