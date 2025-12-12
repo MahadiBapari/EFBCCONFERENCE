@@ -263,17 +263,18 @@ router.get('/verify-email', async (req: Request, res: Response) => {
     
     console.log(`[VERIFY] Successfully verified email for user ${u.id} (${u.email}). Verified at: ${verifyUpdate[0].email_verified_at}`);
     
-    // Send verification complete email
-    try {
-      // Get user name for the email
-      const userInfo = await db.query('SELECT name FROM users WHERE id=? LIMIT 1', [u.id]);
-      const userName = userInfo[0]?.name || '';
-      await sendVerificationCompleteEmail(u.email, userName);
-      console.log(`[VERIFY] Verification complete email sent to ${u.email}`);
-    } catch (e: any) {
-      console.error('Failed to send verification complete email:', e?.message || e);
-      // Don't fail the verification if email fails
-    }
+    // Send verification complete email - DISABLED (only for user self-verification)
+    // Admin verification still sends the email via userController.ts
+    // try {
+    //   // Get user name for the email
+    //   const userInfo = await db.query('SELECT name FROM users WHERE id=? LIMIT 1', [u.id]);
+    //   const userName = userInfo[0]?.name || '';
+    //   await sendVerificationCompleteEmail(u.email, userName);
+    //   console.log(`[VERIFY] Verification complete email sent to ${u.email}`);
+    // } catch (e: any) {
+    //   console.error('Failed to send verification complete email:', e?.message || e);
+    //   // Don't fail the verification if email fails
+    // }
     
     const redirect = process.env.EMAIL_VERIFY_REDIRECT || process.env.FRONTEND_URL || 'http://localhost:3000';
     if (redirect) {
