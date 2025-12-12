@@ -56,6 +56,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   
   // Column widths state for resizable columns
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
+    id: 80,
     badgeName: 120,
     firstName: 100,
     lastName: 100,
@@ -230,6 +231,10 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       let bValue: any;
       
       switch (sortField) {
+        case 'id':
+          aValue = a.id || 0;
+          bValue = b.id || 0;
+          break;
         case 'name':
           aValue = a.name?.toLowerCase() || '';
           bValue = b.name?.toLowerCase() || '';
@@ -269,6 +274,13 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
           return 0;
       }
       
+      // For numeric fields (id), compare directly
+      if (sortField === 'id') {
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      }
+      // For string fields, compare as strings
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
@@ -784,6 +796,20 @@ const confirmSingleDelete = async () => {
               <thead>
                 <tr>
                   <th 
+                    style={{ width: `${columnWidths.id}px`, minWidth: `${columnWidths.id}px`, position: 'relative' }}
+                    className="sortable-header"
+                    onClick={() => handleSort('id')}
+                  >
+                    ID
+                    {sortField === 'id' && (
+                      <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                    )}
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'id')}
+                    />
+                  </th>
+                  <th 
                     style={{ width: `${columnWidths.badgeName}px`, minWidth: `${columnWidths.badgeName}px`, position: 'relative' }}
                     className="sortable-header"
                     onClick={() => handleSort('name')}
@@ -1129,6 +1155,7 @@ const confirmSingleDelete = async () => {
               <tbody>
                 {paginatedRegistrations.map(reg => (
                   <tr key={`detail-${reg.id}`}>
+                    <td style={{ width: `${columnWidths.id}px`, minWidth: `${columnWidths.id}px` }}>{reg.id}</td>
                     <td style={{ width: `${columnWidths.badgeName}px`, minWidth: `${columnWidths.badgeName}px` }}>{displayValue(reg.badgeName)}</td>
                     <td style={{ width: `${columnWidths.firstName}px`, minWidth: `${columnWidths.firstName}px` }}>{displayValue(reg.firstName)}</td>
                     <td style={{ width: `${columnWidths.lastName}px`, minWidth: `${columnWidths.lastName}px` }}>{displayValue(reg.lastName)}</td>
@@ -1185,6 +1212,16 @@ const confirmSingleDelete = async () => {
                 </th>
                 <th 
                   className="sortable-header"
+                  onClick={() => handleSort('id')}
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
+                >
+                  ID
+                  {sortField === 'id' && (
+                    <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                  )}
+                </th>
+                <th 
+                  className="sortable-header"
                   onClick={() => handleSort('name')}
                   style={{ cursor: 'pointer', userSelect: 'none' }}
                 >
@@ -1237,6 +1274,7 @@ const confirmSingleDelete = async () => {
                       aria-label={`Select ${reg.name}`}
                     />
                   </td>
+                  <td>{reg.id}</td>
                   <td>{reg.name}</td>
                   <td>{reg.email}</td>
                   <td>{reg.category}</td>
