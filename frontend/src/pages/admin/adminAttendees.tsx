@@ -155,13 +155,19 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       setUserError(null);
       const params = new URLSearchParams();
       params.append('page', '1');
-      params.append('limit', '50');
+      // Increase limit to fetch all users (1500 should be enough for most cases)
+      // If search is active, use smaller limit since results are filtered
+      const limit = debouncedUserSearchQuery.trim() ? '50' : '1500';
+      params.append('limit', limit);
       if (debouncedUserSearchQuery.trim()) {
         params.append('search', debouncedUserSearchQuery.trim());
       }
       const response = await apiClient.get<SimpleUser[]>(`/users?${params.toString()}`) as any;
-      const apiUsers = (response as any).data || response;
-      const list: SimpleUser[] = Array.isArray(apiUsers) ? apiUsers : [];
+      // Handle API response structure: { success: true, data: [...], pagination: {...} }
+      const apiUsers = (response?.data && Array.isArray(response.data)) 
+        ? response.data 
+        : (Array.isArray(response) ? response : []);
+      const list: SimpleUser[] = apiUsers;
       // Exclude admin roles and users already registered for the selected event
       const filtered = list.filter(u => {
         const role = u.role || 'user';
