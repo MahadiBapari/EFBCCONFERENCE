@@ -188,6 +188,8 @@ router.post('/charge', async (req: Request, res: Response) => {
     // Helper function to get user-friendly error message
     const getErrorMessage = (errorCode: string, errorDetail?: string): string => {
       switch (errorCode) {
+        case 'PAN_FAILURE':
+          return 'The card number you entered is invalid or could not be processed. Please check your card number and try again, or use a different payment method.';
         case 'GENERIC_DECLINE':
           // Check if the error detail suggests a transaction type issue
           if (errorDetail && (errorDetail.toLowerCase().includes('transaction type') || 
@@ -198,17 +200,18 @@ router.post('/charge', async (req: Request, res: Response) => {
           }
           return 'Your card was declined by the card issuer. This could be due to insufficient funds, card restrictions, or security measures. Please contact your bank or try a different payment method.';
         case 'CVV_FAILURE':
-          return 'The CVV code is incorrect. Please check the 3-digit code on the back of your card and try again.';
+          return 'The CVV code is incorrect. Please check the 3-digit code on the back of your card (or 4-digit code on the front for American Express) and try again.';
         case 'ADDRESS_VERIFICATION_FAILURE':
-          return 'The billing address does not match the address on file with your card issuer. Please verify your address and try again.';
+        case 'AVS_FAILURE':
+          return 'The billing address does not match the address on file with your card issuer. Please verify your billing address matches your card statement and try again.';
         case 'INSUFFICIENT_FUNDS':
           return 'Insufficient funds. Please use a different card or contact your bank.';
         case 'EXPIRED_CARD':
           return 'The card has expired. Please use a different card.';
         case 'INVALID_EXPIRATION':
-          return 'The card expiration date is invalid. Please check and try again.';
+          return 'The card expiration date is invalid. Please check the expiration date (MM/YY) and try again.';
         case 'INVALID_CARD':
-          return 'The card number is invalid. Please check and try again.';
+          return 'The card number is invalid. Please check your card number and try again.';
         case 'CARD_NOT_SUPPORTED':
           return 'This card type is not supported. Please use a different payment method.';
         case 'CARD_DECLINED':
@@ -216,12 +219,71 @@ router.post('/charge', async (req: Request, res: Response) => {
         case 'TRANSACTION_TYPE_NOT_PERMITTED':
         case 'TRANSACTION_NOT_PERMITTED':
           return 'Your card issuer has declined this transaction type. This may occur if you are associated with the merchant account. Please use a different payment method or contact your card issuer for assistance.';
+        case 'INVALID_ACCOUNT':
+          return 'The card account is invalid or cannot be used for this transaction. Please use a different payment method.';
+        case 'RESTRICTED_CARD':
+          return 'This card has restrictions that prevent it from being used. Please contact your bank or use a different payment method.';
+        case 'PROCESSING_ERROR':
+          return 'An error occurred while processing your payment. Please try again in a moment. If the problem persists, contact support.';
+        case 'TEMPORARY_ERROR':
+          return 'A temporary error occurred. Please try again in a moment.';
         default:
-          return errorDetail || `Payment failed: ${errorCode}. Please try again or contact support.`;
+          // For unknown errors, provide a helpful generic message
+          if (errorDetail && errorDetail.toLowerCase().includes('authorization')) {
+            return 'Your card issuer declined the authorization. This could be due to security measures, insufficient funds, or card restrictions. Please contact your bank or try a different payment method.';
+          }
+          return errorDetail || `Payment could not be processed. Please check your card details and try again, or contact support if the problem persists.`;
       }
     };
     
-    // Check for card-specific errors first (most specific) - but only if payment exists
+    // Check for top-level Square API errors first (these are the most reliable)
+    if (resultData?.errors && Array.isArray(resultData.errors) && resultData.errors.length > 0) {
+      const firstError = resultData.errors[0];
+      const errorCode = firstError.code || '';
+      const errorDetail = firstError.detail || firstError.code || 'Unknown error';
+      const errorCategory = firstError.category || '';
+      
+      // Provide user-friendly message for payment method errors and other common errors
+      if (errorCategory === 'PAYMENT_METHOD_ERROR' || 
+          errorCategory === 'INVALID_REQUEST_ERROR' ||
+          errorCode === 'GENERIC_DECLINE' ||
+          errorCode === 'PAN_FAILURE' ||
+          errorCode === 'CVV_FAILURE' ||
+          errorCode === 'ADDRESS_VERIFICATION_FAILURE' ||
+          errorCode === 'AVS_FAILURE') {
+        const userMessage = getErrorMessage(errorCode, errorDetail);
+        return res.status(400).json({
+          success: false,
+          error: userMessage,
+          paymentStatus: payment?.status,
+          errorCode: errorCode,
+          errorCategory: errorCategory,
+          details: resultData.errors
+        });
+      }
+      
+      // For other errors, return user-friendly message if possible
+      const userMessage = getErrorMessage(errorCode, errorDetail);
+      if (userMessage && !userMessage.includes('Payment failed:')) {
+        return res.status(400).json({
+          success: false,
+          error: userMessage,
+          paymentStatus: payment?.status,
+          errorCode: errorCode,
+          details: resultData.errors
+        });
+      }
+      
+      // Fallback: return formatted error messages
+      const errorMessages = resultData.errors.map((e: any) => e.detail || e.code || 'Unknown error').join(', ');
+      return res.status(400).json({
+        success: false,
+        error: `Payment could not be processed: ${errorMessages}. Please try again or contact support.`,
+        details: resultData.errors
+      });
+    }
+    
+    // Check for card-specific errors (secondary check) - but only if payment exists
     if (payment) {
       const cardDetails = (payment as any)?.card_details;
       if (cardDetails?.errors && Array.isArray(cardDetails.errors) && cardDetails.errors.length > 0) {
@@ -240,33 +302,6 @@ router.post('/charge', async (req: Request, res: Response) => {
       }
     }
     
-    // Check for top-level Square API errors
-    if (resultData?.errors && Array.isArray(resultData.errors) && resultData.errors.length > 0) {
-      const firstError = resultData.errors[0];
-      const errorCode = firstError.code || '';
-      const errorDetail = firstError.detail || firstError.code || 'Unknown error';
-      
-      // If it's a payment method error, provide user-friendly message
-      if (firstError.category === 'PAYMENT_METHOD_ERROR' || errorCode === 'GENERIC_DECLINE') {
-        const userMessage = getErrorMessage(errorCode, errorDetail);
-        return res.status(400).json({
-          success: false,
-          error: userMessage,
-          paymentStatus: payment?.status,
-          errorCode: errorCode,
-          details: resultData.errors
-        });
-      }
-      
-      // For other errors, return the detail
-      const errorMessages = resultData.errors.map((e: any) => e.detail || e.code || 'Unknown error').join(', ');
-      return res.status(400).json({
-        success: false,
-        error: `Payment failed: ${errorMessages}`,
-        details: resultData.errors
-      });
-    }
-    
     if (!payment) {
       // Include minimal diagnostics to help debug response shape differences
       return res.status(502).json({
@@ -281,11 +316,44 @@ router.post('/charge', async (req: Request, res: Response) => {
     if (payment.status === 'FAILED' || payment.status === 'CANCELED') {
       // Check if payment was delayed and then cancelled
       if ((payment as any).delay_action === 'CANCEL' || (payment as any).delayed_until) {
+        // Check if there are any errors in the payment object that we might have missed
+        const cardDetails = (payment as any)?.card_details;
+        if (cardDetails?.errors && Array.isArray(cardDetails.errors) && cardDetails.errors.length > 0) {
+          const cardError = cardDetails.errors[0];
+          const errorCode = cardError.code || '';
+          const errorDetail = cardError.detail || '';
+          const userMessage = getErrorMessage(errorCode, errorDetail);
+          
+          return res.status(400).json({
+            success: false,
+            error: userMessage,
+            paymentStatus: payment.status,
+            errorCode: errorCode,
+            delayAction: (payment as any).delay_action
+          });
+        }
+        
         return res.status(400).json({
           success: false,
           error: 'Payment was declined by your card issuer. Please contact your bank or try a different payment method.',
           paymentStatus: payment.status,
           delayAction: (payment as any).delay_action
+        });
+      }
+      
+      // For failed payments, check card details for specific error
+      const cardDetails = (payment as any)?.card_details;
+      if (cardDetails?.errors && Array.isArray(cardDetails.errors) && cardDetails.errors.length > 0) {
+        const cardError = cardDetails.errors[0];
+        const errorCode = cardError.code || '';
+        const errorDetail = cardError.detail || '';
+        const userMessage = getErrorMessage(errorCode, errorDetail);
+        
+        return res.status(400).json({
+          success: false,
+          error: userMessage,
+          paymentStatus: payment.status,
+          errorCode: errorCode
         });
       }
       
