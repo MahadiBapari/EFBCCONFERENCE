@@ -328,19 +328,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       // Adding spouse to paid registration - preserve original reg price, calculate spouse price
       const originalRegPrice = registration?.totalPrice || 675;
       const now = getCurrentEasternTime();
-      const withBounds = (arr: any[] = []) =>
-        arr
-          .map((t: any) => ({
-            ...t,
+    const withBounds = (arr: any[] = []) =>
+      arr
+        .map((t: any) => ({
+          ...t,
             s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
             e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity,
-          }))
-          .sort((a: any, b: any) => a.s - b.s);
-      const pickTier = (tiers: any[]) => {
-        if (!tiers || tiers.length === 0) return null;
+        }))
+        .sort((a: any, b: any) => a.s - b.s);
+    const pickTier = (tiers: any[]) => {
+      if (!tiers || tiers.length === 0) return null;
         const active = tiers.find(t => now >= t.s && now < t.e);
-        if (active) return active;
-        if (now < tiers[0].s) return tiers[0];
+      if (active) return active;
+      if (now < tiers[0].s) return tiers[0];
         if (now >= tiers[tiers.length - 1].e) return tiers[tiers.length - 1];
         const upcoming = tiers.find(t => now < t.s);
         return upcoming || tiers[tiers.length - 1];
@@ -1067,8 +1067,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     }
 
     // Check if script is already loading
-    const existing = document.querySelector('script[data-square-sdk]');
-    if (existing) {
+      const existing = document.querySelector('script[data-square-sdk]');
+      if (existing) {
       // Wait for existing script to load
       return new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
@@ -1191,18 +1191,18 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         // Wait a bit for payments to be ready
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        const card = await payments.card();
+    const card = await payments.card();
         
         // Make sure container exists and is empty before attach
-        const container = document.getElementById('card-container');
+    const container = document.getElementById('card-container');
         if (!container) {
           throw new Error('Card container element not found');
         }
         container.innerHTML = '';
         
-        await card.attach('#card-container');
-        setCardInstance(card);
-        return card;
+    await card.attach('#card-container');
+    setCardInstance(card);
+    return card;
       } catch (error: any) {
         lastError = error;
         if (i < retries - 1) {
@@ -1725,13 +1725,13 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           </div>
 
           {/* Spouse section: Always show to allow adding spouse later */}
-          <div className="form-section">
-            <h3 className="section-title">Spouse/Guest Information</h3>
-              <div className="form-group">
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={!!formData.spouseDinnerTicket} 
+            <div className="form-section">
+              <h3 className="section-title">Spouse/Guest Information</h3>
+                <div className="form-group">
+                  <label className="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      checked={!!formData.spouseDinnerTicket} 
                     onChange={e => {
                       // Prevent unchecking if spouse payment was made
                       if (hadSpousePayment && !e.target.checked) {
@@ -1741,15 +1741,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       handleInputChange('spouseDinnerTicket', e.target.checked);
                     }}
                     disabled={hadSpousePayment} // Disable checkbox if payment was made
-                  />
-                  <span>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
+                    />
+                    <span>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
                   {hadSpousePayment && (
                     <span style={{ marginLeft: '8px', color: '#6b7280', fontSize: '0.875rem' }}>
                       (Already paid - cannot be removed)
                     </span>
                   )}
-                </label>
-              </div>
+                  </label>
+                </div>
               {/* Show spouse name fields when checkbox is selected */}
               {formData.spouseDinnerTicket && (
                 <div className="form-row">
@@ -1777,7 +1777,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   </div>
                 </div>
               )}
-          </div>
+            </div>
 
           {/* Child section - only visible to admins */}
           {/* {isAdminEdit && (
@@ -1905,22 +1905,22 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
 
                 if (isAlreadyPaid && !isAddingSpouse) {
                   return (
-                    <div className="payment-summary">
-                      <div className="payment-item">
-                        <span>Paid:</span>
-                        <span>Yes</span>
-                      </div>
-                      {(registration as any)?.squarePaymentId && (
-                        <div className="payment-item">
-                          <span>Square Payment ID:</span>
-                          <span>{(registration as any).squarePaymentId}</span>
-                        </div>
-                      )}
+                <div className="payment-summary">
+                  <div className="payment-item">
+                    <span>Paid:</span>
+                    <span>Yes</span>
+                  </div>
+                  {(registration as any)?.squarePaymentId && (
+                    <div className="payment-item">
+                      <span>Square Payment ID:</span>
+                      <span>{(registration as any).squarePaymentId}</span>
+                    </div>
+                  )}
                       {hadSpouseTicket && (registration as any)?.spousePaymentId && (
                         <div className="payment-item">
                           <span>Spouse Payment ID:</span>
                           <span>{(registration as any).spousePaymentId}</span>
-                        </div>
+                </div>
                       )}
                       {isAddingSpouse && (
                         <div className="payment-item" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
@@ -1962,10 +1962,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   return (
                 <div className="payment-summary">
                   {!isAddingSpouse && (
-                    <div className="payment-item">
-                      <span>Conference Registration:</span>
+                  <div className="payment-item">
+                    <span>Conference Registration:</span>
                       <span>${(event.registrationPricing && event.registrationPricing.length ? (function () { const now = getCurrentEasternTime(); const tiers = (event.registrationPricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0].s ? tiers[0] : (now >= tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
-                    </div>
+                  </div>
                   )}
                   {(formData.spouseDinnerTicket && !isAddingSpouse) || isAddingSpouse ? (
                     <div className="payment-item">
@@ -2040,29 +2040,34 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             {(() => {
               const paymentMethod = formData.paymentMethod || 'Card';
               const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
-              const showSubmitButton = isAdminEdit || (isAlreadyPaid && !isAddingSpouse) || paymentMethod === 'Check';
-              const showPayButton = !isAdminEdit && !isAlreadyPaid && paymentMethod === 'Card' && !isAddingSpouse;
-              const showSpousePayButton = !isAdminEdit && isAlreadyPaid && isAddingSpouse && paymentMethod === 'Card';
               
-              if (showSpousePayButton) {
+              // Show spouse payment button only if registration is already paid and adding spouse
+              if (!isAdminEdit && isAlreadyPaid && isAddingSpouse && paymentMethod === 'Card') {
                 return (
                   <button type="button" className="btn btn-primary btn-save" onClick={handleSpousePayment} disabled={isSubmitting}>
                     {isSubmitting ? 'Processing...' : 'Pay for Spouse Ticket'}
                   </button>
                 );
-              } else if (showSubmitButton) {
+              }
+              
+              // Show submit button for Check payments, admin edits, or already paid registrations (not adding spouse)
+              if (isAdminEdit || (isAlreadyPaid && !isAddingSpouse) || paymentMethod === 'Check') {
                 return (
                   <button className="btn btn-primary btn-save" type="submit" form="registration-form" disabled={isSubmitting}>
                     {isSubmitting ? 'Saving...' : (registration ? 'Update Registration' : 'Complete Registration')}
                   </button>
                 );
-              } else if (showPayButton) {
+              }
+              
+              // Show payment button for unpaid Card payments (including when adding spouse to unpaid registration)
+              if (!isAdminEdit && !isAlreadyPaid && paymentMethod === 'Card') {
                 return (
                   <button type="button" className="btn btn-primary btn-save" onClick={handleCardPay} disabled={isSubmitting}>
                     {isSubmitting ? 'Processing...' : 'Pay & Complete Registration'}
                   </button>
                 );
               }
+              
               return null;
             })()}
           </div>
