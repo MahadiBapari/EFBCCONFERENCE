@@ -24,10 +24,11 @@ router.post('/login', async (req: Request, res: Response) => {
     // User exists, now check password
     const ok = await bcrypt.compare(password, u.password);
     if (!ok) return res.status(401).json({ success: false, error: 'Invalid password' });
-    // Require email verification before issuing token
-    if (!u.email_verified_at) {
-      return res.status(403).json({ success: false, error: 'Email not verified' });
-    }
+    // Email verification check - DISABLED (users are auto-verified on registration)
+    // To re-enable email verification, uncomment the following lines:
+    // if (!u.email_verified_at) {
+    //   return res.status(403).json({ success: false, error: 'Email not verified' });
+    // }
     const user = { id: u.id, name: u.name, email: u.email, role: u.role };
     return res.json({ success: true, data: { user, token: sign(user) } });
   } catch (e: any) {

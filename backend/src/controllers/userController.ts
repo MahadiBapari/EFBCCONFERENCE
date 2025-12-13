@@ -2,8 +2,10 @@ import { Request, Response } from 'express';
 import { User } from '../models/User';
 import { ApiResponse, CreateUserRequest, UpdateUserRequest, LoginRequest, RegisterRequest, AuthResponse } from '../types';
 import { DatabaseService } from '../services/databaseService';
-import crypto from 'crypto';
-import { sendVerificationEmail, sendAdminCreatedUserEmail, sendVerificationCompleteEmail } from '../services/emailService';
+// Email verification imports (commented out - uncomment to re-enable email verification)
+// import crypto from 'crypto';
+// import { sendVerificationEmail, sendAdminCreatedUserEmail, sendVerificationCompleteEmail } from '../services/emailService';
+import { sendAdminCreatedUserEmail, sendVerificationCompleteEmail } from '../services/emailService';
 import { generateStrongTempPassword } from './adminPasswordUtils';
 
 export class UserController {
@@ -376,15 +378,16 @@ export class UserController {
         return;
       }
 
-      // Require verified email
-      if (!users[0].email_verified_at) {
-        const response: AuthResponse = {
-          success: false,
-          error: 'Email not verified'
-        };
-        res.status(403).json(response);
-        return;
-      }
+      // Email verification check - DISABLED (users are auto-verified on registration)
+      // To re-enable email verification, uncomment the following lines:
+      // if (!users[0].email_verified_at) {
+      //   const response: AuthResponse = {
+      //     success: false,
+      //     error: 'Email not verified'
+      //   };
+      //   res.status(403).json(response);
+      //   return;
+      // }
 
       // In a real application, you would generate a JWT token here
       const response: AuthResponse = {
@@ -450,51 +453,61 @@ export class UserController {
       // Hash password
       await user.hashPassword();
       
+      // AUTO-VERIFY MODE: Users are automatically verified on registration
+      // Insert user first
       const result = await this.db.insert('users', user.toDatabase());
       user.id = result.insertId;
 
-      // Generate verification token, store expiry, and send email
-      const token = crypto.randomBytes(32).toString('hex');
-      console.log(`[REGISTER] Generated token for user ${user.id} (${email}): length=${token.length}, prefix=${token.substring(0, 10)}`);
-      
-      // Ensure token is saved before sending email
-      const updateResult = await this.db.query(
-        'UPDATE users SET email_verification_token=?, email_verification_expires_at=DATE_ADD(NOW(), INTERVAL 30 MINUTE) WHERE id=?',
-        [token, user.id]
-      );
-      
-      // Verify the token was saved
-      const verifyToken = await this.db.query(
-        'SELECT email_verification_token, LENGTH(email_verification_token) as token_len FROM users WHERE id=? LIMIT 1',
+      // Auto-verify user on registration (set email_verified_at = NOW())
+      await this.db.query(
+        'UPDATE users SET email_verified_at = NOW() WHERE id = ?',
         [user.id]
       );
-      
-      if (!verifyToken[0] || !verifyToken[0].email_verification_token) {
-        console.error(`[REGISTER] Failed to save verification token for user ${user.id}. Token in DB:`, verifyToken[0]);
-        throw new Error('Failed to save verification token');
-      }
-      
-      if (verifyToken[0].email_verification_token !== token) {
-        console.error(`[REGISTER] Token mismatch for user ${user.id}. Expected: ${token.substring(0, 10)}..., Got: ${verifyToken[0].email_verification_token?.substring(0, 10)}...`);
-        throw new Error('Token verification failed');
-      }
-      
-      console.log(`[REGISTER] Token saved successfully for user ${user.id}. Token length in DB: ${verifyToken[0].token_len}`);
-      
-      // Fire-and-forget email send on registration (after token is confirmed saved)
-      setImmediate(async () => {
-        try {
-          await sendVerificationEmail(email, token);
-          console.log(`[REGISTER] Verification email sent to ${email}`);
-        } catch (e: any) {
-          console.error('SMTP sendVerificationEmail (register) failed:', e?.message || e);
-        }
-      });
+
+      // EMAIL VERIFICATION MODE (COMMENTED OUT - to re-enable, comment out auto-verify above and uncomment below):
+      // Generate verification token, store expiry, and send email
+      // const token = crypto.randomBytes(32).toString('hex');
+      // console.log(`[REGISTER] Generated token for user ${user.id} (${email}): length=${token.length}, prefix=${token.substring(0, 10)}`);
+      // 
+      // // Ensure token is saved before sending email
+      // const updateResult = await this.db.query(
+      //   'UPDATE users SET email_verification_token=?, email_verification_expires_at=DATE_ADD(NOW(), INTERVAL 30 MINUTE) WHERE id=?',
+      //   [token, user.id]
+      // );
+      // 
+      // // Verify the token was saved
+      // const verifyToken = await this.db.query(
+      //   'SELECT email_verification_token, LENGTH(email_verification_token) as token_len FROM users WHERE id=? LIMIT 1',
+      //   [user.id]
+      // );
+      // 
+      // if (!verifyToken[0] || !verifyToken[0].email_verification_token) {
+      //   console.error(`[REGISTER] Failed to save verification token for user ${user.id}. Token in DB:`, verifyToken[0]);
+      //   throw new Error('Failed to save verification token');
+      // }
+      // 
+      // if (verifyToken[0].email_verification_token !== token) {
+      //   console.error(`[REGISTER] Token mismatch for user ${user.id}. Expected: ${token.substring(0, 10)}..., Got: ${verifyToken[0].email_verification_token?.substring(0, 10)}...`);
+      //   throw new Error('Token verification failed');
+      // }
+      // 
+      // console.log(`[REGISTER] Token saved successfully for user ${user.id}. Token length in DB: ${verifyToken[0].token_len}`);
+      // 
+      // // Fire-and-forget email send on registration (after token is confirmed saved)
+      // setImmediate(async () => {
+      //   try {
+      //     await sendVerificationEmail(email, token);
+      //     console.log(`[REGISTER] Verification email sent to ${email}`);
+      //   } catch (e: any) {
+      //     console.error('SMTP sendVerificationEmail (register) failed:', e?.message || e);
+      //   }
+      // });
 
       const response: AuthResponse = {
         success: true,
         user: user.toJSON(),
-        message: 'Registration successful. Please check your email to verify your account.'
+        message: 'Registration successful. You can now login.' // AUTO-VERIFY MODE
+        // message: 'Registration successful. Please check your email to verify your account.' // EMAIL VERIFICATION MODE
       };
 
       res.status(201).json(response);

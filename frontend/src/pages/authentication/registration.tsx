@@ -79,7 +79,10 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
       const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
       const res = await authApi.register({ name: fullName, email: formData.email, password: formData.password });
       const payload: any = (res as any).data || res;
-      const msg = payload?.message || 'Please check your email to verify your account.';
+      // AUTO-VERIFY MODE: Updated default message
+      const msg = payload?.message || 'You can now login to complete your registration.';
+      // EMAIL VERIFICATION MODE (COMMENTED OUT):
+      // const msg = payload?.message || 'Please check your email to verify your account.';
       setSubmitMessage(msg);
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -284,7 +287,11 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
                   </svg>
                 </div>
                 <div className="success-alert-text">
+                  {/* AUTO-VERIFY MODE: Updated title */}
+                  <p className="success-alert-title">Account created. Please login to Complete registration</p>
+                  {/* EMAIL VERIFICATION MODE (COMMENTED OUT):
                   <p className="success-alert-title">Account set-up successful!</p>
+                  */}
                   <p className="success-alert-message">{submitMessage}</p>
                 </div>
               </div>
