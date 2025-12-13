@@ -212,7 +212,7 @@ interface QueuedEmail {
 class EmailQueue {
   private queue: QueuedEmail[] = [];
   private processing: boolean = false;
-  private readonly delayBetweenEmails = 600; // 600ms = slightly more than 500ms for 2 req/sec rate limit
+  private readonly delayBetweenEmails = 800; // 800ms = 1.25 req/sec, well under 2 req/sec limit for Resend
 
   // Add email to queue
   enqueue(payload: MailPayload, maxRetries: number = 3): void {
@@ -249,10 +249,20 @@ class EmailQueue {
         const errorMsg = error?.message || String(error);
         console.error(`[EMAIL QUEUE] Failed to send email ${email.id} to ${email.payload.to} (attempt ${email.retries}/${email.maxRetries + 1}):`, errorMsg);
 
+        // Check if it's a rate limit error (429) from Resend
+        const isRateLimit = errorMsg.includes('429') || 
+                           errorMsg.includes('rate_limit') || 
+                           errorMsg.includes('rate_limit_exceeded') ||
+                           errorMsg.includes('Too many requests');
+
         if (email.retries <= email.maxRetries) {
-          // Retry: add back to queue
-          const retryDelay = Math.min(1000 * email.retries, 5000); // Exponential backoff: 1s, 2s, 3s, max 5s
-          console.log(`[EMAIL QUEUE] Retrying email ${email.id} in ${retryDelay}ms...`);
+          // For rate limit errors, use longer backoff to respect Resend's 2 req/sec limit
+          // For other errors, use exponential backoff
+          const retryDelay = isRateLimit 
+            ? 5000 + (email.retries * 2000) // 5s, 7s, 9s for rate limits (gives time for rate limit to reset)
+            : Math.min(1000 * email.retries, 5000); // 1s, 2s, 3s, max 5s for other errors
+          
+          console.log(`[EMAIL QUEUE] Retrying email ${email.id} in ${retryDelay}ms...${isRateLimit ? ' (rate limit detected)' : ''}`);
           setTimeout(() => {
             this.queue.unshift(email); // Add to front of queue for retry
             if (!this.processing) {
