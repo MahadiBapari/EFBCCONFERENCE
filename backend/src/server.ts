@@ -371,8 +371,10 @@ const migrateEventsAndRegistrationsEnhancements = async () => {
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='spouse_breakfast')) alter.push('ADD COLUMN `spouse_breakfast` BOOLEAN');
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='tuesday_early_reception')) alter.push("ADD COLUMN `tuesday_early_reception` VARCHAR(50)");
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='paid')) alter.push('ADD COLUMN `paid` BOOLEAN DEFAULT FALSE');
+    if (!regCols.some((c:any)=>c.COLUMN_NAME==='paid_at')) alter.push('ADD COLUMN `paid_at` TIMESTAMP NULL');
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='square_payment_id')) alter.push('ADD COLUMN `square_payment_id` VARCHAR(64)');
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='spouse_payment_id')) alter.push('ADD COLUMN `spouse_payment_id` VARCHAR(64) NULL');
+    if (!regCols.some((c:any)=>c.COLUMN_NAME==='spouse_paid_at')) alter.push('ADD COLUMN `spouse_paid_at` TIMESTAMP NULL');
     if (!regCols.some((c:any)=>c.COLUMN_NAME==='special_requests')) alter.push('ADD COLUMN `special_requests` TEXT NULL');
     if (alter.length>0) {
       await databaseService.query(`ALTER TABLE \`registrations\` ${alter.join(', ')}`);

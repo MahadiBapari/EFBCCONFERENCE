@@ -91,8 +91,10 @@ export interface Registration {
   totalPrice: number;
   paymentMethod: 'Card' | 'Check';
   paid?: boolean;
+  paidAt?: string;
   squarePaymentId?: string;
   spousePaymentId?: string;
+  spousePaidAt?: string;
   
   // Group Assignment
   groupAssigned?: number;

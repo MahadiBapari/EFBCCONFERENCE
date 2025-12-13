@@ -806,8 +806,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         // Preserve existing payment info
         paid: (registration as any)?.paid,
         squarePaymentId: (registration as any)?.squarePaymentId,
-        // Add spouse payment ID
+        // Add spouse payment ID and timestamp
         spousePaymentId: payload.paymentId,
+        spousePaidAt: new Date().toISOString(), // Set spouse payment timestamp
       } as Registration;
       
       onSave(registrationData);
@@ -1029,6 +1030,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         // childLunchTicket: !!(formData as any).childLunchTicket,
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
+        paidAt: new Date().toISOString(), // Set payment timestamp
       } as Registration;
       
       // Payment has been verified above, now save the registration

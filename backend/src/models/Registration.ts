@@ -55,8 +55,10 @@ export class Registration {
   public cancellationReason?: string;
   public cancellationAt?: string;
   public paid?: boolean;
+  public paidAt?: string;
   public squarePaymentId?: string;
   public spousePaymentId?: string;
+  public spousePaidAt?: string;
   public groupAssigned?: number;
 
   // Helper method to format dates for MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
@@ -271,8 +273,10 @@ export class Registration {
       total_price: this.totalPrice || 0,
       payment_method: this.paymentMethod || null,
       paid: this.paid ?? false,
+      paid_at: this.paidAt ? this.formatDateForDB(this.paidAt) : null,
       square_payment_id: this.nullIfUndefined(this.squarePaymentId),
       spouse_payment_id: this.nullIfUndefined(this.spousePaymentId),
+      spouse_paid_at: this.spousePaidAt ? this.formatDateForDB(this.spousePaidAt) : null,
       group_assigned: this.nullIfUndefined(this.groupAssigned),
       updated_at: this.formatDateForDB(this.updatedAt || new Date().toISOString()),
     };
@@ -340,8 +344,10 @@ export class Registration {
       cancellationAt: row.cancellation_at,
       tuesdayEarlyReception: row.tuesday_early_reception,
       paid: !!row.paid,
+      paidAt: row.paid_at,
       squarePaymentId: row.square_payment_id,
       spousePaymentId: row.spouse_payment_id,
+      spousePaidAt: row.spouse_paid_at,
       groupAssigned: row.group_assigned || undefined,
       // Legacy fields are not mapped from DB in this version
       name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),

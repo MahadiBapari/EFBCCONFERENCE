@@ -431,6 +431,8 @@ export class RegistrationController {
         paymentMethod: 'payment_method',
         paid: 'paid',
         squarePaymentId: 'square_payment_id',
+        paidAt: 'paid_at',
+        spousePaidAt: 'spouse_paid_at',
       };
       
       // Build update payload by mapping fields and converting values
@@ -470,6 +472,9 @@ export class RegistrationController {
             value = value === true || value === 'Yes' || value === 'yes' || value === 1 ? 1 : 0;
           } else if (camelKey === 'isFirstTimeAttending' || camelKey === 'spouseBreakfast' || camelKey === 'paid') {
             value = value === true || value === 1 ? 1 : 0;
+          } else if (camelKey === 'paidAt' || camelKey === 'spousePaidAt') {
+            // Convert ISO date string to MySQL DATETIME format
+            value = value ? new Date(value).toISOString().slice(0, 19).replace('T', ' ') : null;
           } else if (value === null || value === undefined) {
             value = null;
           }

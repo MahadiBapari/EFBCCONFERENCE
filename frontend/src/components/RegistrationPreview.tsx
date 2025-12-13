@@ -342,24 +342,47 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       doc.text((registration as any).spousePaymentId, margin + 60, yPos);
       yPos += 6;
     }
-    if ((registration as any).paidAt) {
-      const paidAtDate = new Date((registration as any).paidAt);
-      const formattedDate = paidAtDate.toLocaleString('en-US', {
-        timeZone: 'America/New_York',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-        timeZoneName: 'short'
-      });
-      doc.setFont('helvetica', 'bold');
-      doc.text('Payment Date/Time (EST):', margin, yPos);
-      doc.setFont('helvetica', 'normal');
-      doc.text(formattedDate, margin + 60, yPos);
-      yPos += 6;
+    if ((registration as any).paid && registration.paymentMethod === 'Card') {
+      const paidAtDate = (registration as any).paidAt || registration.createdAt;
+      if (paidAtDate) {
+        const formattedDate = new Date(paidAtDate).toLocaleString('en-US', {
+          timeZone: 'America/New_York',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+          timeZoneName: 'short'
+        });
+        doc.setFont('helvetica', 'bold');
+        doc.text('Payment Date/Time (EST):', margin, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.text(formattedDate, margin + 60, yPos);
+        yPos += 6;
+      }
+    }
+    if ((registration as any).spousePaymentId) {
+      const spousePaidAtDate = (registration as any).spousePaidAt || registration.createdAt;
+      if (spousePaidAtDate) {
+        const formattedDate = new Date(spousePaidAtDate).toLocaleString('en-US', {
+          timeZone: 'America/New_York',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+          timeZoneName: 'short'
+        });
+        doc.setFont('helvetica', 'bold');
+        doc.text('Spouse Payment Date/Time (EST):', margin, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.text(formattedDate, margin + 60, yPos);
+        yPos += 6;
+      }
     }
 
     // Save PDF
@@ -547,10 +570,42 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
           {(registration as any).spousePaymentId && (
             <Line label="Spouse Payment ID" value={(registration as any).spousePaymentId} />
           )}
-          {(registration as any).paidAt && (
+          {(registration as any).paid && registration.paymentMethod === 'Card' && ((registration as any).paidAt || registration.createdAt) && (
             <Line 
               label="Payment Date/Time (EST)" 
-              value={new Date((registration as any).paidAt).toLocaleString('en-US', {
+              value={new Date((registration as any).paidAt || registration.createdAt).toLocaleString('en-US', {
+                timeZone: 'America/New_York',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+                timeZoneName: 'short'
+              })} 
+            />
+          )}
+          {(registration as any).spousePaymentId && ((registration as any).spousePaidAt || registration.createdAt) && (
+            <Line 
+              label="Spouse Payment Date/Time (EST)" 
+              value={new Date((registration as any).spousePaidAt || registration.createdAt).toLocaleString('en-US', {
+                timeZone: 'America/New_York',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+                timeZoneName: 'short'
+              })} 
+            />
+          )}
+          {registration.createdAt && (
+            <Line 
+              label="Registration Completed (EST)" 
+              value={new Date(registration.createdAt).toLocaleString('en-US', {
                 timeZone: 'America/New_York',
                 year: 'numeric',
                 month: 'short',

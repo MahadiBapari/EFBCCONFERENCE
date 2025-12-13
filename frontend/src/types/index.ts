@@ -88,8 +88,10 @@ export interface Registration {
   totalPrice: number;
   paymentMethod: 'Card' | 'Check';
   paid?: boolean;
+  paidAt?: string;
   squarePaymentId?: string;
   spousePaymentId?: string;
+  spousePaidAt?: string;
   
   // Group Assignment
   groupAssigned?: number;
@@ -97,6 +99,9 @@ export interface Registration {
   // Legacy fields for backward compatibility
   name: string;
   category: string;
+  
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Group {
