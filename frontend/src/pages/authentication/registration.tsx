@@ -295,6 +295,8 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
                   <p className="success-alert-message">{submitMessage}</p>
                 </div>
               </div>
+              {/* AUTO-VERIFY MODE: Resend Verification Email button commented out */}
+              {/* EMAIL VERIFICATION MODE (COMMENTED OUT):
               <div className="success-alert-actions">
                 <button
                   type="button"
@@ -346,6 +348,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
                   </div>
                 )}
               </div>
+              */}
             </div>
           )}
           {submitError && (
