@@ -602,22 +602,6 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
               })} 
             />
           )}
-          {registration.createdAt && (
-            <Line 
-              label="Registration Completed (EST)" 
-              value={new Date(registration.createdAt).toLocaleString('en-US', {
-                timeZone: 'America/New_York',
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true,
-                timeZoneName: 'short'
-              })} 
-            />
-          )}
         </div>
       </div>
     </Modal>

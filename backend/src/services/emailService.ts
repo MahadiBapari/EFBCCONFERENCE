@@ -668,7 +668,6 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${paymentMethod === 'Card' && registration?.spousePaymentId ? `<tr><td style="color:#6b7280;">Spouse Payment ID</td><td><code>${registration.spousePaymentId}</code></td></tr>` : ''}
         ${paymentMethod === 'Card' && registration?.paid && (registration?.paidAt || registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Payment Date/Time (EST)</td><td>${formatDateInEST(registration.paidAt || registration.createdAt || registration.created_at)}</td></tr>` : ''}
         ${registration?.spousePaymentId && (registration?.spousePaidAt || registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Spouse Payment Date/Time (EST)</td><td>${formatDateInEST(registration.spousePaidAt || registration.createdAt || registration.created_at)}</td></tr>` : ''}
-        ${(registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Registration Completed (EST)</td><td>${formatDateInEST(registration.createdAt || registration.created_at)}</td></tr>` : ''}
       </table>
     `
     : '';
@@ -830,7 +829,6 @@ export async function sendRegistrationUpdateEmail(params: {
         ${paymentMethod === 'Card' && registration?.spousePaymentId ? `<tr><td style="color:#6b7280;">Spouse Payment ID</td><td><code>${registration.spousePaymentId}</code></td></tr>` : ''}
         ${paymentMethod === 'Card' && registration?.paid && (registration?.paidAt || registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Payment Date/Time (EST)</td><td>${formatDateInEST(registration.paidAt || registration.createdAt || registration.created_at)}</td></tr>` : ''}
         ${registration?.spousePaymentId && (registration?.spousePaidAt || registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Spouse Payment Date/Time (EST)</td><td>${formatDateInEST(registration.spousePaidAt || registration.createdAt || registration.created_at)}</td></tr>` : ''}
-        ${(registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Registration Completed (EST)</td><td>${formatDateInEST(registration.createdAt || registration.created_at)}</td></tr>` : ''}
       </table>
     `
     : '';
