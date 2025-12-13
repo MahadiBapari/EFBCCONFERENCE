@@ -392,6 +392,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (!formData.lastName?.trim()) newErrors.lastName = 'Last name is required';
     if (!formData.badgeName?.trim()) newErrors.badgeName = 'Badge name is required';
     if (!formData.email?.trim()) newErrors.email = 'Email is required';
+    if (!formData.secondaryEmail?.trim()) newErrors.secondaryEmail = 'Secondary email is required';
+    if (formData.secondaryEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.secondaryEmail)) {
+      newErrors.secondaryEmail = 'Please enter a valid email address';
+    }
     if (!formData.organization?.trim()) newErrors.organization = 'Organization is required';
     if (!formData.jobTitle?.trim()) newErrors.jobTitle = 'Job title is required';
     if (!addrStreet.trim()) newErrors.address = 'Address is required';
@@ -454,6 +458,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         lastName: 'lastName',
         badgeName: 'badgeName',
         email: 'email',
+        secondaryEmail: 'secondaryEmail',
         organization: 'organization',
         jobTitle: 'jobTitle',
         address: 'addrStreet', // address error maps to addrStreet ID
@@ -1410,8 +1415,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 {errors.email && <div className="error-message">{errors.email}</div>}
               </div>
               <div className="form-group">
-                <label htmlFor="secondaryEmail" className="form-label">Secondary Email</label>
-                <input id="secondaryEmail" type="email" className="form-control" value={formData.secondaryEmail || ''} onChange={e => handleInputChange('secondaryEmail', e.target.value)} placeholder="optional@example.com" />
+                <label htmlFor="secondaryEmail" className="form-label">Secondary Email <span className="required-asterisk">*</span></label>
+                <input id="secondaryEmail" type="email" className={`form-control ${errors.secondaryEmail ? 'error' : ''}`} value={formData.secondaryEmail || ''} onChange={e => handleInputChange('secondaryEmail', e.target.value)} placeholder="secondary@example.com" required />
+                {errors.secondaryEmail && <div className="error-message">{errors.secondaryEmail}</div>}
               </div>
             </div>
             <div className="form-row">
