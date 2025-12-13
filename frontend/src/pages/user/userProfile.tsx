@@ -114,13 +114,14 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdateProfile 
               </div>
             </div>
             <div className="form-group">
-              <label htmlFor="email">Email (Read Only)</label>
+              <label htmlFor="email">Email</label>
               <input
                 type="email"
                 id="email"
                 name="email"
                 value={formData.email}
-                readOnly
+                onChange={handleChange}
+                required
               />
             </div>
             <div className="profile-actions">
