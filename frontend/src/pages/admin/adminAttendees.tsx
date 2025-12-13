@@ -629,7 +629,11 @@ const confirmSingleDelete = async () => {
       'Secondary Email': reg.secondaryEmail,
       'Organization': reg.organization,
       'Job Title': reg.jobTitle,
-      'Address': reg.address,
+      'Address Street': (reg as any).addressStreet || '',
+      'City': (reg as any).city || '',
+      'State': (reg as any).state || '',
+      'Zip Code': (reg as any).zipCode || '',
+      'Country': (reg as any).country || '',
       'Mobile': reg.mobile,
       'Office Phone': reg.officePhone,
       'First Time?': reg.isFirstTimeAttending ? 'Yes' : 'No',
@@ -667,7 +671,18 @@ const confirmSingleDelete = async () => {
     const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
     link.href = url;
-    link.download = 'attendees.xlsx';
+    
+    // Generate filename with timestamp (format: attendees_YYYY-MM-DD_HH-MM-SS.xlsx)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const timestamp = `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+    link.download = `attendees_${timestamp}.xlsx`;
+    
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -906,10 +921,56 @@ const confirmSingleDelete = async () => {
                   <th 
                     style={{ width: `${columnWidths.address}px`, minWidth: `${columnWidths.address}px`, position: 'relative' }}
                   >
-                    Address
+                    Address Street
                     <span 
                       className="resize-handle"
                       onMouseDown={(e) => handleResizeStart(e, 'address')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.city}px`, minWidth: `${columnWidths.city}px`, position: 'relative' }}
+                    className="sortable-header"
+                    onClick={() => handleSort('city')}
+                  >
+                    City
+                    {sortField === 'city' && (
+                      <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                    )}
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'city')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.state}px`, minWidth: `${columnWidths.state}px`, position: 'relative' }}
+                    className="sortable-header"
+                    onClick={() => handleSort('state')}
+                  >
+                    State
+                    {sortField === 'state' && (
+                      <span className="sort-indicator">{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                    )}
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'state')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.zipCode}px`, minWidth: `${columnWidths.zipCode}px`, position: 'relative' }}
+                  >
+                    Zip Code
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'zipCode')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.country}px`, minWidth: `${columnWidths.country}px`, position: 'relative' }}
+                  >
+                    Country
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'country')}
                     />
                   </th>
                   <th 
@@ -1169,7 +1230,11 @@ const confirmSingleDelete = async () => {
                     <td style={{ width: `${columnWidths.secondaryEmail}px`, minWidth: `${columnWidths.secondaryEmail}px` }}>{displayValue(reg.secondaryEmail)}</td>
                     <td style={{ width: `${columnWidths.organization}px`, minWidth: `${columnWidths.organization}px` }}>{displayValue(reg.organization)}</td>
                     <td style={{ width: `${columnWidths.jobTitle}px`, minWidth: `${columnWidths.jobTitle}px` }}>{displayValue(reg.jobTitle)}</td>
-                    <td style={{ width: `${columnWidths.address}px`, minWidth: `${columnWidths.address}px` }}>{displayValue(reg.address)}</td>
+                    <td style={{ width: `${columnWidths.address}px`, minWidth: `${columnWidths.address}px` }}>{displayValue((reg as any).addressStreet)}</td>
+                    <td style={{ width: `${columnWidths.city}px`, minWidth: `${columnWidths.city}px` }}>{displayValue((reg as any).city)}</td>
+                    <td style={{ width: `${columnWidths.state}px`, minWidth: `${columnWidths.state}px` }}>{displayValue((reg as any).state)}</td>
+                    <td style={{ width: `${columnWidths.zipCode}px`, minWidth: `${columnWidths.zipCode}px` }}>{displayValue((reg as any).zipCode)}</td>
+                    <td style={{ width: `${columnWidths.country}px`, minWidth: `${columnWidths.country}px` }}>{displayValue((reg as any).country)}</td>
                     <td style={{ width: `${columnWidths.mobile}px`, minWidth: `${columnWidths.mobile}px` }}>{displayValue(reg.mobile)}</td>
                     <td style={{ width: `${columnWidths.officePhone}px`, minWidth: `${columnWidths.officePhone}px` }}>{displayValue(reg.officePhone)}</td>
                     <td style={{ width: `${columnWidths.firstTime}px`, minWidth: `${columnWidths.firstTime}px` }}>{reg.isFirstTimeAttending ? 'Yes' : 'No'}</td>
