@@ -5,6 +5,15 @@
   --font-family: 'Inter', sans-serif;
 }
 
+html {
+  width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 .light-theme {
   --background-color: #f4f7fa;
   --surface-color: #ffffff;
@@ -39,6 +48,11 @@ body {
   color: var(--text-primary);
   transition: background-color 0.3s, color 0.3s;
   line-height: 1.6;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 #root {
@@ -50,6 +64,9 @@ body {
 /* New Layout */
 .app-layout {
   display: flex;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .sidebar {
@@ -137,7 +154,11 @@ body {
   min-height: 100vh;
   background-color: var(--background-color);
   transition: background-color 0.3s;
-  overflow-y: auto; 
+  overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scroll on main content */
+  width: calc(100% - 240px);
+  max-width: calc(100vw - 240px);
+  box-sizing: border-box;
 }
 
 .app-loading-screen {
@@ -177,6 +198,8 @@ body {
   margin: 0 auto;
   padding: 2rem;
   width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden; /* Prevent container overflow */
 }
 
 .page-header {
@@ -306,6 +329,8 @@ body {
 
   .main-content {
     margin-left: 0;
+    width: 100%;
+    max-width: 100vw;
   }
 
   .mobile-header {
