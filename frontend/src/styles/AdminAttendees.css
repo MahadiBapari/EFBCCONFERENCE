@@ -21,7 +21,7 @@
   color: var(--text-secondary);
   font-family: var(--font-family);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.2s;
@@ -48,7 +48,7 @@
   color: var(--text-secondary);
   font-family: var(--font-family);
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -131,7 +131,7 @@
   background-color: var(--background-color);
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -168,7 +168,7 @@
   min-width: 2000px; /* Increased to accommodate all columns */
   table-layout: fixed; /* Fixed layout to respect width styles for resizing */
   width: auto; /* Use auto width to allow columns to control their own widths */
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   border-collapse: collapse;
 }
 
@@ -330,7 +330,7 @@
   }
   
   .table {
-    font-size: 12px;
+    font-size: 11px;
   }
   
   .table th,
@@ -373,7 +373,7 @@
   margin-top: 0.5rem;
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 500;
   max-width: 200px;
 }
@@ -394,7 +394,7 @@
   display: inline-block;
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   background-color: #dbeafe;
   color: #1e40af;
@@ -431,13 +431,13 @@
 
 .attendee-modal h2 {
   margin: 0 0 0.5rem 0;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   color: var(--text-primary);
 }
 
 .attendee-modal-subtitle {
   margin: 0 0 1rem 0;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
 }
 
@@ -456,14 +456,14 @@
 .attendee-modal-loading,
 .attendee-modal-empty {
   padding: 1rem;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
 }
 
 .attendee-user-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .attendee-user-table th,
@@ -485,7 +485,7 @@
   display: inline-block;
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 500;
 }
 
@@ -508,7 +508,7 @@
 
 .modal-helper-text {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   margin-top: 0.5rem;
 }
 
