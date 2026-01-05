@@ -131,14 +131,14 @@
   background-color: var(--background-color);
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .table td {
   color: var(--text-primary);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 /* Wider, scrollable layout for bulk attendee detail table */
@@ -169,7 +169,7 @@
   min-width: 2000px; /* Increased to accommodate all columns */
   table-layout: fixed; /* Fixed layout to respect width styles for resizing */
   width: auto; /* Use auto width to allow columns to control their own widths */
-  font-size: 12px;
+  font-size: 14px;
   border-collapse: collapse;
 }
 
@@ -216,7 +216,7 @@
   vertical-align: top; /* Align content to top for multi-line cells */
   height: auto; /* Allow row height to adjust based on content */
   box-sizing: border-box; /* Include padding and border in width calculation */
-  font-size: 12px; /* Explicit font size for table cells */
+  font-size: 14px; /* Explicit font size for table cells */
 }
 
 /* Force width styles to be respected for resizable columns */
@@ -465,7 +465,7 @@
 .attendee-user-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .attendee-user-table th,
@@ -479,7 +479,7 @@
   background: var(--bg-tertiary);
   font-weight: 600;
   text-transform: uppercase;
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.05em;
 }
 
