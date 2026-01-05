@@ -224,7 +224,8 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       const lowercasedQuery = searchQuery.toLowerCase();
       results = results.filter(r => 
         r.name.toLowerCase().includes(lowercasedQuery) || 
-        r.email.toLowerCase().includes(lowercasedQuery)
+        r.email.toLowerCase().includes(lowercasedQuery) ||
+        (r.organization && r.organization.toLowerCase().includes(lowercasedQuery))
       );
     }
     return results;
