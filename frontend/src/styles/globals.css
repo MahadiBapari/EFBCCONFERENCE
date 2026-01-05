@@ -12,6 +12,8 @@ html {
   -moz-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Add this for Windows scaling */
+  -ms-overflow-style: -ms-autohiding-scrollbar;
 }
 
 .light-theme {
@@ -49,10 +51,11 @@ body {
   transition: background-color 0.3s, color 0.3s;
   line-height: 1.6;
   width: 100%;
-  max-width: 100vw;
+  max-width: 100%;
   overflow-x: hidden;
   margin: 0;
   padding: 0;
+  position: relative;
 }
 
 #root {
@@ -65,7 +68,7 @@ body {
 .app-layout {
   display: flex;
   width: 100%;
-  max-width: 100vw;
+  max-width: 100%;
   overflow-x: hidden;
 }
 
@@ -157,7 +160,7 @@ body {
   overflow-y: auto;
   overflow-x: hidden; /* Prevent horizontal scroll on main content */
   width: calc(100% - 240px);
-  max-width: calc(100vw - 240px);
+  max-width: 100%;
   box-sizing: border-box;
 }
 
@@ -200,6 +203,7 @@ body {
   width: 100%;
   box-sizing: border-box;
   overflow-x: hidden; /* Prevent container overflow */
+  position: relative;
 }
 
 .page-header {
@@ -330,7 +334,7 @@ body {
   .main-content {
     margin-left: 0;
     width: 100%;
-    max-width: 100vw;
+    max-width: 100%;
   }
 
   .mobile-header {

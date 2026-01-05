@@ -106,12 +106,16 @@
   max-height: calc(100vh - 350px);
   overflow-y: auto;
   overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
 }
 
 .table-wrapper.printable-area {
   max-height: calc(100vh - 350px);
   overflow-y: auto;
   overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
 }
 
 .table {
