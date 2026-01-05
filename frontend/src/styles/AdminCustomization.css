@@ -10,14 +10,14 @@
 
 .customization-form .card h2 {
   margin: 0 0 0.5rem 0;
-  font-size: 1.25rem;
+  font-size: 20px;
   color: var(--text-primary);
 }
 
 .field-description {
   margin: 0 0 1rem 0;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 14px;
 }
 
 .customization-form .form-group {
@@ -36,7 +36,7 @@
   padding: 0.75rem;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 16px;
   font-family: inherit;
   background: var(--bg-primary);
   color: var(--text-primary);
@@ -53,7 +53,7 @@
 .customization-form .form-text {
   display: block;
   margin-top: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 14px;
   color: var(--text-secondary);
 }
 
@@ -109,7 +109,7 @@
 .page-description {
   margin-top: 0.5rem;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 14px;
 }
 
 /* Tabs for Email / Contact */
@@ -127,7 +127,7 @@
   color: var(--text-secondary);
   font-family: var(--font-family);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 15px;
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.2s;

@@ -5,7 +5,7 @@
 .event-status {
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -98,7 +98,7 @@
 }
 
 .stat-number {
-  font-size: 2rem;
+  font-size: 32px;
   font-weight: 700;
   color: var(--primary-color);
   margin-bottom: 0.5rem;
@@ -106,7 +106,7 @@
 
 .stat-label {
   color: var(--text-secondary);
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;

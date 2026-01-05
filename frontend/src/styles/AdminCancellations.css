@@ -11,7 +11,7 @@
 .mr-8 { margin-right: 8px; }
 
 .cancel-loading-text {
-  font-size: 0.9rem;
+  font-size: 14px;
   color: #6b7280;
   margin-bottom: 0.75rem;
 }
@@ -31,7 +31,7 @@
   color: var(--text-secondary);
   font-family: var(--font-family);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 15px;
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.2s;

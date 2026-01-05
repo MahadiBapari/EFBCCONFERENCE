@@ -19,7 +19,7 @@
 }
 
 .registration-card h1 {
-  font-size: 2rem;
+  font-size: 32px;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 1rem;
@@ -28,7 +28,7 @@
 .registration-card p {
   color: var(--text-secondary);
   margin-bottom: 2rem;
-  font-size: 1.1rem;
+  font-size: 18px;
 }
 
 .registration-form {
@@ -60,7 +60,7 @@
   background-color: var(--surface-color);
   color: var(--text-primary);
   font-family: var(--font-family);
-  font-size: 0.95rem;
+  font-size: 15px;
   transition: border-color 0.2s, background-color 0.2s;
 }
 
@@ -94,7 +94,7 @@
 .login-link p {
   color: var(--text-secondary);
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 15px;
 }
 
 .login-link a {
@@ -111,7 +111,7 @@
 
 .password-requirements {
   margin-top: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 14px;
   color: var(--text-secondary);
 }
 
@@ -126,7 +126,7 @@
 
 .error-message {
   color: var(--danger-color);
-  font-size: 0.875rem;
+  font-size: 14px;
   margin-top: 0.5rem;
   display: flex;
   align-items: center;
@@ -135,7 +135,7 @@
 
 .success-message {
   color: var(--success-color);
-  font-size: 0.875rem;
+  font-size: 14px;
   margin-top: 0.5rem;
   display: flex;
   align-items: center;
@@ -212,13 +212,13 @@
 
 .success-alert-title {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 16px;
   color: #065f46;
   margin: 0 0 0.25rem 0;
 }
 
 .success-alert-message {
-  font-size: 0.9rem;
+  font-size: 14px;
   color: #047857;
   margin: 0;
   line-height: 1.5;
@@ -243,7 +243,7 @@
   border: none;
   border-radius: 8px;
   padding: 0.75rem 1.25rem;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -277,7 +277,7 @@
   gap: 0.5rem;
   padding: 0.625rem 0.875rem;
   border-radius: 6px;
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 500;
   animation: slideIn 0.3s ease;
 }
@@ -346,7 +346,7 @@
 }
 
 .error-alert-text p {
-  font-size: 0.9rem;
+  font-size: 14px;
   color: #991b1b;
   margin: 0;
   line-height: 1.5;

@@ -27,7 +27,7 @@
 
 .event-item h3 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 20px;
   font-weight: 600;
   color: var(--text-primary);
   flex: 1;
@@ -38,14 +38,14 @@
   color: white;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: 12px;
   font-weight: 600;
   margin-left: 1rem;
 }
 
 .event-date {
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: 15px;
   margin-bottom: 1rem;
 }
 
@@ -70,7 +70,7 @@
 
 .registration-info h4 {
   margin: 0 0 0.5rem 0;
-  font-size: 1rem;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -79,7 +79,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 14px;
   color: var(--text-secondary);
 }
 

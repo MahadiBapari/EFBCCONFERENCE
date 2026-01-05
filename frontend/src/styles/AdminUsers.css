@@ -16,7 +16,7 @@
 
 .admin-users-header h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 32px;
   color: var(--text-primary);
 }
 
@@ -31,7 +31,7 @@
   padding: 0.5rem 1rem;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 16px;
   min-width: 250px;
   background: var(--bg-secondary);
   color: var(--text-primary);
@@ -110,7 +110,7 @@
   display: inline-block;
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 500;
   text-transform: capitalize;
 }
@@ -134,7 +134,7 @@
   display: inline-block;
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -290,7 +290,7 @@
 }
 
 .pagination-total {
-  font-size: 0.875rem;
+  font-size: 14px;
   color: var(--text-secondary);
   font-weight: normal;
 }
@@ -305,7 +305,7 @@
   padding-top: 1rem;
   border-top: 1px solid var(--border-color);
   color: var(--text-secondary);
-  font-size: 0.875rem;
+  font-size: 14px;
   text-align: center;
 }
 
@@ -337,13 +337,13 @@
 
 .admin-users-modal h2 {
   margin: 0 0 0.5rem 0;
-  font-size: 1.5rem;
+  font-size: 24px;
   color: var(--text-primary);
 }
 
 .admin-users-modal-subtitle {
   margin: 0 0 1rem 0;
-  font-size: 0.9rem;
+  font-size: 14px;
   color: var(--text-secondary);
 }
 
@@ -363,7 +363,7 @@
 
 .admin-users-modal-form label {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 14px;
   color: var(--text-primary);
 }
 
@@ -372,7 +372,7 @@
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   border: 1px solid var(--border-color);
-  font-size: 0.95rem;
+  font-size: 15px;
   background: var(--bg-secondary);
   color: var(--text-primary);
 }
@@ -421,7 +421,7 @@
   }
 
   .admin-users-table {
-    font-size: 0.875rem;
+    font-size: 14px;
   }
 
   .admin-users-table th,

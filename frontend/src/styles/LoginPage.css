@@ -19,7 +19,7 @@
 }
 
 .login-card h1 {
-  font-size: 2rem;
+  font-size: 32px;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 1rem;
@@ -28,7 +28,7 @@
 .login-card p {
   color: var(--text-secondary);
   margin-bottom: 2rem;
-  font-size: 1.1rem;
+  font-size: 18px;
 }
 
 .input-with-action { 
@@ -93,7 +93,7 @@
 .login-link p {
   color: var(--text-secondary);
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 15px;
 }
 
 .login-link a {
@@ -115,7 +115,7 @@
   text-decoration: none;
   font-weight: 400;
   cursor: pointer;
-  font-size: 20 px;
+  font-size: 20px;
   font-family: inherit;
   transition: color 0.2s;
   padding: 0;

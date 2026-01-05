@@ -30,7 +30,7 @@
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 15px;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
 }
@@ -45,7 +45,7 @@
   padding: 0.5rem 1rem;
   border: 2px solid var(--border-color);
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 16px;
   background: var(--surface-color);
   color: var(--text-primary);
   transition: all 0.2s ease;
@@ -113,7 +113,7 @@ select {
 
 .error-message {
   color: #e74c3c;
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 500;
   margin-top: 0.25rem;
   display: flex;
@@ -123,7 +123,7 @@ select {
 
 .error-message::before {
   content: "⚠️";
-  font-size: 0.75rem;
+  font-size: 12px;
 }
 
 .date-preview {
@@ -131,7 +131,7 @@ select {
   border: 1px solid rgba(52, 152, 219, 0.2);
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
+  font-size: 14px;
   color: var(--primary-color);
   font-weight: 500;
   margin-top: 0.5rem;
@@ -162,7 +162,7 @@ select {
 .info-label {
   font-weight: 600;
   color: var(--text-secondary);
-  font-size: 0.875rem;
+  font-size: 14px;
 }
 
 .info-value {
@@ -172,7 +172,7 @@ select {
   background: var(--surface-color);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-size: 0.875rem;
+  font-size: 14px;
 }
 
 /* Modal Title Enhancements */
@@ -184,14 +184,14 @@ select {
 
 .modal-title-content h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .modal-subtitle {
   margin: 0.25rem 0 0 0;
-  font-size: 0.875rem;
+  font-size: 14px;
   color: var(--text-secondary);
   opacity: 0.8;
 }
@@ -310,7 +310,7 @@ select {
   }
   
   .modal-title-content h2 {
-    font-size: 1.25rem;
+    font-size: 20px;
   }
   
   .modal-footer-actions {
@@ -381,7 +381,7 @@ select {
 }
 
 .activities-title {
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
@@ -401,7 +401,7 @@ select {
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -410,7 +410,7 @@ select {
   border: none;
   color: white;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 16px;
   font-weight: bold;
   padding: 0;
   width: 16px;

@@ -36,7 +36,7 @@
 
 .event-card-header-text h2 {
   margin: 0 0 0.5rem 0;
-  font-size: 1.25rem;
+  font-size: 20px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -44,7 +44,7 @@
 .event-card-header-text p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: 15px;
 }
 
 .event-card-footer {

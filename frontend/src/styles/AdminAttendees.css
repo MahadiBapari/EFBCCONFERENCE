@@ -21,7 +21,7 @@
   color: var(--text-secondary);
   font-family: var(--font-family);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 14px;
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.2s;
@@ -48,7 +48,7 @@
   color: var(--text-secondary);
   font-family: var(--font-family);
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -131,14 +131,14 @@
   background-color: var(--background-color);
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 0.75rem;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .table td {
   color: var(--text-primary);
-  font-size: 0.75rem;
+  font-size: 12px;
 }
 
 /* Wider, scrollable layout for bulk attendee detail table */
@@ -169,7 +169,7 @@
   min-width: 2000px; /* Increased to accommodate all columns */
   table-layout: fixed; /* Fixed layout to respect width styles for resizing */
   width: auto; /* Use auto width to allow columns to control their own widths */
-  font-size: 0.75rem;
+  font-size: 12px;
   border-collapse: collapse;
 }
 
@@ -216,7 +216,7 @@
   vertical-align: top; /* Align content to top for multi-line cells */
   height: auto; /* Allow row height to adjust based on content */
   box-sizing: border-box; /* Include padding and border in width calculation */
-  font-size: 0.75rem; /* Explicit font size for table cells */
+  font-size: 12px; /* Explicit font size for table cells */
 }
 
 /* Force width styles to be respected for resizable columns */
@@ -375,7 +375,7 @@
   margin-top: 0.5rem;
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
-  font-size: 0.7rem;
+  font-size: 11px;
   font-weight: 500;
   max-width: 200px;
 }
@@ -396,7 +396,7 @@
   display: inline-block;
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
-  font-size: 0.7rem;
+  font-size: 11px;
   font-weight: 600;
   background-color: #dbeafe;
   color: #1e40af;
@@ -433,13 +433,13 @@
 
 .attendee-modal h2 {
   margin: 0 0 0.5rem 0;
-  font-size: 1.3rem;
+  font-size: 21px;
   color: var(--text-primary);
 }
 
 .attendee-modal-subtitle {
   margin: 0 0 1rem 0;
-  font-size: 0.8rem;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
@@ -458,14 +458,14 @@
 .attendee-modal-loading,
 .attendee-modal-empty {
   padding: 1rem;
-  font-size: 0.8rem;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
 .attendee-user-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8rem;
+  font-size: 13px;
 }
 
 .attendee-user-table th,
@@ -479,7 +479,7 @@
   background: var(--bg-tertiary);
   font-weight: 600;
   text-transform: uppercase;
-  font-size: 0.8rem;
+  font-size: 13px;
   letter-spacing: 0.05em;
 }
 
@@ -487,7 +487,7 @@
   display: inline-block;
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 11px;
   font-weight: 500;
 }
 
@@ -510,7 +510,7 @@
 
 .modal-helper-text {
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 13px;
   margin-top: 0.5rem;
 }
 

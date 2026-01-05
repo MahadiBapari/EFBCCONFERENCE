@@ -18,7 +18,7 @@
 
 .profile-info h3 {
   margin: 0 0 1rem 0;
-  font-size: 1.25rem;
+  font-size: 20px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -42,7 +42,7 @@
 
 .profile-detail span {
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: 15px;
 }
 
 .profile-field {

@@ -29,13 +29,13 @@
   min-width: 220px;
   color: var(--muted-color);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 14px;
 }
 
 .preview-value {
   flex: 1;
   color: var(--text-primary);
-  font-size: 0.95rem;
+  font-size: 15px;
 }
 
 .modal-footer-actions {
