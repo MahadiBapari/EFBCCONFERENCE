@@ -659,7 +659,7 @@ const confirmSingleDelete = async () => {
       'Spouse First Name': reg.spouseFirstName,
       'Spouse Last Name': reg.spouseLastName,
       'Spouse Dinner Ticket': reg.spouseDinnerTicket ? 'Yes' : 'No',
-      'Kids Count': reg.kids && reg.kids.length > 0 ? reg.kids.length : 0,
+      'Children Count': reg.kids && reg.kids.length > 0 ? reg.kids.length : 0,
       'Payment Method': reg.paymentMethod,
       'Paid?': (reg as any).paid ? 'Yes' : 'No',
       'Payment ID': (reg as any).squarePaymentId || '',
@@ -1181,6 +1181,15 @@ const confirmSingleDelete = async () => {
                     <span 
                       className="resize-handle"
                       onMouseDown={(e) => handleResizeStart(e, 'spouseDinnerTicket')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.kidsCount}px`, minWidth: `${columnWidths.kidsCount}px`, position: 'relative' }}
+                  >
+                    Children Count
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'kidsCount')}
                     />
                   </th>
                   <th 

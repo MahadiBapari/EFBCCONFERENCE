@@ -1388,10 +1388,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               </div>
               {(event.kidsPricing && event.kidsPricing.length > 0) && (
                 <div className="pricing-section">
-                  <h4 className="pricing-title">Kids Registration</h4>
+                  <h4 className="pricing-title">Child/Children Registration</h4>
                   {(event.kidsPricing || []).map((t, i) => (
                     <div className="pricing-item" key={i}>
-                      <span className="pricing-label">{t.label || `Kids registration ${i + 1}`}:</span>
+                      <span className="pricing-label">{t.label || `Child/Children registration ${i + 1}`}:</span>
                       <span className="pricing-amount">${t.price}{(t.startDate || t.endDate) ? ` ${t.startDate ? 'between ' + formatDateShort(t.startDate) : ''}${t.startDate && t.endDate ? ' to ' : ''}${t.endDate ? formatDateShort(t.endDate) : ''}` : ''}</span>
                     </div>
                   ))}
@@ -1818,15 +1818,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               )}
             </div>
 
-          {/* Kids Registration Section */}
+          {/* Child/Children Registration Section */}
           <div className="form-section">
-            <h3 className="section-title">Kids Registration</h3>
+            <h3 className="section-title">Child/Children Registration</h3>
             <p className="form-help-text">Add children who will be attending the conference.</p>
             
             {kids.map((kid, idx) => (
               <div key={idx} className="kid-entry" style={{ border: '1px solid #ddd', padding: '1rem', marginBottom: '1rem', borderRadius: '4px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <h4 style={{ margin: 0 }}>Kid {idx + 1}</h4>
+                  <h4 style={{ margin: 0 }}>Child {idx + 1}</h4>
                   <button
                     type="button"
                     className="btn btn-danger btn-sm"
@@ -1926,25 +1926,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   </div>
                 </div>
                 
-                <div className="form-group">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={kid.lunchTicket || false}
-                      onChange={(e) => {
-                        const updatedKids = [...kids];
-                        updatedKids[idx] = { ...updatedKids[idx], lunchTicket: e.target.checked };
-                        handleInputChange('kids', updatedKids);
-                      }}
-                    />
-                    <span>Include lunch ticket for this child</span>
-                  </label>
-                </div>
-                
                 {isAdminEdit && (
                   <div className="form-group">
                     <label htmlFor={`kid_${idx}_price`} className="form-label">
-                      Admin Price Override (per kid)
+                      Admin Price Override (per child)
                     </label>
                     <input
                       id={`kid_${idx}_price`}
@@ -1977,18 +1962,17 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   lastName: '',
                   badgeName: '',
                   age: 0,
-                  lunchTicket: false,
                 };
                 handleInputChange('kids', [...kids, newKid]);
               }}
             >
-              Add Kid
+              Add Child
             </button>
             
             {isAdminEdit && kids.length > 0 && (
               <div className="form-group" style={{ marginTop: '1rem' }}>
                 <label htmlFor="kidsTotalPrice" className="form-label">
-                  Kids Total Price Override
+                  Children Total Price Override
                 </label>
                 <input
                   id="kidsTotalPrice"
@@ -2003,7 +1987,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   }}
                 />
                 <small className="form-help-text">
-                  Override the total price for all kids. If not set, price will be calculated from the active pricing tier.
+                  Override the total price for all children. If not set, price will be calculated from the active pricing tier.
                 </small>
               </div>
             )}
@@ -2205,7 +2189,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   ) : null}
                   {kids.length > 0 && (
                     <div className="payment-item">
-                      <span>Kids Registration ({kids.length} {kids.length === 1 ? 'kid' : 'kids'}):</span>
+                      <span>Child/Children Registration ({kids.length} {kids.length === 1 ? 'child' : 'children'}):</span>
                       <span>${(function () {
                         if (formData.kidsTotalPrice !== undefined) {
                           return formData.kidsTotalPrice.toFixed(2);
