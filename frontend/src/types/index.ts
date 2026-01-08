@@ -1,5 +1,14 @@
 // Global type definitions
 
+export interface Kid {
+  firstName: string;
+  lastName: string;
+  badgeName: string;
+  age: number;
+  price?: number; // Admin-adjusted price per kid
+  lunchTicket?: boolean;
+}
+
 export interface User {
   id: number;
   name: string;
@@ -24,6 +33,7 @@ export interface Event {
   breakfastPrice?: number;
   breakfastEndDate?: string;
   childLunchPrice?: number;
+  kidsPricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
 }
 
 export interface Registration {
@@ -79,7 +89,11 @@ export interface Registration {
   spouseLastName?: string;
   spouseBreakfast?: boolean;
   
-  // Child Information
+  // Kids Information (new - supports multiple kids)
+  kids?: Kid[];
+  kidsTotalPrice?: number; // Admin-adjusted total price for all kids
+  
+  // Child Information (legacy - kept for backward compatibility)
   childFirstName?: string;
   childLastName?: string;
   childLunchTicket?: boolean;

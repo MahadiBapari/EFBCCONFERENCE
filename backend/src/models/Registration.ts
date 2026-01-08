@@ -42,6 +42,8 @@ export class Registration {
   public spouseFirstName?: string;
   public spouseLastName?: string;
   public spouseDinnerTicket: boolean;
+  public kids?: Array<{ firstName: string; lastName: string; badgeName: string; age: number; price?: number; lunchTicket?: boolean }>;
+  public kidsTotalPrice?: number;
   public childFirstName?: string;
   public childLastName?: string;
   public childLunchTicket?: boolean;
@@ -133,6 +135,8 @@ export class Registration {
     // Accept boolean or "Yes"/"No" and normalize to boolean
     const sdt: any = (data as any).spouseDinnerTicket;
     this.spouseDinnerTicket = sdt === true || sdt === 'Yes' || sdt === 'yes' || sdt === 1;
+    this.kids = (data as any).kids || undefined;
+    this.kidsTotalPrice = (data as any).kidsTotalPrice ?? undefined;
     this.childFirstName = (data as any).childFirstName;
     this.childLastName = (data as any).childLastName;
     const clt: any = (data as any).childLunchTicket;
@@ -197,6 +201,8 @@ export class Registration {
       spouseFirstName: this.spouseFirstName,
       spouseLastName: this.spouseLastName,
       spouseDinnerTicket: this.spouseDinnerTicket,
+      kids: this.kids,
+      kidsTotalPrice: this.kidsTotalPrice,
       childFirstName: this.childFirstName,
       childLastName: this.childLastName,
       childLunchTicket: this.childLunchTicket,
@@ -267,6 +273,8 @@ export class Registration {
       tuesday_early_reception: this.nullIfUndefined(this.tuesdayEarlyReception),
       spouse_first_name: this.nullIfUndefined(this.spouseFirstName),
       spouse_last_name: this.nullIfUndefined(this.spouseLastName),
+      kids_data: this.kids && this.kids.length > 0 ? JSON.stringify(this.kids) : null,
+      kids_total_price: this.kidsTotalPrice ?? null,
       child_first_name: this.nullIfUndefined(this.childFirstName),
       child_last_name: this.nullIfUndefined(this.childLastName),
       child_lunch_ticket: this.childLunchTicket ?? false,
@@ -332,6 +340,28 @@ export class Registration {
       spouseBreakfast: !!row.spouse_breakfast,
       spouseFirstName: row.spouse_first_name,
       spouseLastName: row.spouse_last_name,
+      kids: (() => {
+        // Parse kids from JSON or migrate from legacy fields
+        if (row.kids_data) {
+          try {
+            return JSON.parse(row.kids_data);
+          } catch (e) {
+            console.error('Error parsing kids_data:', e);
+            return undefined;
+          }
+        } else if (row.child_first_name || row.child_last_name) {
+          // Migrate legacy single child to array
+          return [{
+            firstName: row.child_first_name || '',
+            lastName: row.child_last_name || '',
+            badgeName: `${row.child_first_name || ''} ${row.child_last_name || ''}`.trim(),
+            age: 0, // Unknown age for legacy data
+            lunchTicket: !!row.child_lunch_ticket,
+          }];
+        }
+        return undefined;
+      })(),
+      kidsTotalPrice: row.kids_total_price ?? undefined,
       childFirstName: row.child_first_name,
       childLastName: row.child_last_name,
       childLunchTicket: !!row.child_lunch_ticket,

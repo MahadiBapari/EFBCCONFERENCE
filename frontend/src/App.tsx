@@ -232,6 +232,9 @@ useEffect(() => {
         spouseDinnerTicket: !!(r.spouseDinnerTicket ?? false),
         spouseFirstName: r.spouseFirstName ?? '',
         spouseLastName: r.spouseLastName ?? '',
+        // Kids
+        kids: r.kids ?? (r.kids_data ? (typeof r.kids_data === 'string' ? JSON.parse(r.kids_data) : r.kids_data) : undefined),
+        kidsTotalPrice: r.kidsTotalPrice ?? r.kids_total_price ?? undefined,
         // Payment
         totalPrice: Number(r.totalPrice ?? 675),
         paymentMethod: r.paymentMethod ?? 'Card',

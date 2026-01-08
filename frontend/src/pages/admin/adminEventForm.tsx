@@ -27,6 +27,11 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     { label: 'Dinner Ticket', price: undefined },
     { label: 'On-Site Dinner Ticket', price: undefined },
   ]);
+  const [kidsPricing, setKidsPricing] = useState<Array<{ label: string; price?: number; startDate?: string; endDate?: string }>>([
+    { label: 'Early Bird Kids Registration', price: undefined },
+    { label: 'Kids Registration', price: undefined },
+    { label: 'On-Site Kids Registration', price: undefined },
+  ]);
   // const [childLunchPrice, setChildLunchPrice] = useState<number | undefined>(undefined);
   const [errors, setErrors] = useState<{ name?: string; startDate?: string; endDate?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,6 +55,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     setActivities(event.activities || []);
     setRegistrationPricing(event.registrationPricing || registrationPricing);
     setSpousePricing(event.spousePricing && event.spousePricing.length ? event.spousePricing : spousePricing);
+    setKidsPricing(event.kidsPricing && event.kidsPricing.length ? event.kidsPricing : kidsPricing);
     // setChildLunchPrice(event.childLunchPrice);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -101,6 +107,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
         activities,
         registrationPricing,
         spousePricing,
+        kidsPricing,
         // childLunchPrice,
       } as Event);
     } finally {
@@ -314,6 +321,61 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
                   </div>
                 ))}
                 <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setSpousePricing([...spousePricing,{label:'',price:undefined}])} disabled={isSubmitting}>Add Tier</button>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Kids Registration Pricing Tiers</label>
+              <div className="pricing-tiers">
+                {kidsPricing.map((tier, idx) => (
+                  <div key={idx} className="tier-row">
+                    <input
+                      className="form-control tier-label"
+                      type="text"
+                      placeholder="Label (e.g., Early Bird)"
+                      aria-label="Kids Tier Label"
+                      value={tier.label}
+                      onChange={(e)=>{ const v=[...kidsPricing]; v[idx]={...v[idx], label:e.target.value}; setKidsPricing(v); }}
+                      disabled={isSubmitting}
+                    />
+                    <input
+                      className="form-control tier-price"
+                      type="number"
+                      placeholder="Price"
+                      aria-label="Kids Tier Price"
+                      min={0}
+                      value={tier.price ?? ''}
+                      onChange={(e)=>{ const raw=e.target.value; const v=[...kidsPricing]; v[idx]={...v[idx], price: raw === '' ? undefined : Number(raw)}; setKidsPricing(v); }}
+                      disabled={isSubmitting}
+                    />
+                    <input
+                      className="form-control tier-date"
+                      type="date"
+                      aria-label="Kids Tier Start Date"
+                      value={tier.startDate || ''}
+                      onChange={(e)=>{ const v=[...kidsPricing]; v[idx]={...v[idx], startDate:e.target.value}; setKidsPricing(v); }}
+                      disabled={isSubmitting}
+                    />
+                    <input
+                      className="form-control tier-date"
+                      type="date"
+                      aria-label="Kids Tier End Date"
+                      value={tier.endDate || ''}
+                      onChange={(e)=>{ const v=[...kidsPricing]; v[idx]={...v[idx], endDate:e.target.value}; setKidsPricing(v); }}
+                      disabled={isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      aria-label="Remove kids tier"
+                      onClick={()=>{ const v=[...kidsPricing]; v.splice(idx,1); setKidsPricing(v); }}
+                      disabled={isSubmitting}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setKidsPricing([...kidsPricing,{label:'',price:undefined}])} disabled={isSubmitting}>Add Tier</button>
               </div>
             </div>
             

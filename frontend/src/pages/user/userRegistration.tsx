@@ -213,7 +213,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     spouseDinnerTicket: toBooleanYesNo((registration as any)?.spouseDinnerTicket) || false,
     spouseFirstName: registration?.spouseFirstName || '',
     spouseLastName: registration?.spouseLastName || '',
-    // Child Information
+    
+    // Kids Information
+    kids: registration?.kids || [],
+    kidsTotalPrice: registration?.kidsTotalPrice,
+    
+    // Child Information (legacy)
     // childLunchTicket: (registration as any)?.childLunchTicket || false,
     // childFirstName: (registration as any)?.childFirstName || '',
     // childLastName: (registration as any)?.childLastName || '',
@@ -295,9 +300,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   }, [registration?.clubRentals]);
 
   const spouseDinnerSelected = !!formData.spouseDinnerTicket;
+  const kids = useMemo(() => formData.kids || [], [formData.kids]);
   // const childLunchSelected = !!(formData as any).childLunchTicket;
   const regTiers = useMemo(() => event?.registrationPricing || [], [event?.registrationPricing]);
   const spouseTiers = useMemo(() => event?.spousePricing || [], [event?.spousePricing]);
+  const kidsTiers = useMemo(() => event?.kidsPricing || [], [event?.kidsPricing]);
   // const childLunchPrice = useMemo(() => event?.childLunchPrice || 0, [event?.childLunchPrice]);
 
   // Ensure spouse ticket stays checked if payment was made
@@ -380,11 +387,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     };
     const regActive = pickTier(withBounds(regTiers));
     const spouseActive = pickTier(withBounds(spouseTiers));
+    const kidsActive = pickTier(withBounds(kidsTiers));
     let total = regActive?.price ?? 675;
     if (spouseDinnerSelected) total += spouseActive?.price ?? 200;
+    // Calculate kids price: use admin override if set, otherwise calculate from tiers
+    if (kids.length > 0) {
+      const kidsPrice = formData.kidsTotalPrice !== undefined 
+        ? formData.kidsTotalPrice 
+        : (kidsActive?.price ?? 0) * kids.length;
+      total += kidsPrice;
+    }
     // if (childLunchSelected) total += childLunchPrice;
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, spouseDinnerSelected, registration?.totalPrice, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers]);
+  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, formData.kidsTotalPrice, spouseDinnerSelected, registration?.totalPrice, kids, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -428,6 +443,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (formData.spouseDinnerTicket) {
       if (!formData.spouseFirstName?.trim()) newErrors.spouseFirstName = 'Spouse first name is required';
       if (!formData.spouseLastName?.trim()) newErrors.spouseLastName = 'Spouse last name is required';
+    }
+    // Validate kids
+    if (kids.length > 0) {
+      kids.forEach((kid, idx) => {
+        if (!kid.firstName?.trim()) (newErrors as any)[`kid_${idx}_firstName`] = 'First name is required';
+        if (!kid.lastName?.trim()) (newErrors as any)[`kid_${idx}_lastName`] = 'Last name is required';
+        if (!kid.badgeName?.trim()) (newErrors as any)[`kid_${idx}_badgeName`] = 'Badge name is required';
+        if (!kid.age || kid.age < 0) (newErrors as any)[`kid_${idx}_age`] = 'Valid age is required';
+      });
     }
     // if ((formData as any).childLunchTicket) {
     //   if (!(formData as any).childFirstName?.trim()) (newErrors as any).childFirstName = 'Child first name is required';
@@ -626,6 +650,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         massageTimeSlot: massageTimeSlotValue,
         pickleballEquipment: pickleballEquipmentValue,
         badgeName: (formData.badgeName || '').toUpperCase(), // Ensure badge name is saved in uppercase
+        kids: kids.map(kid => ({
+          ...kid,
+          badgeName: (kid.badgeName || '').toUpperCase(), // Ensure kids badge names are uppercase
+        })),
         address: composedAddress, // Legacy field for backward compatibility
         addressStreet: addrStreet.trim(),
         city: addrCity.trim(),
@@ -1358,6 +1386,17 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   </div>
                 ))}
               </div>
+              {(event.kidsPricing && event.kidsPricing.length > 0) && (
+                <div className="pricing-section">
+                  <h4 className="pricing-title">Kids Registration</h4>
+                  {(event.kidsPricing || []).map((t, i) => (
+                    <div className="pricing-item" key={i}>
+                      <span className="pricing-label">{t.label || `Kids registration ${i + 1}`}:</span>
+                      <span className="pricing-amount">${t.price}{(t.startDate || t.endDate) ? ` ${t.startDate ? 'between ' + formatDateShort(t.startDate) : ''}${t.startDate && t.endDate ? ' to ' : ''}${t.endDate ? formatDateShort(t.endDate) : ''}` : ''}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="registration-includes">
               <h4 className="includes-title">Registration Form Includes:</h4>
@@ -1779,6 +1818,197 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               )}
             </div>
 
+          {/* Kids Registration Section */}
+          <div className="form-section">
+            <h3 className="section-title">Kids Registration</h3>
+            <p className="form-help-text">Add children who will be attending the conference.</p>
+            
+            {kids.map((kid, idx) => (
+              <div key={idx} className="kid-entry" style={{ border: '1px solid #ddd', padding: '1rem', marginBottom: '1rem', borderRadius: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <h4 style={{ margin: 0 }}>Kid {idx + 1}</h4>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    onClick={() => {
+                      const updatedKids = [...kids];
+                      updatedKids.splice(idx, 1);
+                      handleInputChange('kids', updatedKids);
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor={`kid_${idx}_firstName`} className="form-label">
+                      First Name <span className="required-asterisk">*</span>
+                    </label>
+                    <input
+                      id={`kid_${idx}_firstName`}
+                      type="text"
+                      className={`form-control ${(errors as any)[`kid_${idx}_firstName`] ? 'error' : ''}`}
+                      value={kid.firstName || ''}
+                      onChange={(e) => {
+                        const updatedKids = [...kids];
+                        updatedKids[idx] = { ...updatedKids[idx], firstName: e.target.value };
+                        handleInputChange('kids', updatedKids);
+                      }}
+                    />
+                    {(errors as any)[`kid_${idx}_firstName`] && (
+                      <div className="error-message">{(errors as any)[`kid_${idx}_firstName`]}</div>
+                    )}
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor={`kid_${idx}_lastName`} className="form-label">
+                      Last Name <span className="required-asterisk">*</span>
+                    </label>
+                    <input
+                      id={`kid_${idx}_lastName`}
+                      type="text"
+                      className={`form-control ${(errors as any)[`kid_${idx}_lastName`] ? 'error' : ''}`}
+                      value={kid.lastName || ''}
+                      onChange={(e) => {
+                        const updatedKids = [...kids];
+                        updatedKids[idx] = { ...updatedKids[idx], lastName: e.target.value };
+                        handleInputChange('kids', updatedKids);
+                      }}
+                    />
+                    {(errors as any)[`kid_${idx}_lastName`] && (
+                      <div className="error-message">{(errors as any)[`kid_${idx}_lastName`]}</div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor={`kid_${idx}_badgeName`} className="form-label">
+                      Badge Name <span className="required-asterisk">*</span>
+                    </label>
+                    <input
+                      id={`kid_${idx}_badgeName`}
+                      type="text"
+                      className={`form-control ${(errors as any)[`kid_${idx}_badgeName`] ? 'error' : ''}`}
+                      value={kid.badgeName || ''}
+                      onChange={(e) => {
+                        const updatedKids = [...kids];
+                        updatedKids[idx] = { ...updatedKids[idx], badgeName: e.target.value };
+                        handleInputChange('kids', updatedKids);
+                      }}
+                    />
+                    {(errors as any)[`kid_${idx}_badgeName`] && (
+                      <div className="error-message">{(errors as any)[`kid_${idx}_badgeName`]}</div>
+                    )}
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor={`kid_${idx}_age`} className="form-label">
+                      Age <span className="required-asterisk">*</span>
+                    </label>
+                    <input
+                      id={`kid_${idx}_age`}
+                      type="number"
+                      min="0"
+                      max="17"
+                      className={`form-control ${(errors as any)[`kid_${idx}_age`] ? 'error' : ''}`}
+                      value={kid.age || ''}
+                      onChange={(e) => {
+                        const updatedKids = [...kids];
+                        updatedKids[idx] = { ...updatedKids[idx], age: parseInt(e.target.value) || 0 };
+                        handleInputChange('kids', updatedKids);
+                      }}
+                    />
+                    {(errors as any)[`kid_${idx}_age`] && (
+                      <div className="error-message">{(errors as any)[`kid_${idx}_age`]}</div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={kid.lunchTicket || false}
+                      onChange={(e) => {
+                        const updatedKids = [...kids];
+                        updatedKids[idx] = { ...updatedKids[idx], lunchTicket: e.target.checked };
+                        handleInputChange('kids', updatedKids);
+                      }}
+                    />
+                    <span>Include lunch ticket for this child</span>
+                  </label>
+                </div>
+                
+                {isAdminEdit && (
+                  <div className="form-group">
+                    <label htmlFor={`kid_${idx}_price`} className="form-label">
+                      Admin Price Override (per kid)
+                    </label>
+                    <input
+                      id={`kid_${idx}_price`}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="form-control"
+                      value={kid.price || ''}
+                      placeholder="Leave empty to use tier pricing"
+                      onChange={(e) => {
+                        const updatedKids = [...kids];
+                        updatedKids[idx] = { 
+                          ...updatedKids[idx], 
+                          price: e.target.value === '' ? undefined : parseFloat(e.target.value) 
+                        };
+                        handleInputChange('kids', updatedKids);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => {
+                const newKid = {
+                  firstName: '',
+                  lastName: '',
+                  badgeName: '',
+                  age: 0,
+                  lunchTicket: false,
+                };
+                handleInputChange('kids', [...kids, newKid]);
+              }}
+            >
+              Add Kid
+            </button>
+            
+            {isAdminEdit && kids.length > 0 && (
+              <div className="form-group" style={{ marginTop: '1rem' }}>
+                <label htmlFor="kidsTotalPrice" className="form-label">
+                  Kids Total Price Override
+                </label>
+                <input
+                  id="kidsTotalPrice"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="form-control"
+                  value={formData.kidsTotalPrice || ''}
+                  placeholder="Leave empty to calculate from tier pricing"
+                  onChange={(e) => {
+                    handleInputChange('kidsTotalPrice', e.target.value === '' ? undefined : parseFloat(e.target.value));
+                  }}
+                />
+                <small className="form-help-text">
+                  Override the total price for all kids. If not set, price will be calculated from the active pricing tier.
+                </small>
+              </div>
+            )}
+          </div>
+
           {/* Child section - only visible to admins */}
           {/* {isAdminEdit && (
             <div className="form-section">
@@ -1973,6 +2203,28 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       <span>${(function () { const now = getCurrentEasternTime(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
                     </div>
                   ) : null}
+                  {kids.length > 0 && (
+                    <div className="payment-item">
+                      <span>Kids Registration ({kids.length} {kids.length === 1 ? 'kid' : 'kids'}):</span>
+                      <span>${(function () {
+                        if (formData.kidsTotalPrice !== undefined) {
+                          return formData.kidsTotalPrice.toFixed(2);
+                        }
+                        const now = getCurrentEasternTime();
+                        const tiers = (event.kidsPricing || []).map((t: any) => ({ 
+                          ...t, 
+                          s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, 
+                          e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity 
+                        })).sort((a: any, b: any) => a.s - b.s);
+                        const active = tiers.find((t: any) => now >= t.s && now < t.e) || 
+                          (now < tiers[0]?.s ? tiers[0] : 
+                          (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : 
+                          (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
+                        const pricePerKid = active?.price ?? 0;
+                        return (pricePerKid * kids.length).toFixed(2);
+                      })()}</span>
+                    </div>
+                  )}
                   {isCard && convenienceFee > 0 && (
                     <div className="payment-item" style={{ color: '#6b7280', fontSize: '0.9rem' }}>
                       <span>Convenience Fee (3.5%):</span>

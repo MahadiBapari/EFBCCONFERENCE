@@ -154,6 +154,7 @@ const createTables = async () => {
     await migrateAddressFields();
     await migrateGroupAssignedColumn();
     await migrateChildLunchFeature();
+    await migrateKidsRegistration();
     await migratePickleballEquipment();
 
     // Activity Groups table (basic definition; columns may be extended by migrations)
@@ -510,6 +511,41 @@ const migrateChildLunchFeature = async (): Promise<void> => {
     }
   } catch (error: any) {
     console.error('Error migrating child lunch feature:', error?.message || error);
+  }
+};
+
+// Migration helper to add kids registration feature
+const migrateKidsRegistration = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    // Add kids_pricing to events table
+    const eventCols = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+      [dbName, 'events']
+    );
+    if (!eventCols.some((c: any) => c.COLUMN_NAME === 'kids_pricing')) {
+      await databaseService.query('ALTER TABLE `events` ADD COLUMN `kids_pricing` JSON NULL AFTER `spouse_pricing`');
+      console.log('🛠️ Added events.kids_pricing column');
+    }
+
+    // Add kids fields to registrations table
+    const regCols = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+      [dbName, 'registrations']
+    );
+    if (!regCols.some((c: any) => c.COLUMN_NAME === 'kids_data')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `kids_data` JSON NULL AFTER `child_lunch_ticket`');
+      console.log('🛠️ Added registrations.kids_data column');
+    }
+    if (!regCols.some((c: any) => c.COLUMN_NAME === 'kids_total_price')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `kids_total_price` DECIMAL(10,2) NULL AFTER `total_price`');
+      console.log('🛠️ Added registrations.kids_total_price column');
+    }
+  } catch (error: any) {
+    console.error('Error migrating kids registration:', error?.message || error);
   }
 };
 

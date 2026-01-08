@@ -92,6 +92,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     spouseFirstName: 120,
     spouseLastName: 120,
     spouseDinnerTicket: 150,
+    kidsCount: 100,
     paymentMethod: 120,
     paid: 80,
     paymentId: 200,
@@ -658,6 +659,7 @@ const confirmSingleDelete = async () => {
       'Spouse First Name': reg.spouseFirstName,
       'Spouse Last Name': reg.spouseLastName,
       'Spouse Dinner Ticket': reg.spouseDinnerTicket ? 'Yes' : 'No',
+      'Kids Count': reg.kids && reg.kids.length > 0 ? reg.kids.length : 0,
       'Payment Method': reg.paymentMethod,
       'Paid?': (reg as any).paid ? 'Yes' : 'No',
       'Payment ID': (reg as any).squarePaymentId || '',
@@ -1259,6 +1261,7 @@ const confirmSingleDelete = async () => {
                     <td style={{ width: `${columnWidths.spouseFirstName}px`, minWidth: `${columnWidths.spouseFirstName}px` }}>{displayValue(reg.spouseFirstName)}</td>
                     <td style={{ width: `${columnWidths.spouseLastName}px`, minWidth: `${columnWidths.spouseLastName}px` }}>{displayValue(reg.spouseLastName)}</td>
                     <td style={{ width: `${columnWidths.spouseDinnerTicket}px`, minWidth: `${columnWidths.spouseDinnerTicket}px` }}>{reg.spouseDinnerTicket ? 'Yes' : 'No'}</td>
+                    <td style={{ width: `${columnWidths.kidsCount}px`, minWidth: `${columnWidths.kidsCount}px` }}>{reg.kids && reg.kids.length > 0 ? reg.kids.length : '0'}</td>
                     <td style={{ width: `${columnWidths.paymentMethod}px`, minWidth: `${columnWidths.paymentMethod}px` }}>{displayValue(reg.paymentMethod)}</td>
                     <td style={{ width: `${columnWidths.paid}px`, minWidth: `${columnWidths.paid}px` }}>{(reg as any).paid ? 'Yes' : 'No'}</td>
                     <td style={{ width: `${columnWidths.paymentId}px`, minWidth: `${columnWidths.paymentId}px` }}>{displayValue((reg as any).squarePaymentId)}</td>

@@ -16,6 +16,7 @@ export class Event {
   public breakfastPrice?: number;
   public breakfastEndDate?: string;
   public childLunchPrice?: number;
+  public kidsPricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
 
   constructor(data: Partial<IEvent> & { spousePricing?: any }) {
     this.id = data.id;
@@ -34,6 +35,7 @@ export class Event {
     this.breakfastPrice = (data as any).breakfastPrice ?? undefined;
     this.breakfastEndDate = (data as any).breakfastEndDate || undefined;
     this.childLunchPrice = (data as any).childLunchPrice ?? undefined;
+    this.kidsPricing = (data as any).kidsPricing || [];
   }
 
   // Convert to JSON
@@ -54,7 +56,8 @@ export class Event {
       registrationPricing: this.registrationPricing,
       breakfastPrice: this.breakfastPrice,
       breakfastEndDate: this.breakfastEndDate,
-      childLunchPrice: this.childLunchPrice
+      childLunchPrice: this.childLunchPrice,
+      kidsPricing: this.kidsPricing
     };
   }
 
@@ -73,7 +76,8 @@ export class Event {
       registration_pricing: this.registrationPricing ? JSON.stringify(this.registrationPricing) : null,
       breakfast_price: this.breakfastPrice ?? null,
       breakfast_end_date: this.breakfastEndDate || null,
-      child_lunch_price: this.childLunchPrice ?? null
+      child_lunch_price: this.childLunchPrice ?? null,
+      kids_pricing: this.kidsPricing ? JSON.stringify(this.kidsPricing) : null
     };
   }
 
@@ -89,6 +93,7 @@ export class Event {
     }
     let spousePricing: any[] = [];
     let registrationPricing: any[] = [];
+    let kidsPricing: any[] = [];
     // Support both string and native JSON return types from mysql2
     if (row.spouse_pricing !== undefined && row.spouse_pricing !== null) {
       if (typeof row.spouse_pricing === 'string') {
@@ -107,6 +112,15 @@ export class Event {
         registrationPricing = row.registration_pricing;
       } else if (typeof row.registration_pricing === 'object') {
         registrationPricing = Array.isArray((row.registration_pricing as any)) ? (row.registration_pricing as any) : [];
+      }
+    }
+    if (row.kids_pricing !== undefined && row.kids_pricing !== null) {
+      if (typeof row.kids_pricing === 'string') {
+        try { kidsPricing = JSON.parse(row.kids_pricing); } catch { kidsPricing = []; }
+      } else if (Array.isArray(row.kids_pricing)) {
+        kidsPricing = row.kids_pricing;
+      } else if (typeof row.kids_pricing === 'object') {
+        kidsPricing = Array.isArray((row.kids_pricing as any)) ? (row.kids_pricing as any) : [];
       }
     }
     
@@ -135,7 +149,8 @@ export class Event {
       registrationPricing,
       breakfastPrice: row.breakfast_price,
       breakfastEndDate: row.breakfast_end_date,
-      childLunchPrice: row.child_lunch_price
+      childLunchPrice: row.child_lunch_price,
+      kidsPricing
     } as any);
   }
 }
