@@ -578,6 +578,11 @@ export async function sendRegistrationConfirmationEmail(params: {
   const paymentMethod = registration?.paymentMethod || registration?.payment_method || '';
   const squarePaymentId = registration?.squarePaymentId || registration?.square_payment_id || '';
   
+  // Calculate convenience fee (3.5% for card payments) and total with fee
+  const isCardPayment = paymentMethod === 'Card';
+  const convenienceFee = isCardPayment && paymentAmount > 0 ? paymentAmount * 0.035 : 0;
+  const totalWithFee = paymentAmount + convenienceFee;
+  
   // Format event date range as "12 to 15 May"
   const formattedEventDate = formatEventDateRange(eventStartDate || null, eventDate || null);
   
@@ -662,7 +667,7 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${spouseFirstName ? `<tr><td style="color:#6b7280;">Spouse First Name</td><td>${spouseFirstName}</td></tr>`:''}
         ${spouseLastName ? `<tr><td style="color:#6b7280;">Spouse Last Name</td><td>${spouseLastName}</td></tr>`:''}
         ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Payment Information</strong></td></tr>`:''}
-        ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;">Payment Amount</td><td><strong style="color:#111827;font-size:16px;">$${paymentAmount.toFixed(2)}</strong></td></tr>`:''}
+        ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;">Total Payment Amount</td><td><strong style="color:#111827;font-size:16px;">$${totalWithFee.toFixed(2)}</strong></td></tr>`:''}
         ${paymentMethod ? `<tr><td style="color:#6b7280;">Payment Method</td><td>${paymentMethod}</td></tr>` : ''}
         ${paymentMethod === 'Card' && squarePaymentId ? `<tr><td style="color:#6b7280;">Square Payment ID</td><td><code>${squarePaymentId}</code></td></tr>` : ''}
         ${paymentMethod === 'Card' && registration?.spousePaymentId ? `<tr><td style="color:#6b7280;">Spouse Payment ID</td><td><code>${registration.spousePaymentId}</code></td></tr>` : ''}
@@ -680,7 +685,7 @@ export async function sendRegistrationConfirmationEmail(params: {
       <p style="margin:0 0 8px 0;">Thank you for registering for the EFBC Conference.</p>
       ${eventName ? `<p style=\"margin:0;\"><strong>Event:</strong> ${eventName}</p>` : ''}
       ${formattedEventDate ? `<p style=\"margin:4px 0 0 0;\"><strong>Date:</strong> ${formattedEventDate}</p>` : ''}
-      ${paymentAmount > 0 ? `<p style=\"margin:12px 0 8px 0;padding:12px;background:#f0f9ff;border-left:4px solidrgba(59, 131, 246, 0);border-radius:4px;\"><strong style=\"color:#111827;font-size:16px;\">Payment Amount: $${paymentAmount.toFixed(2)}</strong></p>` : ''}
+      ${paymentAmount > 0 ? `<p style=\"margin:12px 0 8px 0;padding:12px;background:#f0f9ff;border-left:4px solidrgba(59, 131, 246, 0);border-radius:4px;\"><strong style=\"color:#111827;font-size:16px;\">Total Payment Amount: $${totalWithFee.toFixed(2)}</strong></p>` : ''}
       ${detailsHtml}
       ${paymentMethod === 'Check' ? `
         <div style="margin:20px 0;padding:16px;background:#f9fafb;border-left:4px solidrgba(59, 131, 246, 0);border-radius:4px;">
@@ -699,7 +704,9 @@ export async function sendRegistrationConfirmationEmail(params: {
   parts.push('Thank you for registering for EFBC Conference.');
   if (eventName) parts.push(`Event: ${eventName}.`);
   if (formattedEventDate) parts.push(`Date: ${formattedEventDate}.`);
-  if (paymentAmount > 0) parts.push(`Payment Amount: $${paymentAmount.toFixed(2)}.`);
+  if (paymentAmount > 0) {
+    parts.push(`Total Payment Amount: $${totalWithFee.toFixed(2)}.`);
+  }
   if (paymentMethod) parts.push(`Payment method: ${paymentMethod}.`);
   if (paymentMethod === 'Card' && squarePaymentId) {
     parts.push(`Square payment ID: ${squarePaymentId}.`);
@@ -738,6 +745,11 @@ export async function sendRegistrationUpdateEmail(params: {
   const priceText = paymentAmount > 0 ? `Total: $${paymentAmount.toFixed(2)}` : '';
   const paymentMethod = registration?.paymentMethod || registration?.payment_method || '';
   const squarePaymentId = registration?.squarePaymentId || registration?.square_payment_id || '';
+  
+  // Calculate convenience fee (3.5% for card payments) and total with fee
+  const isCardPayment = paymentMethod === 'Card';
+  const convenienceFee = isCardPayment && paymentAmount > 0 ? paymentAmount * 0.035 : 0;
+  const totalWithFee = paymentAmount + convenienceFee;
   
   // Format event date range as "12 to 15 May"
   const formattedEventDate = formatEventDateRange(eventStartDate || null, eventDate || null);
@@ -823,7 +835,7 @@ export async function sendRegistrationUpdateEmail(params: {
         ${spouseFirstName ? `<tr><td style="color:#6b7280;">Spouse First Name</td><td>${spouseFirstName}</td></tr>`:''}
         ${spouseLastName ? `<tr><td style="color:#6b7280;">Spouse Last Name</td><td>${spouseLastName}</td></tr>`:''}
         ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Payment Information</strong></td></tr>`:''}
-        ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;">Payment Amount</td><td><strong style="color:#111827;font-size:16px;">$${paymentAmount.toFixed(2)}</strong></td></tr>`:''}
+        ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;">Total Payment Amount</td><td><strong style="color:#111827;font-size:16px;">$${totalWithFee.toFixed(2)}</strong></td></tr>`:''}
         ${paymentMethod ? `<tr><td style="color:#6b7280;">Payment Method</td><td>${paymentMethod}</td></tr>` : ''}
         ${paymentMethod === 'Card' && squarePaymentId ? `<tr><td style="color:#6b7280;">Square Payment ID</td><td><code>${squarePaymentId}</code></td></tr>` : ''}
         ${paymentMethod === 'Card' && registration?.spousePaymentId ? `<tr><td style="color:#6b7280;">Spouse Payment ID</td><td><code>${registration.spousePaymentId}</code></td></tr>` : ''}
@@ -840,7 +852,7 @@ export async function sendRegistrationUpdateEmail(params: {
       <p style="margin:0 0 12px 0;">Hi ${fullName || 'Attendee'},</p>
       ${eventName ? `<p style=\"margin:0;\"><strong>Event:</strong> ${eventName}</p>` : ''}
       ${formattedEventDate ? `<p style=\"margin:4px 0 0 0;\"><strong>Date:</strong> ${formattedEventDate}</p>` : ''}
-      ${paymentAmount > 0 ? `<p style=\"margin:12px 0 8px 0;padding:12px;background:#f0f9ff;border-left:4px solidrgba(59, 131, 246, 0);border-radius:4px;\"><strong style=\"color:#111827;font-size:16px;\">Payment Amount: $${paymentAmount.toFixed(2)}</strong></p>` : ''}
+      ${paymentAmount > 0 ? `<p style=\"margin:12px 0 8px 0;padding:12px;background:#f0f9ff;border-left:4px solidrgba(59, 131, 246, 0);border-radius:4px;\"><strong style=\"color:#111827;font-size:16px;\">Total Payment Amount: $${totalWithFee.toFixed(2)}</strong></p>` : ''}
       ${detailsHtml}
       ${paymentMethod === 'Check' ? `
         <div style="margin:20px 0;padding:16px;background:#f9fafb;border-left:4px solidrgba(59, 131, 246, 0);border-radius:4px;">
@@ -858,7 +870,9 @@ export async function sendRegistrationUpdateEmail(params: {
   const parts: string[] = [];
   if (eventName) parts.push(`Event: ${eventName}.`);
   if (formattedEventDate) parts.push(`Date: ${formattedEventDate}.`);
-  if (paymentAmount > 0) parts.push(`Payment Amount: $${paymentAmount.toFixed(2)}.`);
+  if (paymentAmount > 0) {
+    parts.push(`Total Payment Amount: $${totalWithFee.toFixed(2)}.`);
+  }
   if (paymentMethod) parts.push(`Payment method: ${paymentMethod}.`);
   if (paymentMethod === 'Card' && squarePaymentId) {
     parts.push(`Square payment ID: ${squarePaymentId}.`);
