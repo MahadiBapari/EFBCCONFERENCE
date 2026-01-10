@@ -212,11 +212,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     // Additional Information
     transportationMethod: registration?.transportationMethod || '',
     transportationDetails: registration?.transportationDetails || '',
-    stayingAtBeachClub: registration?.stayingAtBeachClub,
+    stayingAtBeachClub: registration?.stayingAtBeachClub !== undefined ? registration.stayingAtBeachClub : undefined,
     accommodationDetails: registration?.accommodationDetails || '',
     dietaryRequirements: registration?.dietaryRequirements || [],
     dietaryRequirementsOther: registration?.dietaryRequirementsOther || '',
-    specialPhysicalNeeds: registration?.specialPhysicalNeeds,
+    specialPhysicalNeeds: registration?.specialPhysicalNeeds !== undefined ? registration.specialPhysicalNeeds : undefined,
     specialPhysicalNeedsDetails: registration?.specialPhysicalNeedsDetails || '',
 
     // Spouse/Guest Information
