@@ -493,11 +493,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (formData.stayingAtBeachClub === false && !formData.accommodationDetails?.trim()) {
       (newErrors as any).accommodationDetails = 'Please specify where you will be staying';
     }
-    if (!formData.dietaryRestrictions?.trim()) {
-      (newErrors as any).dietaryRestrictions = 'Please specify any dietary restrictions or allergies';
-    }
+    // If "None" is selected, it's valid even if it's the only option
     if (!formData.dietaryRequirements || formData.dietaryRequirements.length === 0) {
       (newErrors as any).dietaryRequirements = 'Please select at least one option';
+    } else if ((formData.dietaryRequirements || []).includes('None') && formData.dietaryRequirements.length === 1) {
+      // "None" alone is valid, so remove any error
+      delete (newErrors as any).dietaryRequirements;
     }
     if ((formData.dietaryRequirements || []).includes('Other') && !formData.dietaryRequirementsOther?.trim()) {
       (newErrors as any).dietaryRequirementsOther = 'Please specify other dietary requirement';
@@ -527,7 +528,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         state: 'addrState',
         transportationMethod: 'transportationMethod',
         accommodationDetails: 'accommodationDetails',
-        dietaryRestrictions: 'dietaryRestrictions',
         dietaryRequirements: 'dietaryRequirements',
         dietaryRequirementsOther: 'dietaryRequirementsOther',
         specialPhysicalNeeds: 'specialPhysicalNeeds',
@@ -1798,9 +1798,68 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               {errors.fridayBreakfast && <div className="error-message">{errors.fridayBreakfast}</div>}
             </div>
             <div className="form-group">
-              <label htmlFor="dietaryRestrictions" className="form-label">Do you have any dietary restrictions or allergies? <span className="required-asterisk">*</span></label>
-              <textarea id="dietaryRestrictions" className={`form-control ${errors.dietaryRestrictions ? 'error' : ''}`} value={formData.dietaryRestrictions || ''} onChange={e => handleInputChange('dietaryRestrictions', e.target.value)} rows={3} placeholder="Please specify any dietary restrictions or allergies..." required />
-              {errors.dietaryRestrictions && <div className="error-message">{errors.dietaryRestrictions}</div>}
+              <label className="form-label">Do you have any dietary restrictions or allergies? <span className="required-asterisk">*</span></label>
+              <div className="checkbox-group">
+                {['None', 'Dairy Free', 'Gluten Free', 'Lactose Intolerant', 'Vegetarian'].map(option => (
+                  <label key={option} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={(formData.dietaryRequirements || []).includes(option)}
+                      onChange={(e) => {
+                        const current = formData.dietaryRequirements || [];
+                        if (e.target.checked) {
+                          if (option === 'None') {
+                            // If "None" is selected, clear all other selections
+                            handleInputChange('dietaryRequirements', ['None']);
+                            handleInputChange('dietaryRequirementsOther', '');
+                          } else {
+                            // If any other option is selected, remove "None" if it exists
+                            const withoutNone = current.filter((item: string) => item !== 'None');
+                            handleInputChange('dietaryRequirements', [...withoutNone, option]);
+                          }
+                        } else {
+                          handleInputChange('dietaryRequirements', current.filter((item: string) => item !== option));
+                        }
+                      }}
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={(formData.dietaryRequirements || []).includes('Other')}
+                    onChange={(e) => {
+                      const current = formData.dietaryRequirements || [];
+                      if (e.target.checked) {
+                        // If "Other" is selected, remove "None" if it exists
+                        const withoutNone = current.filter((item: string) => item !== 'None');
+                        handleInputChange('dietaryRequirements', [...withoutNone, 'Other']);
+                      } else {
+                        handleInputChange('dietaryRequirements', current.filter((item: string) => item !== 'Other'));
+                        handleInputChange('dietaryRequirementsOther', '');
+                      }
+                    }}
+                  />
+                  <span>Other</span>
+                </label>
+              </div>
+              {(formData.dietaryRequirements || []).includes('Other') && (
+                <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                  <label htmlFor="dietaryRequirementsOther" className="form-label">Please specify other dietary requirement <span className="required-asterisk">*</span></label>
+                  <input 
+                    id="dietaryRequirementsOther" 
+                    type="text" 
+                    className={`form-control ${errors.dietaryRequirementsOther ? 'error' : ''}`} 
+                    value={formData.dietaryRequirementsOther || ''} 
+                    onChange={e => handleInputChange('dietaryRequirementsOther', e.target.value)} 
+                    placeholder="Specify other dietary requirement..." 
+                    required={(formData.dietaryRequirements || []).includes('Other')}
+                  />
+                  {errors.dietaryRequirementsOther && <div className="error-message">{errors.dietaryRequirementsOther}</div>}
+                </div>
+              )}
+              {errors.dietaryRequirements && <div className="error-message">{errors.dietaryRequirements}</div>}
             </div>
             <div className="form-group">
               <label htmlFor="specialRequests" className="form-label">Special Requests</label>
@@ -1879,61 +1938,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   {errors.accommodationDetails && <div className="error-message">{errors.accommodationDetails}</div>}
                 </div>
               )}
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">Do you have any dietary requirements or allergies? <span className="required-asterisk">*</span></label>
-              <div className="checkbox-group">
-                {['Dairy Free', 'Gluten Free', 'Lactose Intolerant', 'Vegetarian'].map(option => (
-                  <label key={option} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={(formData.dietaryRequirements || []).includes(option)}
-                      onChange={(e) => {
-                        const current = formData.dietaryRequirements || [];
-                        if (e.target.checked) {
-                          handleInputChange('dietaryRequirements', [...current, option]);
-                        } else {
-                          handleInputChange('dietaryRequirements', current.filter((item: string) => item !== option));
-                        }
-                      }}
-                    />
-                    <span>{option}</span>
-                  </label>
-                ))}
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={(formData.dietaryRequirements || []).includes('Other')}
-                    onChange={(e) => {
-                      const current = formData.dietaryRequirements || [];
-                      if (e.target.checked) {
-                        handleInputChange('dietaryRequirements', [...current, 'Other']);
-                      } else {
-                        handleInputChange('dietaryRequirements', current.filter((item: string) => item !== 'Other'));
-                        handleInputChange('dietaryRequirementsOther', '');
-                      }
-                    }}
-                  />
-                  <span>Other</span>
-                </label>
-              </div>
-              {(formData.dietaryRequirements || []).includes('Other') && (
-                <div className="form-group" style={{ marginTop: '0.5rem' }}>
-                  <label htmlFor="dietaryRequirementsOther" className="form-label">Please specify other dietary requirement <span className="required-asterisk">*</span></label>
-                  <input 
-                    id="dietaryRequirementsOther" 
-                    type="text" 
-                    className={`form-control ${errors.dietaryRequirementsOther ? 'error' : ''}`} 
-                    value={formData.dietaryRequirementsOther || ''} 
-                    onChange={e => handleInputChange('dietaryRequirementsOther', e.target.value)} 
-                    placeholder="Specify other dietary requirement..." 
-                    required={(formData.dietaryRequirements || []).includes('Other')}
-                  />
-                  {errors.dietaryRequirementsOther && <div className="error-message">{errors.dietaryRequirementsOther}</div>}
-                </div>
-              )}
-              {errors.dietaryRequirements && <div className="error-message">{errors.dietaryRequirements}</div>}
             </div>
             
             <div className="form-group">
