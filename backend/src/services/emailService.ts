@@ -627,6 +627,9 @@ export async function sendRegistrationConfirmationEmail(params: {
   const spouseDinnerTicket = registration?.spouseDinnerTicket !== undefined 
     ? registration.spouseDinnerTicket 
     : (registration?.spouse_dinner_ticket !== undefined ? registration.spouse_dinner_ticket : false);
+  
+  // Get children information
+  const kids = registration?.kids || (registration?.kids_data ? (typeof registration.kids_data === 'string' ? JSON.parse(registration.kids_data) : registration.kids_data) : []);
 
   const detailsHtml = registration
     ? `
@@ -666,6 +669,14 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${spouseDinnerTicket ? `<tr><td style="color:#6b7280;">Spouse Dinner Ticket</td><td>Yes</td></tr>`:''}
         ${spouseFirstName ? `<tr><td style="color:#6b7280;">Spouse First Name</td><td>${spouseFirstName}</td></tr>`:''}
         ${spouseLastName ? `<tr><td style="color:#6b7280;">Spouse Last Name</td><td>${spouseLastName}</td></tr>`:''}
+        ${kids && Array.isArray(kids) && kids.length > 0 ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Child/Children Information</strong></td></tr>`:''}
+        ${kids && Array.isArray(kids) && kids.length > 0 ? kids.map((kid: any, idx: number) => `
+          <tr><td style="color:#6b7280;padding-top:${idx === 0 ? '0' : '8'}px;" colspan="2"><strong>Child ${idx + 1}</strong></td></tr>
+          ${kid.firstName ? `<tr><td style="color:#6b7280;">First Name</td><td>${kid.firstName}</td></tr>`:''}
+          ${kid.lastName ? `<tr><td style="color:#6b7280;">Last Name</td><td>${kid.lastName}</td></tr>`:''}
+          ${kid.badgeName ? `<tr><td style="color:#6b7280;">Badge Name</td><td>${kid.badgeName}</td></tr>`:''}
+          ${kid.age ? `<tr><td style="color:#6b7280;">Age</td><td>${kid.age}</td></tr>`:''}
+        `).join('') : ''}
         ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Payment Information</strong></td></tr>`:''}
         ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;">Total Payment Amount</td><td><strong style="color:#111827;font-size:16px;">$${totalWithFee.toFixed(2)}</strong></td></tr>`:''}
         ${paymentMethod ? `<tr><td style="color:#6b7280;">Payment Method</td><td>${paymentMethod}</td></tr>` : ''}
@@ -795,6 +806,9 @@ export async function sendRegistrationUpdateEmail(params: {
   const spouseDinnerTicket = registration?.spouseDinnerTicket !== undefined 
     ? registration.spouseDinnerTicket 
     : (registration?.spouse_dinner_ticket !== undefined ? registration.spouse_dinner_ticket : false);
+  
+  // Get children information
+  const kids = registration?.kids || (registration?.kids_data ? (typeof registration.kids_data === 'string' ? JSON.parse(registration.kids_data) : registration.kids_data) : []);
 
   const detailsHtml = registration
     ? `
@@ -834,6 +848,14 @@ export async function sendRegistrationUpdateEmail(params: {
         ${spouseDinnerTicket ? `<tr><td style="color:#6b7280;">Spouse Dinner Ticket</td><td>Yes</td></tr>`:''}
         ${spouseFirstName ? `<tr><td style="color:#6b7280;">Spouse First Name</td><td>${spouseFirstName}</td></tr>`:''}
         ${spouseLastName ? `<tr><td style="color:#6b7280;">Spouse Last Name</td><td>${spouseLastName}</td></tr>`:''}
+        ${kids && Array.isArray(kids) && kids.length > 0 ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Child/Children Information</strong></td></tr>`:''}
+        ${kids && Array.isArray(kids) && kids.length > 0 ? kids.map((kid: any, idx: number) => `
+          <tr><td style="color:#6b7280;padding-top:${idx === 0 ? '0' : '8'}px;" colspan="2"><strong>Child ${idx + 1}</strong></td></tr>
+          ${kid.firstName ? `<tr><td style="color:#6b7280;">First Name</td><td>${kid.firstName}</td></tr>`:''}
+          ${kid.lastName ? `<tr><td style="color:#6b7280;">Last Name</td><td>${kid.lastName}</td></tr>`:''}
+          ${kid.badgeName ? `<tr><td style="color:#6b7280;">Badge Name</td><td>${kid.badgeName}</td></tr>`:''}
+          ${kid.age ? `<tr><td style="color:#6b7280;">Age</td><td>${kid.age}</td></tr>`:''}
+        `).join('') : ''}
         ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Payment Information</strong></td></tr>`:''}
         ${paymentAmount > 0 ? `<tr><td style="color:#6b7280;">Total Payment Amount</td><td><strong style="color:#111827;font-size:16px;">$${totalWithFee.toFixed(2)}</strong></td></tr>`:''}
         ${paymentMethod ? `<tr><td style="color:#6b7280;">Payment Method</td><td>${paymentMethod}</td></tr>` : ''}
