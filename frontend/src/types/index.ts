@@ -83,6 +83,16 @@ export interface Registration {
   dietaryRestrictions?: string;
   specialRequests?: string;
   
+  // Additional Information
+  transportationMethod?: string; // Driving or Flying
+  transportationDetails?: string; // Text box for transportation details
+  stayingAtBeachClub?: boolean; // Will you be staying at the Beach Club Resort?
+  accommodationDetails?: string; // Text box if not staying at Beach Club
+  dietaryRequirements?: string[]; // Array of dietary requirements (Dairy Free, Gluten Free, etc.)
+  dietaryRequirementsOther?: string; // Text box for "Other" dietary requirement
+  specialPhysicalNeeds?: boolean; // Do you have any special physical needs?
+  specialPhysicalNeedsDetails?: string; // Text box for special physical needs details
+  
   // Spouse/Guest Information
   spouseDinnerTicket: boolean;
   spouseFirstName?: string;

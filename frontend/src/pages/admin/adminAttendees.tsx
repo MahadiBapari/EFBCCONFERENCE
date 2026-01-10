@@ -89,6 +89,14 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     fridayBreakfast: 150,
     dietaryRestrictions: 200,
     specialRequests: 200,
+    transportationMethod: 120,
+    transportationDetails: 200,
+    stayingAtBeachClub: 150,
+    accommodationDetails: 200,
+    dietaryRequirements: 200,
+    dietaryRequirementsOther: 200,
+    specialPhysicalNeeds: 150,
+    specialPhysicalNeedsDetails: 200,
     spouseFirstName: 120,
     spouseLastName: 120,
     spouseDinnerTicket: 150,
@@ -656,6 +664,14 @@ const confirmSingleDelete = async () => {
       'Friday Breakfast': reg.fridayBreakfast,
       'Dietary Restrictions': reg.dietaryRestrictions,
       'Special Requests': (reg as any).specialRequests,
+      'Transportation Method': reg.transportationMethod || '',
+      'Transportation Details': reg.transportationDetails || '',
+      'Staying at Beach Club Resort': reg.stayingAtBeachClub !== undefined ? (reg.stayingAtBeachClub ? 'Yes' : 'No') : '',
+      'Accommodation Details': reg.accommodationDetails || '',
+      'Dietary Requirements': reg.dietaryRequirements && Array.isArray(reg.dietaryRequirements) ? reg.dietaryRequirements.join(', ') : '',
+      'Dietary Requirements (Other)': reg.dietaryRequirementsOther || '',
+      'Special Physical Needs': reg.specialPhysicalNeeds !== undefined ? (reg.specialPhysicalNeeds ? 'Yes' : 'No') : '',
+      'Special Physical Needs Details': reg.specialPhysicalNeedsDetails || '',
       'Spouse First Name': reg.spouseFirstName,
       'Spouse Last Name': reg.spouseLastName,
       'Spouse Dinner Ticket': reg.spouseDinnerTicket ? 'Yes' : 'No',
@@ -1267,6 +1283,14 @@ const confirmSingleDelete = async () => {
                     <td style={{ width: `${columnWidths.fridayBreakfast}px`, minWidth: `${columnWidths.fridayBreakfast}px` }}>{displayValue(reg.fridayBreakfast)}</td>
                     <td style={{ width: `${columnWidths.dietaryRestrictions}px`, minWidth: `${columnWidths.dietaryRestrictions}px` }}>{displayValue(reg.dietaryRestrictions)}</td>
                     <td style={{ width: `${columnWidths.specialRequests}px`, minWidth: `${columnWidths.specialRequests}px` }}>{displayValue((reg as any).specialRequests)}</td>
+                    <td style={{ width: `${columnWidths.transportationMethod}px`, minWidth: `${columnWidths.transportationMethod}px` }}>{displayValue(reg.transportationMethod)}</td>
+                    <td style={{ width: `${columnWidths.transportationDetails}px`, minWidth: `${columnWidths.transportationDetails}px` }}>{displayValue(reg.transportationDetails)}</td>
+                    <td style={{ width: `${columnWidths.stayingAtBeachClub}px`, minWidth: `${columnWidths.stayingAtBeachClub}px` }}>{reg.stayingAtBeachClub !== undefined ? (reg.stayingAtBeachClub ? 'Yes' : 'No') : ''}</td>
+                    <td style={{ width: `${columnWidths.accommodationDetails}px`, minWidth: `${columnWidths.accommodationDetails}px` }}>{displayValue(reg.accommodationDetails)}</td>
+                    <td style={{ width: `${columnWidths.dietaryRequirements}px`, minWidth: `${columnWidths.dietaryRequirements}px` }}>{reg.dietaryRequirements && Array.isArray(reg.dietaryRequirements) ? reg.dietaryRequirements.join(', ') : ''}</td>
+                    <td style={{ width: `${columnWidths.dietaryRequirementsOther}px`, minWidth: `${columnWidths.dietaryRequirementsOther}px` }}>{displayValue(reg.dietaryRequirementsOther)}</td>
+                    <td style={{ width: `${columnWidths.specialPhysicalNeeds}px`, minWidth: `${columnWidths.specialPhysicalNeeds}px` }}>{reg.specialPhysicalNeeds !== undefined ? (reg.specialPhysicalNeeds ? 'Yes' : 'No') : ''}</td>
+                    <td style={{ width: `${columnWidths.specialPhysicalNeedsDetails}px`, minWidth: `${columnWidths.specialPhysicalNeedsDetails}px` }}>{displayValue(reg.specialPhysicalNeedsDetails)}</td>
                     <td style={{ width: `${columnWidths.spouseFirstName}px`, minWidth: `${columnWidths.spouseFirstName}px` }}>{displayValue(reg.spouseFirstName)}</td>
                     <td style={{ width: `${columnWidths.spouseLastName}px`, minWidth: `${columnWidths.spouseLastName}px` }}>{displayValue(reg.spouseLastName)}</td>
                     <td style={{ width: `${columnWidths.spouseDinnerTicket}px`, minWidth: `${columnWidths.spouseDinnerTicket}px` }}>{reg.spouseDinnerTicket ? 'Yes' : 'No'}</td>

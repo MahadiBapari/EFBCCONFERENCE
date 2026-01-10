@@ -208,6 +208,16 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     tuesdayEarlyReception: (registration as any)?.tuesdayEarlyReception || '',
     dietaryRestrictions: registration?.dietaryRestrictions || '',
     specialRequests: (registration as any)?.specialRequests || '',
+    
+    // Additional Information
+    transportationMethod: registration?.transportationMethod || '',
+    transportationDetails: registration?.transportationDetails || '',
+    stayingAtBeachClub: registration?.stayingAtBeachClub,
+    accommodationDetails: registration?.accommodationDetails || '',
+    dietaryRequirements: registration?.dietaryRequirements || [],
+    dietaryRequirementsOther: registration?.dietaryRequirementsOther || '',
+    specialPhysicalNeeds: registration?.specialPhysicalNeeds,
+    specialPhysicalNeedsDetails: registration?.specialPhysicalNeedsDetails || '',
 
     // Spouse/Guest Information
     spouseDinnerTicket: toBooleanYesNo((registration as any)?.spouseDinnerTicket) || false,
@@ -472,6 +482,33 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         (newErrors as any)[field] = 'Please choose an option';
       }
     });
+    
+    // Validate additional information fields
+    if (!formData.transportationMethod?.trim()) {
+      (newErrors as any).transportationMethod = 'Please choose an option';
+    }
+    if (formData.stayingAtBeachClub === undefined || formData.stayingAtBeachClub === null) {
+      (newErrors as any).stayingAtBeachClub = 'Please choose an option';
+    }
+    if (formData.stayingAtBeachClub === false && !formData.accommodationDetails?.trim()) {
+      (newErrors as any).accommodationDetails = 'Please specify where you will be staying';
+    }
+    if (!formData.dietaryRestrictions?.trim()) {
+      (newErrors as any).dietaryRestrictions = 'Please specify any dietary restrictions or allergies';
+    }
+    if (!formData.dietaryRequirements || formData.dietaryRequirements.length === 0) {
+      (newErrors as any).dietaryRequirements = 'Please select at least one option';
+    }
+    if ((formData.dietaryRequirements || []).includes('Other') && !formData.dietaryRequirementsOther?.trim()) {
+      (newErrors as any).dietaryRequirementsOther = 'Please specify other dietary requirement';
+    }
+    if (formData.specialPhysicalNeeds === undefined || formData.specialPhysicalNeeds === null) {
+      (newErrors as any).specialPhysicalNeeds = 'Please choose an option';
+    }
+    if (formData.specialPhysicalNeeds === true && !formData.specialPhysicalNeedsDetails?.trim()) {
+      (newErrors as any).specialPhysicalNeedsDetails = 'Please specify your special physical needs';
+    }
+    
     setErrors(newErrors);
     
     // If there are errors, scroll to the first error field
@@ -488,6 +525,13 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         address: 'addrStreet', // address error maps to addrStreet ID
         city: 'addrCity',
         state: 'addrState',
+        transportationMethod: 'transportationMethod',
+        accommodationDetails: 'accommodationDetails',
+        dietaryRestrictions: 'dietaryRestrictions',
+        dietaryRequirements: 'dietaryRequirements',
+        dietaryRequirementsOther: 'dietaryRequirementsOther',
+        specialPhysicalNeeds: 'specialPhysicalNeeds',
+        specialPhysicalNeedsDetails: 'specialPhysicalNeedsDetails',
         zip: 'addrZip',
         country: 'addrCountry',
         mobile: 'mobile',
@@ -518,8 +562,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           let focusableElement: HTMLElement | null = null;
           let errorMessageElement: HTMLElement | null = null;
           
-          // Special handling for radio button fields (pickleballEquipment, isFirstTimeAttending)
-          if (firstErrorField === 'pickleballEquipment' || firstErrorField === 'isFirstTimeAttending') {
+          // Special handling for radio button fields (pickleballEquipment, isFirstTimeAttending, stayingAtBeachClub, specialPhysicalNeeds)
+          if (firstErrorField === 'pickleballEquipment' || firstErrorField === 'isFirstTimeAttending' || firstErrorField === 'stayingAtBeachClub' || firstErrorField === 'specialPhysicalNeeds') {
             // Find the first radio button or the parent form-group
             const radioButtons = document.querySelectorAll(`input[name="${firstErrorField}"]`);
             if (radioButtons.length > 0) {
@@ -1754,12 +1798,186 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               {errors.fridayBreakfast && <div className="error-message">{errors.fridayBreakfast}</div>}
             </div>
             <div className="form-group">
-              <label htmlFor="dietaryRestrictions" className="form-label">Dietary Restrictions</label>
-              <textarea id="dietaryRestrictions" className="form-control" value={formData.dietaryRestrictions || ''} onChange={e => handleInputChange('dietaryRestrictions', e.target.value)} rows={3} placeholder="Please specify any dietary restrictions..." />
+              <label htmlFor="dietaryRestrictions" className="form-label">Do you have any dietary restrictions or allergies? <span className="required-asterisk">*</span></label>
+              <textarea id="dietaryRestrictions" className={`form-control ${errors.dietaryRestrictions ? 'error' : ''}`} value={formData.dietaryRestrictions || ''} onChange={e => handleInputChange('dietaryRestrictions', e.target.value)} rows={3} placeholder="Please specify any dietary restrictions or allergies..." required />
+              {errors.dietaryRestrictions && <div className="error-message">{errors.dietaryRestrictions}</div>}
             </div>
             <div className="form-group">
               <label htmlFor="specialRequests" className="form-label">Special Requests</label>
               <textarea id="specialRequests" className="form-control" value={(formData as any).specialRequests || ''} onChange={e => handleInputChange('specialRequests', e.target.value)} rows={3} placeholder="Please specify any special requests..." />
+            </div>
+          </div>
+
+          {/* Additional Information Section */}
+          <div className="form-section">
+            <h3 className="section-title">Additional Information</h3>
+            
+            <div className="form-group">
+              <label htmlFor="transportationMethod" className="form-label">Will you be driving or flying? <span className="required-asterisk">*</span></label>
+              <select 
+                id="transportationMethod" 
+                className={`form-control ${errors.transportationMethod ? 'error' : ''}`} 
+                value={formData.transportationMethod || ''} 
+                onChange={e => handleInputChange('transportationMethod', e.target.value)} 
+                required
+              >
+                <option value="" disabled>Choose</option>
+                <option value="Driving">Driving</option>
+                <option value="Flying">Flying</option>
+              </select>
+              {errors.transportationMethod && <div className="error-message">{errors.transportationMethod}</div>}
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="transportationDetails" className="form-label">Transportation Details</label>
+              <textarea 
+                id="transportationDetails" 
+                className="form-control" 
+                value={formData.transportationDetails || ''} 
+                onChange={e => handleInputChange('transportationDetails', e.target.value)} 
+                rows={2} 
+                placeholder="Please provide additional details about your transportation..." 
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Will you be staying at the Beach Club Resort? <span className="required-asterisk">*</span></label>
+              <div className="radio-group">
+                <label className="radio-label">
+                  <input
+                    type="radio"
+                    name="stayingAtBeachClub"
+                    checked={formData.stayingAtBeachClub === true}
+                    onChange={() => handleInputChange('stayingAtBeachClub', true)}
+                    required
+                  />
+                  Yes
+                </label>
+                <label className="radio-label">
+                  <input
+                    type="radio"
+                    name="stayingAtBeachClub"
+                    checked={formData.stayingAtBeachClub === false}
+                    onChange={() => handleInputChange('stayingAtBeachClub', false)}
+                    required
+                  />
+                  No
+                </label>
+              </div>
+              {formData.stayingAtBeachClub === false && (
+                <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                  <label htmlFor="accommodationDetails" className="form-label">If not, please list where you will be staying. <span className="required-asterisk">*</span></label>
+                  <textarea 
+                    id="accommodationDetails" 
+                    className={`form-control ${errors.accommodationDetails ? 'error' : ''}`} 
+                    value={formData.accommodationDetails || ''} 
+                    onChange={e => handleInputChange('accommodationDetails', e.target.value)} 
+                    rows={2} 
+                    placeholder="Please specify your accommodation..." 
+                    required={formData.stayingAtBeachClub === false}
+                  />
+                  {errors.accommodationDetails && <div className="error-message">{errors.accommodationDetails}</div>}
+                </div>
+              )}
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Do you have any dietary requirements or allergies? <span className="required-asterisk">*</span></label>
+              <div className="checkbox-group">
+                {['Dairy Free', 'Gluten Free', 'Lactose Intolerant', 'Vegetarian'].map(option => (
+                  <label key={option} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={(formData.dietaryRequirements || []).includes(option)}
+                      onChange={(e) => {
+                        const current = formData.dietaryRequirements || [];
+                        if (e.target.checked) {
+                          handleInputChange('dietaryRequirements', [...current, option]);
+                        } else {
+                          handleInputChange('dietaryRequirements', current.filter((item: string) => item !== option));
+                        }
+                      }}
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={(formData.dietaryRequirements || []).includes('Other')}
+                    onChange={(e) => {
+                      const current = formData.dietaryRequirements || [];
+                      if (e.target.checked) {
+                        handleInputChange('dietaryRequirements', [...current, 'Other']);
+                      } else {
+                        handleInputChange('dietaryRequirements', current.filter((item: string) => item !== 'Other'));
+                        handleInputChange('dietaryRequirementsOther', '');
+                      }
+                    }}
+                  />
+                  <span>Other</span>
+                </label>
+              </div>
+              {(formData.dietaryRequirements || []).includes('Other') && (
+                <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                  <label htmlFor="dietaryRequirementsOther" className="form-label">Please specify other dietary requirement <span className="required-asterisk">*</span></label>
+                  <input 
+                    id="dietaryRequirementsOther" 
+                    type="text" 
+                    className={`form-control ${errors.dietaryRequirementsOther ? 'error' : ''}`} 
+                    value={formData.dietaryRequirementsOther || ''} 
+                    onChange={e => handleInputChange('dietaryRequirementsOther', e.target.value)} 
+                    placeholder="Specify other dietary requirement..." 
+                    required={(formData.dietaryRequirements || []).includes('Other')}
+                  />
+                  {errors.dietaryRequirementsOther && <div className="error-message">{errors.dietaryRequirementsOther}</div>}
+                </div>
+              )}
+              {errors.dietaryRequirements && <div className="error-message">{errors.dietaryRequirements}</div>}
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Do you have any special physical needs? <span className="required-asterisk">*</span></label>
+              <div className="radio-group">
+                <label className="radio-label">
+                  <input
+                    type="radio"
+                    name="specialPhysicalNeeds"
+                    checked={formData.specialPhysicalNeeds === false}
+                    onChange={() => {
+                      handleInputChange('specialPhysicalNeeds', false);
+                      handleInputChange('specialPhysicalNeedsDetails', '');
+                    }}
+                    required
+                  />
+                  No
+                </label>
+                <label className="radio-label">
+                  <input
+                    type="radio"
+                    name="specialPhysicalNeeds"
+                    checked={formData.specialPhysicalNeeds === true}
+                    onChange={() => handleInputChange('specialPhysicalNeeds', true)}
+                    required
+                  />
+                  Yes
+                </label>
+              </div>
+              {formData.specialPhysicalNeeds === true && (
+                <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                  <label htmlFor="specialPhysicalNeedsDetails" className="form-label">Please specify your special physical needs <span className="required-asterisk">*</span></label>
+                  <textarea 
+                    id="specialPhysicalNeedsDetails" 
+                    className={`form-control ${errors.specialPhysicalNeedsDetails ? 'error' : ''}`} 
+                    value={formData.specialPhysicalNeedsDetails || ''} 
+                    onChange={e => handleInputChange('specialPhysicalNeedsDetails', e.target.value)} 
+                    rows={3} 
+                    placeholder="Please specify your special physical needs..." 
+                    required={formData.specialPhysicalNeeds === true}
+                  />
+                  {errors.specialPhysicalNeedsDetails && <div className="error-message">{errors.specialPhysicalNeedsDetails}</div>}
+                </div>
+              )}
             </div>
           </div>
 

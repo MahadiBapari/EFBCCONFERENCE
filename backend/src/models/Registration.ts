@@ -33,6 +33,14 @@ export class Registration {
   public fridayDinner: 'I will attend' | 'I will NOT attend';
   public dietaryRestrictions?: string;
   public specialRequests?: string;
+  public transportationMethod?: string;
+  public transportationDetails?: string;
+  public stayingAtBeachClub?: boolean;
+  public accommodationDetails?: string;
+  public dietaryRequirements?: string[];
+  public dietaryRequirementsOther?: string;
+  public specialPhysicalNeeds?: boolean;
+  public specialPhysicalNeedsDetails?: string;
   public clubRentals?: string;
   public golfHandicap?: string;
   public massageTimeSlot?: string;
@@ -109,6 +117,14 @@ export class Registration {
     this.fridayDinner = data.fridayDinner || 'I will attend';
     this.dietaryRestrictions = data.dietaryRestrictions;
     this.specialRequests = (data as any).specialRequests;
+    this.transportationMethod = (data as any).transportationMethod;
+    this.transportationDetails = (data as any).transportationDetails;
+    this.stayingAtBeachClub = (data as any).stayingAtBeachClub !== undefined ? (data as any).stayingAtBeachClub : undefined;
+    this.accommodationDetails = (data as any).accommodationDetails;
+    this.dietaryRequirements = (data as any).dietaryRequirements || undefined;
+    this.dietaryRequirementsOther = (data as any).dietaryRequirementsOther;
+    this.specialPhysicalNeeds = (data as any).specialPhysicalNeeds !== undefined ? (data as any).specialPhysicalNeeds : undefined;
+    this.specialPhysicalNeedsDetails = (data as any).specialPhysicalNeedsDetails;
     // Handle clubRentals as string (preference or 'I will bring my own')
     // Support backward compatibility with boolean values
     const cr = (data as any).clubRentals;
@@ -194,6 +210,14 @@ export class Registration {
       fridayDinner: this.fridayDinner,
       dietaryRestrictions: this.dietaryRestrictions,
       specialRequests: this.specialRequests,
+      transportationMethod: this.transportationMethod,
+      transportationDetails: this.transportationDetails,
+      stayingAtBeachClub: this.stayingAtBeachClub,
+      accommodationDetails: this.accommodationDetails,
+      dietaryRequirements: this.dietaryRequirements,
+      dietaryRequirementsOther: this.dietaryRequirementsOther,
+      specialPhysicalNeeds: this.specialPhysicalNeeds,
+      specialPhysicalNeedsDetails: this.specialPhysicalNeedsDetails,
       clubRentals: this.clubRentals,
       golfHandicap: this.golfHandicap,
       massageTimeSlot: this.massageTimeSlot,
@@ -264,6 +288,14 @@ export class Registration {
       friday_breakfast: this.fridayBreakfast || null,
       dietary_restrictions: this.dietaryRestrictions || null,
       special_requests: this.nullIfUndefined(this.specialRequests),
+      transportation_method: this.nullIfUndefined(this.transportationMethod),
+      transportation_details: this.nullIfUndefined(this.transportationDetails),
+      staying_at_beach_club: this.stayingAtBeachClub ?? null,
+      accommodation_details: this.nullIfUndefined(this.accommodationDetails),
+      dietary_requirements: this.dietaryRequirements && this.dietaryRequirements.length > 0 ? JSON.stringify(this.dietaryRequirements) : null,
+      dietary_requirements_other: this.nullIfUndefined(this.dietaryRequirementsOther),
+      special_physical_needs: this.specialPhysicalNeeds ?? null,
+      special_physical_needs_details: this.nullIfUndefined(this.specialPhysicalNeedsDetails),
       club_rentals: this.nullIfUndefined(this.clubRentals),
       golf_handicap: this.nullIfUndefined(this.golfHandicap),
       massage_time_slot: this.nullIfUndefined(this.massageTimeSlot),
@@ -332,6 +364,23 @@ export class Registration {
       fridayDinner: row.friday_dinner,
       dietaryRestrictions: row.dietary_restrictions,
       specialRequests: row.special_requests,
+      transportationMethod: row.transportation_method,
+      transportationDetails: row.transportation_details,
+      stayingAtBeachClub: row.staying_at_beach_club !== undefined ? !!row.staying_at_beach_club : undefined,
+      accommodationDetails: row.accommodation_details,
+      dietaryRequirements: (() => {
+        if (row.dietary_requirements) {
+          try {
+            return typeof row.dietary_requirements === 'string' ? JSON.parse(row.dietary_requirements) : row.dietary_requirements;
+          } catch (e) {
+            return undefined;
+          }
+        }
+        return undefined;
+      })(),
+      dietaryRequirementsOther: row.dietary_requirements_other,
+      specialPhysicalNeeds: row.special_physical_needs !== undefined ? !!row.special_physical_needs : undefined,
+      specialPhysicalNeedsDetails: row.special_physical_needs_details,
       clubRentals: row.club_rentals || undefined,
       golfHandicap: row.golf_handicap,
       massageTimeSlot: row.massage_time_slot,

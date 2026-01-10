@@ -630,6 +630,20 @@ export async function sendRegistrationConfirmationEmail(params: {
   
   // Get children information
   const kids = registration?.kids || (registration?.kids_data ? (typeof registration.kids_data === 'string' ? JSON.parse(registration.kids_data) : registration.kids_data) : []);
+  
+  // Get additional information
+  const transportationMethod = registration?.transportationMethod || registration?.transportation_method || '';
+  const transportationDetails = registration?.transportationDetails || registration?.transportation_details || '';
+  const stayingAtBeachClub = registration?.stayingAtBeachClub !== undefined 
+    ? registration.stayingAtBeachClub 
+    : (registration?.staying_at_beach_club !== undefined ? !!registration.staying_at_beach_club : undefined);
+  const accommodationDetails = registration?.accommodationDetails || registration?.accommodation_details || '';
+  const dietaryRequirements = registration?.dietaryRequirements || (registration?.dietary_requirements ? (typeof registration.dietary_requirements === 'string' ? JSON.parse(registration.dietary_requirements) : registration.dietary_requirements) : []);
+  const dietaryRequirementsOther = registration?.dietaryRequirementsOther || registration?.dietary_requirements_other || '';
+  const specialPhysicalNeeds = registration?.specialPhysicalNeeds !== undefined 
+    ? registration.specialPhysicalNeeds 
+    : (registration?.special_physical_needs !== undefined ? !!registration.special_physical_needs : undefined);
+  const specialPhysicalNeedsDetails = registration?.specialPhysicalNeedsDetails || registration?.special_physical_needs_details || '';
 
   const detailsHtml = registration
     ? `
@@ -809,6 +823,20 @@ export async function sendRegistrationUpdateEmail(params: {
   
   // Get children information
   const kids = registration?.kids || (registration?.kids_data ? (typeof registration.kids_data === 'string' ? JSON.parse(registration.kids_data) : registration.kids_data) : []);
+  
+  // Get additional information
+  const transportationMethod = registration?.transportationMethod || registration?.transportation_method || '';
+  const transportationDetails = registration?.transportationDetails || registration?.transportation_details || '';
+  const stayingAtBeachClub = registration?.stayingAtBeachClub !== undefined 
+    ? registration.stayingAtBeachClub 
+    : (registration?.staying_at_beach_club !== undefined ? !!registration.staying_at_beach_club : undefined);
+  const accommodationDetails = registration?.accommodationDetails || registration?.accommodation_details || '';
+  const dietaryRequirements = registration?.dietaryRequirements || (registration?.dietary_requirements ? (typeof registration.dietary_requirements === 'string' ? JSON.parse(registration.dietary_requirements) : registration.dietary_requirements) : []);
+  const dietaryRequirementsOther = registration?.dietaryRequirementsOther || registration?.dietary_requirements_other || '';
+  const specialPhysicalNeeds = registration?.specialPhysicalNeeds !== undefined 
+    ? registration.specialPhysicalNeeds 
+    : (registration?.special_physical_needs !== undefined ? !!registration.special_physical_needs : undefined);
+  const specialPhysicalNeedsDetails = registration?.specialPhysicalNeedsDetails || registration?.special_physical_needs_details || '';
 
   const detailsHtml = registration
     ? `
@@ -842,6 +870,13 @@ export async function sendRegistrationUpdateEmail(params: {
         ${registration.fridayBreakfast ? `<tr><td style="color:#6b7280;">Friday Breakfast</td><td>${registration.fridayBreakfast}</td></tr>`:''}
         ${dietaryRestrictions ? `<tr><td style="color:#6b7280;">Dietary Restrictions</td><td>${dietaryRestrictions}</td></tr>`:''}
         ${specialRequests ? `<tr><td style="color:#6b7280;">Special Requests</td><td>${specialRequests}</td></tr>`:''}
+        ${transportationMethod ? `<tr><td style="color:#6b7280;">Transportation Method</td><td>${transportationMethod}</td></tr>`:''}
+        ${transportationDetails ? `<tr><td style="color:#6b7280;">Transportation Details</td><td>${transportationDetails}</td></tr>`:''}
+        ${stayingAtBeachClub !== undefined ? `<tr><td style="color:#6b7280;">Staying at Beach Club Resort</td><td>${stayingAtBeachClub ? 'Yes' : 'No'}</td></tr>`:''}
+        ${accommodationDetails ? `<tr><td style="color:#6b7280;">Accommodation Details</td><td>${accommodationDetails}</td></tr>`:''}
+        ${dietaryRequirements && Array.isArray(dietaryRequirements) && dietaryRequirements.length > 0 ? `<tr><td style="color:#6b7280;">Dietary Requirements</td><td>${dietaryRequirements.join(', ')}${dietaryRequirementsOther ? ` (Other: ${dietaryRequirementsOther})` : ''}</td></tr>`:''}
+        ${specialPhysicalNeeds !== undefined ? `<tr><td style="color:#6b7280;">Special Physical Needs</td><td>${specialPhysicalNeeds ? 'Yes' : 'No'}</td></tr>`:''}
+        ${specialPhysicalNeedsDetails ? `<tr><td style="color:#6b7280;">Special Physical Needs Details</td><td>${specialPhysicalNeedsDetails}</td></tr>`:''}
         ${emergencyContactName ? `<tr><td style="color:#6b7280;">Emergency Contact Name</td><td>${emergencyContactName}</td></tr>`:''}
         ${emergencyContactPhone ? `<tr><td style="color:#6b7280;">Emergency Contact Phone</td><td>${emergencyContactPhone}</td></tr>`:''}
         ${spouseDinnerTicket ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Spouse/Guest Information</strong></td></tr>`:''}

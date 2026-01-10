@@ -235,6 +235,15 @@ useEffect(() => {
         // Kids
         kids: r.kids ?? (r.kids_data ? (typeof r.kids_data === 'string' ? JSON.parse(r.kids_data) : r.kids_data) : undefined),
         kidsTotalPrice: r.kidsTotalPrice ?? r.kids_total_price ?? undefined,
+        // Additional Information
+        transportationMethod: r.transportationMethod ?? r.transportation_method ?? '',
+        transportationDetails: r.transportationDetails ?? r.transportation_details ?? '',
+        stayingAtBeachClub: r.stayingAtBeachClub !== undefined ? r.stayingAtBeachClub : (r.staying_at_beach_club !== undefined ? !!r.staying_at_beach_club : undefined),
+        accommodationDetails: r.accommodationDetails ?? r.accommodation_details ?? '',
+        dietaryRequirements: r.dietaryRequirements ?? (r.dietary_requirements ? (typeof r.dietary_requirements === 'string' ? JSON.parse(r.dietary_requirements) : r.dietary_requirements) : []),
+        dietaryRequirementsOther: r.dietaryRequirementsOther ?? r.dietary_requirements_other ?? '',
+        specialPhysicalNeeds: r.specialPhysicalNeeds !== undefined ? r.specialPhysicalNeeds : (r.special_physical_needs !== undefined ? !!r.special_physical_needs : undefined),
+        specialPhysicalNeedsDetails: r.specialPhysicalNeedsDetails ?? r.special_physical_needs_details ?? '',
         // Payment
         totalPrice: Number(r.totalPrice ?? 675),
         paymentMethod: r.paymentMethod ?? 'Card',

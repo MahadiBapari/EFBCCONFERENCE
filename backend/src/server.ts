@@ -155,6 +155,7 @@ const createTables = async () => {
     await migrateGroupAssignedColumn();
     await migrateChildLunchFeature();
     await migrateKidsRegistration();
+    await migrateAdditionalRegistrationQuestions();
     await migratePickleballEquipment();
 
     // Activity Groups table (basic definition; columns may be extended by migrations)
@@ -546,6 +547,56 @@ const migrateKidsRegistration = async (): Promise<void> => {
     }
   } catch (error: any) {
     console.error('Error migrating kids registration:', error?.message || error);
+  }
+};
+
+// Migration helper to add additional registration questions
+const migrateAdditionalRegistrationQuestions = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    const regCols = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+      [dbName, 'registrations']
+    );
+    const columnNames = regCols.map((c: any) => c.COLUMN_NAME);
+
+    if (!columnNames.includes('transportation_method')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `transportation_method` VARCHAR(50) NULL AFTER `special_requests`');
+      console.log('🛠️ Added registrations.transportation_method column');
+    }
+    if (!columnNames.includes('transportation_details')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `transportation_details` TEXT NULL AFTER `transportation_method`');
+      console.log('🛠️ Added registrations.transportation_details column');
+    }
+    if (!columnNames.includes('staying_at_beach_club')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `staying_at_beach_club` BOOLEAN NULL AFTER `transportation_details`');
+      console.log('🛠️ Added registrations.staying_at_beach_club column');
+    }
+    if (!columnNames.includes('accommodation_details')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `accommodation_details` TEXT NULL AFTER `staying_at_beach_club`');
+      console.log('🛠️ Added registrations.accommodation_details column');
+    }
+    if (!columnNames.includes('dietary_requirements')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `dietary_requirements` JSON NULL AFTER `accommodation_details`');
+      console.log('🛠️ Added registrations.dietary_requirements column');
+    }
+    if (!columnNames.includes('dietary_requirements_other')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `dietary_requirements_other` TEXT NULL AFTER `dietary_requirements`');
+      console.log('🛠️ Added registrations.dietary_requirements_other column');
+    }
+    if (!columnNames.includes('special_physical_needs')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `special_physical_needs` BOOLEAN NULL AFTER `dietary_requirements_other`');
+      console.log('🛠️ Added registrations.special_physical_needs column');
+    }
+    if (!columnNames.includes('special_physical_needs_details')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `special_physical_needs_details` TEXT NULL AFTER `special_physical_needs`');
+      console.log('🛠️ Added registrations.special_physical_needs_details column');
+    }
+  } catch (error: any) {
+    console.error('Error migrating additional registration questions:', error?.message || error);
   }
 };
 
