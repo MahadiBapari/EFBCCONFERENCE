@@ -2719,14 +2719,30 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             </div>
           )}
 
-          {/* Payment section: Hide in admin edit mode, show in user mode */}
-          {!isAdminEdit && (
+          {/* Payment section: Hide in admin edit mode, show in user mode only when transaction is needed */}
+          {!isAdminEdit && (() => {
+            // Check if spouse is being added (wasn't there before, but now is)
+            const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
+            // Check if kids are being added (wasn't there before, but now is)
+            const isAddingKids = isEditing && !hadKidsBefore && kids.length > 0 && !hadKidsPayment;
+            
+            // Show payment section if:
+            // 1. New registration (!isEditing)
+            // 2. Unpaid registration being edited (!isAlreadyPaid)
+            // 3. Adding spouse to already-paid registration (isAddingSpouse)
+            // 4. Adding kids to already-paid registration (isAddingKids)
+            const shouldShowPaymentSection = !isEditing || !isAlreadyPaid || isAddingSpouse || isAddingKids;
+            
+            if (!shouldShowPaymentSection) {
+              return null; // Hide payment section for paid registrations being edited without adding spouse/kids
+            }
+            
+            return (
             <div className="form-section">
               <h3 className="section-title">Payment Information</h3>
               {(() => {
-                // Check if spouse is being added (wasn't there before, but now is)
+                // Re-check these flags for the payment summary logic
                 const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
-                // Check if kids are being added (wasn't there before, but now is)
                 const isAddingKids = isEditing && !hadKidsBefore && kids.length > 0 && !hadKidsPayment;
 
                 if (isAlreadyPaid && !isAddingSpouse && !isAddingKids) {
@@ -2925,7 +2941,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 );
               })()}
             </div>
-          )}
+            );
+          })()}
 
           <div className="modal-footer-actions" style={{ marginTop: '1rem' }}>
             <button type="button" className="btn btn-secondary" onClick={onBack} disabled={isSubmitting}>Cancel</button>
