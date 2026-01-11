@@ -174,6 +174,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const isAlreadyPaid = !!(registration as any)?.paid;
   const hadSpouseTicket = toBooleanYesNo((registration as any)?.spouseDinnerTicket);
   const hadSpousePayment = !!(registration as any)?.spousePaymentId;
+  const hadKidsBefore = registration?.kids && Array.isArray(registration.kids) && registration.kids.length > 0;
+  const hadKidsPayment = !!(registration as any)?.kidsPaymentId;
 
   const [formData, setFormData] = useState<Partial<Registration>>({
     // Personal Information
@@ -859,7 +861,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         userId: user.id,
         eventId: event.id,
         ...formData,
-        totalPrice: (Number(registration?.totalPrice || 0) + spousePrice).toString(),
+        // Keep original totalPrice - don't add spouse price to it
+        totalPrice: registration?.totalPrice || formData.totalPrice || '0',
         badgeName: (formData.badgeName || '').toUpperCase(),
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
@@ -888,6 +891,403 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       onBack();
     } catch (err: any) {
       console.error('Spouse payment error:', {
+        message: err?.message,
+        error: err,
+        response: err?.response,
+        stack: err?.stack
+      });
+      
+      // Extract error message with priority: user-friendly message > Square error > generic message
+      let errorMessage = err?.message || err?.response?.data?.error || 'Payment failed. Please check your card details and try again.';
+      
+      // If it's a tokenization error, it should already have a user-friendly message
+      // Otherwise, provide a generic helpful message
+      if (!errorMessage.includes('tokenization') && !errorMessage.includes('card') && !errorMessage.includes('declined')) {
+        errorMessage = 'Payment failed. Please check your card details and try again, or contact support if the problem persists.';
+      }
+      
+      alert(`Payment Error: ${errorMessage}`);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleKidsPayment = async () => {
+    if (!event) return;
+    if (!kids || kids.length === 0) {
+      alert('Please add at least one child first.');
+      return;
+    }
+    
+    // Validate all kids have required fields
+    for (let i = 0; i < kids.length; i++) {
+      const kid = kids[i];
+      if (!kid.firstName?.trim() || !kid.lastName?.trim() || !kid.badgeName?.trim() || !kid.age) {
+        alert(`Please fill in all required fields for Child ${i + 1} (First Name, Last Name, Badge Name, and Age).`);
+        return;
+      }
+    }
+    
+    setIsSubmitting(true);
+    try {
+      // Ensure card is mounted with proper error handling
+      let card;
+      try {
+        card = await ensureCardMounted();
+      } catch (error: any) {
+        const errorMsg = error?.message || 'Failed to initialize payment form';
+        alert(`Payment Error: ${errorMsg}`);
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Attempt tokenization with improved error handling
+      let res;
+      try {
+        res = await card.tokenize();
+      } catch (tokenizeError: any) {
+        console.error('Tokenization exception (kids):', tokenizeError);
+        throw new Error('Failed to process card information. Please check your card details and try again.');
+      }
+      
+      if (res.status !== 'OK') {
+        const userFriendlyMessage = getTokenizationErrorMessage(res);
+        throw new Error(userFriendlyMessage);
+      }
+      const nonce = res.token;
+      
+      // Calculate kids-only price using Eastern Time to match backend
+      const now = getCurrentEasternTime();
+      const tiers = (event.kidsPricing || []).map((t: any) => ({
+        ...t,
+        s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+        e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+      })).sort((a: any, b: any) => a.s - b.s);
+      // Find active tier
+      const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
+        (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
+      const pricePerKid = active?.price ?? 0;
+      const kidsPrice = formData.kidsTotalPrice !== undefined 
+        ? formData.kidsTotalPrice 
+        : pricePerKid * kids.length;
+      const baseAmountCents = Math.round(kidsPrice * 100);
+      
+      // Backend will calculate the final amount with fee when applyCardFee is true
+      const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amountCents: baseAmountCents, // Backend will add fee
+          baseAmountCents,
+          applyCardFee: true, // Backend will apply 3.5% fee
+          currency: 'USD',
+          eventName: `${event?.name || 'EFBC Conference'} - Children Registration (${kids.length} ${kids.length === 1 ? 'child' : 'children'})`,
+          nonce,
+          buyerEmail: formData.email || undefined,
+          buyerPhone: formData.mobile || formData.officePhone || undefined,
+          billingAddress: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            addressLine1: addrStreet,
+            locality: addrCity,
+            administrativeDistrictLevel1: addrState,
+            postalCode: addrZip,
+            country: (addrCountry && addrCountry.length === 2 ? addrCountry.toUpperCase() : 'US')
+          }
+        })
+      });
+      
+      if (!payRes.ok) {
+        const errorData = await payRes.json().catch(() => ({ error: 'Network error or invalid response' }));
+        const errorMessage = errorData?.error || errorData?.message || `Payment failed with status ${payRes.status}`;
+        throw new Error(errorMessage);
+      }
+      
+      const payload = await payRes.json();
+      if (!payload?.success) {
+        const errorMessage = payload?.error || payload?.message || 'Payment charge failed';
+        throw new Error(errorMessage);
+      }
+      
+      if (!payload?.paymentId) {
+        throw new Error('Payment was processed but no payment ID was returned. Please contact support.');
+      }
+      
+      if (payload?.status && payload.status !== 'COMPLETED') {
+        throw new Error(`Payment status is ${payload.status}. Payment may not have been completed successfully.`);
+      }
+      
+      // Update registration with kids payment ID
+      const composedAddress = [
+        addrStreet.trim(),
+        `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
+        addrCountry.trim()
+      ].filter(Boolean).join('\n');
+      
+      const isGolf = (formData.wednesdayActivity || '').toLowerCase().includes('golf');
+      const isMassage = (formData.wednesdayActivity || '').toLowerCase().includes('massage');
+      const isPickleball = (formData.wednesdayActivity || '').toLowerCase().includes('pickleball');
+      
+      const clubRentalsValue = isGolf 
+        ? (needsClubRentals && golfClubPreference 
+            ? golfClubPreference 
+            : (!needsClubRentals ? 'I will bring my own' : undefined))
+        : undefined;
+      
+      const golfHandicapValue = isGolf ? formData.golfHandicap : undefined;
+      const massageTimeSlotValue = isMassage ? (formData as any).massageTimeSlot : undefined;
+      const pickleballEquipmentValue = isPickleball ? ((formData as any).pickleballEquipment !== undefined ? (formData as any).pickleballEquipment : null) : null;
+      
+      const registrationData: Registration = {
+        ...(registration?.id ? { id: registration.id } : {} as any),
+        userId: user.id,
+        eventId: event.id,
+        ...formData,
+        // Keep original totalPrice - don't add kids price to it
+        totalPrice: registration?.totalPrice || formData.totalPrice || '0',
+        badgeName: (formData.badgeName || '').toUpperCase(),
+        specialRequests: (formData as any).specialRequests || '',
+        clubRentals: clubRentalsValue,
+        golfHandicap: golfHandicapValue,
+        massageTimeSlot: massageTimeSlotValue,
+        pickleballEquipment: pickleballEquipmentValue,
+        address: composedAddress,
+        addressStreet: addrStreet.trim(),
+        city: addrCity.trim(),
+        state: addrState.trim(),
+        zipCode: addrZip.trim(),
+        country: addrCountry.trim(),
+        tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
+        name: `${formData.firstName} ${formData.lastName}`,
+        category: formData.wednesdayActivity || 'Networking',
+        // Preserve existing payment info
+        paid: (registration as any)?.paid,
+        squarePaymentId: (registration as any)?.squarePaymentId,
+        spousePaymentId: (registration as any)?.spousePaymentId,
+        spousePaidAt: (registration as any)?.spousePaidAt,
+        // Add kids payment ID and timestamp
+        kidsPaymentId: payload.paymentId,
+        kidsPaidAt: new Date().toISOString(), // Set kids payment timestamp
+        kids: kids.map(kid => ({
+          ...kid,
+          badgeName: (kid.badgeName || '').toUpperCase(), // Ensure kids badge names are uppercase
+        })),
+      } as Registration;
+      
+      onSave(registrationData);
+      alert(`Children registration payment successful! Registration updated.`);
+      onBack();
+    } catch (err: any) {
+      console.error('Kids payment error:', {
+        message: err?.message,
+        error: err,
+        response: err?.response,
+        stack: err?.stack
+      });
+      
+      // Extract error message with priority: user-friendly message > Square error > generic message
+      let errorMessage = err?.message || err?.response?.data?.error || 'Payment failed. Please check your card details and try again.';
+      
+      // If it's a tokenization error, it should already have a user-friendly message
+      // Otherwise, provide a generic helpful message
+      if (!errorMessage.includes('tokenization') && !errorMessage.includes('card') && !errorMessage.includes('declined')) {
+        errorMessage = 'Payment failed. Please check your card details and try again, or contact support if the problem persists.';
+      }
+      
+      alert(`Payment Error: ${errorMessage}`);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCombinedPayment = async () => {
+    if (!event) return;
+    if (!formData.spouseDinnerTicket) {
+      alert('Please select spouse dinner ticket first.');
+      return;
+    }
+    if (!formData.spouseFirstName || !formData.spouseLastName) {
+      alert('Please enter spouse first and last name.');
+      return;
+    }
+    if (!kids || kids.length === 0) {
+      alert('Please add at least one child first.');
+      return;
+    }
+    
+    // Validate all kids have required fields
+    for (let i = 0; i < kids.length; i++) {
+      const kid = kids[i];
+      if (!kid.firstName?.trim() || !kid.lastName?.trim() || !kid.badgeName?.trim() || !kid.age) {
+        alert(`Please fill in all required fields for Child ${i + 1} (First Name, Last Name, Badge Name, and Age).`);
+        return;
+      }
+    }
+    
+    setIsSubmitting(true);
+    try {
+      // Ensure card is mounted with proper error handling
+      let card;
+      try {
+        card = await ensureCardMounted();
+      } catch (error: any) {
+        const errorMsg = error?.message || 'Failed to initialize payment form';
+        alert(`Payment Error: ${errorMsg}`);
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Attempt tokenization with improved error handling
+      let res;
+      try {
+        res = await card.tokenize();
+      } catch (tokenizeError: any) {
+        console.error('Tokenization exception (combined):', tokenizeError);
+        throw new Error('Failed to process card information. Please check your card details and try again.');
+      }
+      
+      if (res.status !== 'OK') {
+        const userFriendlyMessage = getTokenizationErrorMessage(res);
+        throw new Error(userFriendlyMessage);
+      }
+      const nonce = res.token;
+      
+      // Calculate combined price (spouse + kids) using Eastern Time to match backend
+      const now = getCurrentEasternTime();
+      
+      // Calculate spouse price
+      const spouseTiers = (event.spousePricing || []).map((t: any) => ({
+        ...t,
+        s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+        e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+      })).sort((a: any, b: any) => a.s - b.s);
+      const spouseActive = spouseTiers.find((t: any) => now >= t.s && now < t.e) ||
+        (now < spouseTiers[0]?.s ? spouseTiers[0] : (now >= spouseTiers[spouseTiers.length - 1]?.e ? spouseTiers[spouseTiers.length - 1] : (spouseTiers.find((t: any) => now < t.s) || spouseTiers[spouseTiers.length - 1])));
+      const spousePrice = spouseActive?.price ?? 0;
+      
+      // Calculate kids price
+      const kidsTiers = (event.kidsPricing || []).map((t: any) => ({
+        ...t,
+        s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+        e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+      })).sort((a: any, b: any) => a.s - b.s);
+      const kidsActive = kidsTiers.find((t: any) => now >= t.s && now < t.e) ||
+        (now < kidsTiers[0]?.s ? kidsTiers[0] : (now >= kidsTiers[kidsTiers.length - 1]?.e ? kidsTiers[kidsTiers.length - 1] : (kidsTiers.find((t: any) => now < t.s) || kidsTiers[kidsTiers.length - 1])));
+      const pricePerKid = kidsActive?.price ?? 0;
+      const kidsPrice = formData.kidsTotalPrice !== undefined 
+        ? formData.kidsTotalPrice 
+        : pricePerKid * kids.length;
+      
+      const combinedPrice = spousePrice + kidsPrice;
+      const baseAmountCents = Math.round(combinedPrice * 100);
+      
+      // Backend will calculate the final amount with fee when applyCardFee is true
+      const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amountCents: baseAmountCents, // Backend will add fee
+          baseAmountCents,
+          applyCardFee: true, // Backend will apply 3.5% fee
+          currency: 'USD',
+          eventName: `${event?.name || 'EFBC Conference'} - Spouse & Children Registration`,
+          nonce,
+          buyerEmail: formData.email || undefined,
+          buyerPhone: formData.mobile || formData.officePhone || undefined,
+          billingAddress: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            addressLine1: addrStreet,
+            locality: addrCity,
+            administrativeDistrictLevel1: addrState,
+            postalCode: addrZip,
+            country: (addrCountry && addrCountry.length === 2 ? addrCountry.toUpperCase() : 'US')
+          }
+        })
+      });
+      
+      if (!payRes.ok) {
+        const errorData = await payRes.json().catch(() => ({ error: 'Network error or invalid response' }));
+        const errorMessage = errorData?.error || errorData?.message || `Payment failed with status ${payRes.status}`;
+        throw new Error(errorMessage);
+      }
+      
+      const payload = await payRes.json();
+      if (!payload?.success) {
+        const errorMessage = payload?.error || payload?.message || 'Payment charge failed';
+        throw new Error(errorMessage);
+      }
+      
+      if (!payload?.paymentId) {
+        throw new Error('Payment was processed but no payment ID was returned. Please contact support.');
+      }
+      
+      if (payload?.status && payload.status !== 'COMPLETED') {
+        throw new Error(`Payment status is ${payload.status}. Payment may not have been completed successfully.`);
+      }
+      
+      // Update registration with combined payment ID (same ID for both spouse and kids)
+      const composedAddress = [
+        addrStreet.trim(),
+        `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
+        addrCountry.trim()
+      ].filter(Boolean).join('\n');
+      
+      const isGolf = (formData.wednesdayActivity || '').toLowerCase().includes('golf');
+      const isMassage = (formData.wednesdayActivity || '').toLowerCase().includes('massage');
+      const isPickleball = (formData.wednesdayActivity || '').toLowerCase().includes('pickleball');
+      
+      const clubRentalsValue = isGolf 
+        ? (needsClubRentals && golfClubPreference 
+            ? golfClubPreference 
+            : (!needsClubRentals ? 'I will bring my own' : undefined))
+        : undefined;
+      
+      const golfHandicapValue = isGolf ? formData.golfHandicap : undefined;
+      const massageTimeSlotValue = isMassage ? (formData as any).massageTimeSlot : undefined;
+      const pickleballEquipmentValue = isPickleball ? ((formData as any).pickleballEquipment !== undefined ? (formData as any).pickleballEquipment : null) : null;
+      
+      const paymentTimestamp = new Date().toISOString();
+      
+      const registrationData: Registration = {
+        ...(registration?.id ? { id: registration.id } : {} as any),
+        userId: user.id,
+        eventId: event.id,
+        ...formData,
+        // Keep original totalPrice - don't add combined price to it
+        totalPrice: registration?.totalPrice || formData.totalPrice || '0',
+        badgeName: (formData.badgeName || '').toUpperCase(),
+        specialRequests: (formData as any).specialRequests || '',
+        clubRentals: clubRentalsValue,
+        golfHandicap: golfHandicapValue,
+        massageTimeSlot: massageTimeSlotValue,
+        pickleballEquipment: pickleballEquipmentValue,
+        address: composedAddress,
+        addressStreet: addrStreet.trim(),
+        city: addrCity.trim(),
+        state: addrState.trim(),
+        zipCode: addrZip.trim(),
+        country: addrCountry.trim(),
+        tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
+        name: `${formData.firstName} ${formData.lastName}`,
+        category: formData.wednesdayActivity || 'Networking',
+        // Preserve existing payment info
+        paid: (registration as any)?.paid,
+        squarePaymentId: (registration as any)?.squarePaymentId,
+        // Store same payment ID in both fields for combined payment
+        spousePaymentId: payload.paymentId,
+        spousePaidAt: paymentTimestamp,
+        kidsPaymentId: payload.paymentId, // Same payment ID for combined transaction
+        kidsPaidAt: paymentTimestamp, // Same timestamp for combined transaction
+        kids: kids.map(kid => ({
+          ...kid,
+          badgeName: (kid.badgeName || '').toUpperCase(), // Ensure kids badge names are uppercase
+        })),
+      } as Registration;
+      
+      onSave(registrationData);
+      alert(`Spouse and children registration payment successful! Registration updated.`);
+      onBack();
+    } catch (err: any) {
+      console.error('Combined payment error:', {
         message: err?.message,
         error: err,
         response: err?.response,
@@ -2325,21 +2725,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               {(() => {
                 // Check if spouse is being added (wasn't there before, but now is)
                 const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
-                const spousePrice = (() => {
-                  if (!formData.spouseDinnerTicket) return 0;
-                  // Use Eastern Time to match backend
-                  const now = getCurrentEasternTime();
-                  const tiers = (event?.spousePricing || []).map((t: any) => ({
-                    ...t,
-                    s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
-                    e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
-                  })).sort((a: any, b: any) => a.s - b.s);
-                  const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
-                    (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
-                  return active?.price ?? 0;
-                })();
+                // Check if kids are being added (wasn't there before, but now is)
+                const isAddingKids = isEditing && !hadKidsBefore && kids.length > 0 && !hadKidsPayment;
 
-                if (isAlreadyPaid && !isAddingSpouse) {
+                if (isAlreadyPaid && !isAddingSpouse && !isAddingKids) {
                   return (
                 <div className="payment-summary">
                   <div className="payment-item">
@@ -2358,11 +2747,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                           <span>{(registration as any).spousePaymentId}</span>
                 </div>
                       )}
-                      {isAddingSpouse && (
-                        <div className="payment-item" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
-                          <span>Spouse Ticket (New):</span>
-                          <span>${spousePrice.toFixed(2)}</span>
-                        </div>
+                      {hadKidsBefore && (registration as any)?.kidsPaymentId && (
+                        <div className="payment-item">
+                          <span>Children Payment ID:</span>
+                          <span>{(registration as any).kidsPaymentId}</span>
+                </div>
                       )}
                     </div>
                   );
@@ -2372,10 +2761,40 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 {(() => {
                   // Check if this is a spouse-only payment (adding spouse to already-paid registration)
                   const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
+                  // Check if this is a kids-only payment (adding kids to already-paid registration)
+                  const isAddingKids = isEditing && !hadKidsBefore && kids.length > 0 && !hadKidsPayment;
                   
-                  // If adding spouse to paid registration, only calculate spouse price
+                  // If adding spouse or kids to paid registration, only calculate the new amount
                   let baseTotal: number;
-                  if (isAddingSpouse) {
+                  if (isAddingSpouse && isAddingKids) {
+                    // Calculate combined price (spouse + kids) using current tier
+                    const now = getCurrentEasternTime();
+                    
+                    // Calculate spouse price
+                    const spouseTiers = (event.spousePricing || []).map((t: any) => ({
+                      ...t,
+                      s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+                      e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+                    })).sort((a: any, b: any) => a.s - b.s);
+                    const spouseActive = spouseTiers.find((t: any) => now >= t.s && now < t.e) ||
+                      (now < spouseTiers[0]?.s ? spouseTiers[0] : (now >= spouseTiers[spouseTiers.length - 1]?.e ? spouseTiers[spouseTiers.length - 1] : (spouseTiers.find((t: any) => now < t.s) || spouseTiers[spouseTiers.length - 1])));
+                    const spousePrice = spouseActive?.price ?? 0;
+                    
+                    // Calculate kids price
+                    const kidsTiers = (event.kidsPricing || []).map((t: any) => ({
+                      ...t,
+                      s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+                      e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+                    })).sort((a: any, b: any) => a.s - b.s);
+                    const kidsActive = kidsTiers.find((t: any) => now >= t.s && now < t.e) ||
+                      (now < kidsTiers[0]?.s ? kidsTiers[0] : (now >= kidsTiers[kidsTiers.length - 1]?.e ? kidsTiers[kidsTiers.length - 1] : (kidsTiers.find((t: any) => now < t.s) || kidsTiers[kidsTiers.length - 1])));
+                    const pricePerKid = kidsActive?.price ?? 0;
+                    const kidsPrice = formData.kidsTotalPrice !== undefined 
+                      ? formData.kidsTotalPrice 
+                      : pricePerKid * kids.length;
+                    
+                    baseTotal = spousePrice + kidsPrice;
+                  } else if (isAddingSpouse) {
                     // Calculate only spouse price using current tier
                     const now = getCurrentEasternTime();
                     const tiers = (event.spousePricing || []).map((t: any) => ({
@@ -2386,6 +2805,20 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
                       (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
                     baseTotal = active?.price ?? 0;
+                  } else if (isAddingKids) {
+                    // Calculate only kids price using current tier
+                    const now = getCurrentEasternTime();
+                    const tiers = (event.kidsPricing || []).map((t: any) => ({
+                      ...t,
+                      s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+                      e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+                    })).sort((a: any, b: any) => a.s - b.s);
+                    const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
+                      (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
+                    const pricePerKid = active?.price ?? 0;
+                    baseTotal = formData.kidsTotalPrice !== undefined 
+                      ? formData.kidsTotalPrice 
+                      : pricePerKid * kids.length;
                   } else {
                     // Normal flow: show full registration price
                     baseTotal = Number(formData.totalPrice || 0);
@@ -2397,19 +2830,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   const totalWithFee = baseTotal + convenienceFee;
                   return (
                 <div className="payment-summary">
-                  {!isAddingSpouse && (
+                  {!isAddingSpouse && !isAddingKids && (
                   <div className="payment-item">
                     <span>Conference Registration:</span>
                       <span>${(event.registrationPricing && event.registrationPricing.length ? (function () { const now = getCurrentEasternTime(); const tiers = (event.registrationPricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0].s ? tiers[0] : (now >= tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
                   </div>
                   )}
-                  {(formData.spouseDinnerTicket && !isAddingSpouse) || isAddingSpouse ? (
+                  {(formData.spouseDinnerTicket && !isAddingSpouse && !isAddingKids) || isAddingSpouse || (isAddingSpouse && isAddingKids) ? (
                     <div className="payment-item">
                       <span>Spouse Dinner Ticket:</span>
                       <span>${(function () { const now = getCurrentEasternTime(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
                     </div>
                   ) : null}
-                  {kids.length > 0 && (
+                  {(kids.length > 0 && !isAddingKids && !isAddingSpouse) || isAddingKids || (isAddingSpouse && isAddingKids) ? (
                     <div className="payment-item">
                       <span>Child/Children Registration ({kids.length} {kids.length === 1 ? 'child' : 'children'}):</span>
                       <span>${(function () {
@@ -2430,7 +2863,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                         return (pricePerKid * kids.length).toFixed(2);
                       })()}</span>
                     </div>
-                  )}
+                  ) : null}
                   {isCard && convenienceFee > 0 && (
                     <div className="payment-item" style={{ color: '#6b7280', fontSize: '0.9rem' }}>
                       <span>Convenience Fee (3.5%):</span>
@@ -2498,9 +2931,20 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             {(() => {
               const paymentMethod = formData.paymentMethod || 'Card';
               const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
+              const isAddingKids = isEditing && !hadKidsBefore && kids.length > 0 && !hadKidsPayment;
+              const isAddingBoth = isAddingSpouse && isAddingKids;
               
-              // Show spouse payment button only if registration is already paid and adding spouse
-              if (!isAdminEdit && isAlreadyPaid && isAddingSpouse && paymentMethod === 'Card') {
+              // Show combined payment button if both spouse and kids are being added
+              if (!isAdminEdit && isAlreadyPaid && isAddingBoth && paymentMethod === 'Card') {
+                return (
+                  <button type="button" className="btn btn-primary btn-save" onClick={handleCombinedPayment} disabled={isSubmitting}>
+                    {isSubmitting ? 'Processing...' : 'Pay for Spouse & Children Registration'}
+                  </button>
+                );
+              }
+              
+              // Show spouse payment button only if registration is already paid and adding spouse (but not kids)
+              if (!isAdminEdit && isAlreadyPaid && isAddingSpouse && paymentMethod === 'Card' && !isAddingKids) {
                 return (
                   <button type="button" className="btn btn-primary btn-save" onClick={handleSpousePayment} disabled={isSubmitting}>
                     {isSubmitting ? 'Processing...' : 'Pay for Spouse Ticket'}
@@ -2508,8 +2952,17 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 );
               }
               
-              // Show submit button for Check payments, admin edits, or already paid registrations (not adding spouse)
-              if (isAdminEdit || (isAlreadyPaid && !isAddingSpouse) || paymentMethod === 'Check') {
+              // Show kids payment button only if registration is already paid and adding kids (but not spouse)
+              if (!isAdminEdit && isAlreadyPaid && isAddingKids && paymentMethod === 'Card' && !isAddingSpouse) {
+                return (
+                  <button type="button" className="btn btn-primary btn-save" onClick={handleKidsPayment} disabled={isSubmitting}>
+                    {isSubmitting ? 'Processing...' : `Pay for Children Registration (${kids.length} ${kids.length === 1 ? 'child' : 'children'})`}
+                  </button>
+                );
+              }
+              
+              // Show submit button for Check payments, admin edits, or already paid registrations (not adding spouse or kids)
+              if (isAdminEdit || (isAlreadyPaid && !isAddingSpouse && !isAddingKids) || paymentMethod === 'Check') {
                 return (
                   <button className="btn btn-primary btn-save" type="submit" form="registration-form" disabled={isSubmitting}>
                     {isSubmitting ? 'Saving...' : (registration ? 'Update Registration' : 'Complete Registration')}

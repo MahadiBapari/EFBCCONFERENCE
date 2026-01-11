@@ -249,6 +249,10 @@ useEffect(() => {
         paymentMethod: r.paymentMethod ?? 'Card',
         paid: r.paid ?? false,
         squarePaymentId: r.squarePaymentId ?? r.square_payment_id,
+        spousePaymentId: r.spousePaymentId ?? r.spouse_payment_id,
+        spousePaidAt: r.spousePaidAt ?? r.spouse_paid_at,
+        kidsPaymentId: r.kidsPaymentId ?? r.kids_payment_id,
+        kidsPaidAt: r.kidsPaidAt ?? r.kids_paid_at,
         groupAssigned: r.groupAssigned ?? r.group_assigned ?? undefined,
         // Legacy
         name: r.name ?? `${r.firstName || ''} ${r.lastName || ''}`.trim(),

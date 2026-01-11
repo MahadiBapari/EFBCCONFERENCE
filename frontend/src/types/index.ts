@@ -116,6 +116,8 @@ export interface Registration {
   squarePaymentId?: string;
   spousePaymentId?: string;
   spousePaidAt?: string;
+  kidsPaymentId?: string;
+  kidsPaidAt?: string;
   
   // Group Assignment
   groupAssigned?: number;
