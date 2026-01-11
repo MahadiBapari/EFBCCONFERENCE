@@ -1962,11 +1962,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               <div className="radio-group">
                 <label className="radio-label">
                   <input type="radio" name="isFirstTimeAttending" checked={formData.isFirstTimeAttending === true} onChange={() => handleInputChange('isFirstTimeAttending', true)} />
-                  Yes
+                  <span style={{ marginLeft: '8px' }}>Yes</span>
                 </label>
                 <label className="radio-label">
                   <input type="radio" name="isFirstTimeAttending" checked={formData.isFirstTimeAttending === false} onChange={() => handleInputChange('isFirstTimeAttending', false)} />
-                  No
+                  <span style={{ marginLeft: '8px' }}>No</span>
                 </label>
               </div>
               {(errors as any).isFirstTimeAttending && <div className="error-message">{(errors as any).isFirstTimeAttending}</div>}
@@ -2026,7 +2026,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                           setGolfClubPreference('');
                         }} 
                       />
-                      Yes
+                      <span style={{ marginLeft: '8px' }}>Yes</span>
                     </label>
                     <label className="radio-label">
                       <input 
@@ -2038,7 +2038,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                           setGolfClubPreference('');
                         }} 
                       />
-                      No
+                      <span style={{ marginLeft: '8px' }}>No</span>
                     </label>
                   </div>
                 </div>
@@ -2116,7 +2116,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       checked={(formData as any).pickleballEquipment === true} 
                       onChange={() => handleInputChange('pickleballEquipment', true)} 
                     />
-                    Yes
+                    <span style={{ marginLeft: '8px' }}>Yes</span>
                   </label>
                   <label className="radio-label">
                     <input 
@@ -2125,7 +2125,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       checked={(formData as any).pickleballEquipment === false} 
                       onChange={() => handleInputChange('pickleballEquipment', false)} 
                     />
-                    No
+                    <span style={{ marginLeft: '8px' }}>No</span>
                   </label>
                 </div>
                 {(errors as any).pickleballEquipment && (
@@ -2222,7 +2222,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                         }
                       }}
                     />
-                    <span>{option}</span>
+                    <span style={{ marginLeft: '8px' }}>{option}</span>
                   </label>
                 ))}
                 <label className="checkbox-label">
@@ -2241,7 +2241,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       }
                     }}
                   />
-                  <span>Other</span>
+                  <span style={{ marginLeft: '8px' }}>Other</span>
                 </label>
               </div>
               {(formData.dietaryRequirements || []).includes('Other') && (
@@ -2310,7 +2310,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     onChange={() => handleInputChange('stayingAtBeachClub', true)}
                     required
                   />
-                  Yes
+                  <span style={{ marginLeft: '8px' }}>Yes</span>
                 </label>
                 <label className="radio-label">
                   <input
@@ -2320,7 +2320,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     onChange={() => handleInputChange('stayingAtBeachClub', false)}
                     required
                   />
-                  No
+                  <span style={{ marginLeft: '8px' }}>No</span>
                 </label>
               </div>
               {formData.stayingAtBeachClub === false && (
@@ -2343,6 +2343,17 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             <div className="form-group">
               <label className="form-label">Do you have any special physical needs? <span className="required-asterisk">*</span></label>
               <div className="radio-group">
+                
+                <label className="radio-label">
+                  <input
+                    type="radio"
+                    name="specialPhysicalNeeds"
+                    checked={formData.specialPhysicalNeeds === true}
+                    onChange={() => handleInputChange('specialPhysicalNeeds', true)}
+                    required
+                  />
+                  <span style={{ marginLeft: '8px' }}>Yes</span>
+                </label>
                 <label className="radio-label">
                   <input
                     type="radio"
@@ -2354,17 +2365,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     }}
                     required
                   />
-                  No
-                </label>
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    name="specialPhysicalNeeds"
-                    checked={formData.specialPhysicalNeeds === true}
-                    onChange={() => handleInputChange('specialPhysicalNeeds', true)}
-                    required
-                  />
-                  Yes
+                  <span style={{ marginLeft: '8px' }}>No</span>
                 </label>
               </div>
               {formData.specialPhysicalNeeds === true && (
@@ -2403,7 +2404,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     }}
                     disabled={hadSpousePayment} // Disable checkbox if payment was made
                     />
-                    <span>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
+                    <span style={{ marginLeft: '8px' }}>Check Box to purchase Spouse/Guest Dinner Ticket.</span>
                   {hadSpousePayment && (
                     <span style={{ marginLeft: '8px', color: '#6b7280', fontSize: '0.875rem' }}>
                       (Already paid - cannot be removed)
@@ -2674,7 +2675,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       checked={(formData.paymentMethod || 'Card') === 'Card'}
                       onChange={() => handleInputChange('paymentMethod', 'Card')}
                     />
-                    <span>Card</span>
+                    <span style={{ marginLeft: '8px' }}>Card</span>
                   </label>
                   <label className="segmented-label">
                     <input
@@ -2683,7 +2684,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       checked={formData.paymentMethod === 'Check'}
                       onChange={() => handleInputChange('paymentMethod', 'Check')}
                     />
-                    <span>Check</span>
+                    <span style={{ marginLeft: '8px' }}>Check</span>
                   </label>
                 </div>
               </div>
@@ -2698,7 +2699,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                         checked={formData.paid === true}
                         onChange={() => handleInputChange('paid', true)}
                       />
-                      Yes
+                      <span style={{ marginLeft: '8px' }}>Yes</span>
                     </label>
                     <label className="radio-label">
                       <input
@@ -2707,7 +2708,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                         checked={formData.paid === false || formData.paid === undefined}
                         onChange={() => handleInputChange('paid', false)}
                       />
-                      No
+                      <span style={{ marginLeft: '8px' }}>No</span>
                     </label>
                   </div>
                   <p className="form-hint" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
