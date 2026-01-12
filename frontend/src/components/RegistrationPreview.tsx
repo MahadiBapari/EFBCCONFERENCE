@@ -221,6 +221,46 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       ...((registration as any).specialRequests ? [['Special Requests', (registration as any).specialRequests]] : []),
     ];
 
+    // Additional Information
+    if ((registration as any).transportationMethod || (registration as any).transportationDetails || 
+        (registration as any).stayingAtBeachClub !== undefined || (registration as any).accommodationDetails ||
+        ((registration as any).dietaryRequirements && Array.isArray((registration as any).dietaryRequirements) && (registration as any).dietaryRequirements.length > 0) ||
+        (registration as any).dietaryRequirementsOther || (registration as any).specialPhysicalNeeds !== undefined ||
+        (registration as any).specialPhysicalNeedsDetails) {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = margin;
+      }
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Additional Information', margin, yPos);
+      yPos += 8;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const additionalData = [
+        ...((registration as any).transportationMethod ? [['Transportation Method', (registration as any).transportationMethod]] : []),
+        ...((registration as any).transportationDetails ? [['Transportation Details', (registration as any).transportationDetails]] : []),
+        ...((registration as any).stayingAtBeachClub !== undefined ? [['Staying at Beach Club Resort', (registration as any).stayingAtBeachClub ? 'Yes' : 'No']] : []),
+        ...((registration as any).accommodationDetails ? [['Accommodation Details', (registration as any).accommodationDetails]] : []),
+        ...(((registration as any).dietaryRequirements && Array.isArray((registration as any).dietaryRequirements) && (registration as any).dietaryRequirements.length > 0) 
+          ? [['Dietary Requirements', ((registration as any).dietaryRequirements.join(', ')) + ((registration as any).dietaryRequirementsOther ? ` (Other: ${(registration as any).dietaryRequirementsOther})` : '')]] 
+          : []),
+        ...((registration as any).specialPhysicalNeeds !== undefined ? [['Special Physical Needs', (registration as any).specialPhysicalNeeds ? 'Yes' : 'No']] : []),
+        ...((registration as any).specialPhysicalNeedsDetails ? [['Special Physical Needs Details', (registration as any).specialPhysicalNeedsDetails]] : []),
+      ];
+
+      additionalData.forEach(([label, value]) => {
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${label}:`, margin, yPos);
+        doc.setFont('helvetica', 'normal');
+        const lines = doc.splitTextToSize(value || '-', 120);
+        doc.text(lines, margin + 60, yPos);
+        yPos += lines.length * 6;
+      });
+      yPos += 5;
+    }
+
     mealData.forEach(([label, value]) => {
       doc.setFont('helvetica', 'bold');
       doc.text(`${label}:`, margin, yPos);
@@ -265,37 +305,82 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       }
     }
 
-    // Child Information
-    if ((registration as any).childLunchTicket) {
+    // Child/Children Information
+    const kids = (registration as any).kids && Array.isArray((registration as any).kids) ? (registration as any).kids : [];
+    const hasLegacyChild = (registration as any).childLunchTicket || (registration as any).childFirstName || (registration as any).childLastName;
+    
+    if (kids.length > 0 || hasLegacyChild) {
       if (yPos > 250) {
         doc.addPage();
         yPos = margin;
       }
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('Child Information', margin, yPos);
+      doc.text('Child/Children Information', margin, yPos);
       yPos += 8;
 
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.setFont('helvetica', 'bold');
-      doc.text('Lunch Ticket:', margin, yPos);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Yes', margin + 60, yPos);
-      yPos += 6;
-      if ((registration as any).childFirstName) {
-        doc.setFont('helvetica', 'bold');
-        doc.text('Child First Name:', margin, yPos);
-        doc.setFont('helvetica', 'normal');
-        doc.text((registration as any).childFirstName, margin + 60, yPos);
-        yPos += 6;
+      
+      // New kids array
+      if (kids.length > 0) {
+        kids.forEach((kid: any, idx: number) => {
+          doc.setFont('helvetica', 'bold');
+          doc.text(`Child ${idx + 1}:`, margin, yPos);
+          yPos += 6;
+          if (kid.firstName) {
+            doc.setFont('helvetica', 'bold');
+            doc.text('  First Name:', margin + 10, yPos);
+            doc.setFont('helvetica', 'normal');
+            doc.text(kid.firstName, margin + 70, yPos);
+            yPos += 6;
+          }
+          if (kid.lastName) {
+            doc.setFont('helvetica', 'bold');
+            doc.text('  Last Name:', margin + 10, yPos);
+            doc.setFont('helvetica', 'normal');
+            doc.text(kid.lastName, margin + 70, yPos);
+            yPos += 6;
+          }
+          if (kid.badgeName) {
+            doc.setFont('helvetica', 'bold');
+            doc.text('  Badge Name:', margin + 10, yPos);
+            doc.setFont('helvetica', 'normal');
+            doc.text(kid.badgeName, margin + 70, yPos);
+            yPos += 6;
+          }
+          if (kid.age) {
+            doc.setFont('helvetica', 'bold');
+            doc.text('  Age:', margin + 10, yPos);
+            doc.setFont('helvetica', 'normal');
+            doc.text(String(kid.age), margin + 70, yPos);
+            yPos += 6;
+          }
+          yPos += 3;
+        });
       }
-      if ((registration as any).childLastName) {
+      
+      // Legacy child information
+      if (hasLegacyChild) {
         doc.setFont('helvetica', 'bold');
-        doc.text('Child Last Name:', margin, yPos);
+        doc.text('Lunch Ticket:', margin, yPos);
         doc.setFont('helvetica', 'normal');
-        doc.text((registration as any).childLastName, margin + 60, yPos);
+        doc.text((registration as any).childLunchTicket ? 'Yes' : 'No', margin + 60, yPos);
         yPos += 6;
+        if ((registration as any).childFirstName) {
+          doc.setFont('helvetica', 'bold');
+          doc.text('Child First Name:', margin, yPos);
+          doc.setFont('helvetica', 'normal');
+          doc.text((registration as any).childFirstName, margin + 60, yPos);
+          yPos += 6;
+        }
+        if ((registration as any).childLastName) {
+          doc.setFont('helvetica', 'bold');
+          doc.text('Child Last Name:', margin, yPos);
+          doc.setFont('helvetica', 'normal');
+          doc.text((registration as any).childLastName, margin + 60, yPos);
+          yPos += 6;
+        }
       }
     }
 
@@ -526,24 +611,64 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
           {(registration as any).specialRequests && <Line label="Special Requests" value={(registration as any).specialRequests} />}
         </div>
 
-        {(registration as any).childLunchTicket && (
+        {((registration as any).transportationMethod || (registration as any).transportationDetails || 
+          (registration as any).stayingAtBeachClub !== undefined || (registration as any).accommodationDetails ||
+          ((registration as any).dietaryRequirements && Array.isArray((registration as any).dietaryRequirements) && (registration as any).dietaryRequirements.length > 0) ||
+          (registration as any).dietaryRequirementsOther || (registration as any).specialPhysicalNeeds !== undefined ||
+          (registration as any).specialPhysicalNeedsDetails) && (
           <div className="preview-section">
-            <h3 className="section-title">Child Information</h3>
-            <div className="preview-item">
-              <span className="preview-label">Lunch Ticket:</span>
-              <span className="preview-value">Yes</span>
-            </div>
-            {(registration as any).childFirstName && (
-              <div className="preview-item">
-                <span className="preview-label">Child First Name:</span>
-                <span className="preview-value">{(registration as any).childFirstName}</span>
-              </div>
+            <h3 className="section-title">Additional Information</h3>
+            {(registration as any).transportationMethod && <Line label="Transportation Method" value={(registration as any).transportationMethod} />}
+            {(registration as any).transportationDetails && <Line label="Transportation Details" value={(registration as any).transportationDetails} />}
+            {(registration as any).stayingAtBeachClub !== undefined && <Line label="Staying at Beach Club Resort" value={(registration as any).stayingAtBeachClub ? 'Yes' : 'No'} />}
+            {(registration as any).accommodationDetails && <Line label="Accommodation Details" value={(registration as any).accommodationDetails} />}
+            {((registration as any).dietaryRequirements && Array.isArray((registration as any).dietaryRequirements) && (registration as any).dietaryRequirements.length > 0) && (
+              <Line 
+                label="Dietary Requirements" 
+                value={((registration as any).dietaryRequirements.join(', ')) + ((registration as any).dietaryRequirementsOther ? ` (Other: ${(registration as any).dietaryRequirementsOther})` : '')} 
+              />
             )}
-            {(registration as any).childLastName && (
-              <div className="preview-item">
-                <span className="preview-label">Child Last Name:</span>
-                <span className="preview-value">{(registration as any).childLastName}</span>
-              </div>
+            {(registration as any).specialPhysicalNeeds !== undefined && <Line label="Special Physical Needs" value={(registration as any).specialPhysicalNeeds ? 'Yes' : 'No'} />}
+            {(registration as any).specialPhysicalNeedsDetails && <Line label="Special Physical Needs Details" value={(registration as any).specialPhysicalNeedsDetails} />}
+          </div>
+        )}
+
+        {(((registration as any).kids && Array.isArray((registration as any).kids) && (registration as any).kids.length > 0) || 
+          (registration as any).childLunchTicket || (registration as any).childFirstName || (registration as any).childLastName) && (
+          <div className="preview-section">
+            <h3 className="section-title">Child/Children Information</h3>
+            {(registration as any).kids && Array.isArray((registration as any).kids) && (registration as any).kids.length > 0 && (
+              <>
+                {(registration as any).kids.map((kid: any, idx: number) => (
+                  <div key={idx} style={{ marginBottom: '1rem', padding: '0.5rem', border: '1px solid #e5e7eb', borderRadius: '4px' }}>
+                    <h4 style={{ marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold' }}>Child {idx + 1}</h4>
+                    {kid.firstName && <Line label="First Name" value={kid.firstName} />}
+                    {kid.lastName && <Line label="Last Name" value={kid.lastName} />}
+                    {kid.badgeName && <Line label="Badge Name" value={kid.badgeName} />}
+                    {kid.age && <Line label="Age" value={String(kid.age)} />}
+                  </div>
+                ))}
+              </>
+            ))}
+            {((registration as any).childLunchTicket || (registration as any).childFirstName || (registration as any).childLastName) && (
+              <>
+                <div className="preview-item">
+                  <span className="preview-label">Lunch Ticket:</span>
+                  <span className="preview-value">{(registration as any).childLunchTicket ? 'Yes' : 'No'}</span>
+                </div>
+                {(registration as any).childFirstName && (
+                  <div className="preview-item">
+                    <span className="preview-label">Child First Name:</span>
+                    <span className="preview-value">{(registration as any).childFirstName}</span>
+                  </div>
+                )}
+                {(registration as any).childLastName && (
+                  <div className="preview-item">
+                    <span className="preview-label">Child Last Name:</span>
+                    <span className="preview-value">{(registration as any).childLastName}</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

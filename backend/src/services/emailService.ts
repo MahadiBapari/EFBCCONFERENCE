@@ -710,6 +710,13 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${registration.fridayBreakfast ? `<tr><td style="color:#6b7280;">Friday Breakfast</td><td>${registration.fridayBreakfast}</td></tr>`:''}
         ${dietaryRestrictions ? `<tr><td style="color:#6b7280;">Dietary Restrictions</td><td>${dietaryRestrictions}</td></tr>`:''}
         ${specialRequests ? `<tr><td style="color:#6b7280;">Special Requests</td><td>${specialRequests}</td></tr>`:''}
+        ${transportationMethod ? `<tr><td style="color:#6b7280;">Transportation Method</td><td>${transportationMethod}</td></tr>`:''}
+        ${transportationDetails ? `<tr><td style="color:#6b7280;">Transportation Details</td><td>${transportationDetails}</td></tr>`:''}
+        ${stayingAtBeachClub !== undefined ? `<tr><td style="color:#6b7280;">Staying at Beach Club Resort</td><td>${stayingAtBeachClub ? 'Yes' : 'No'}</td></tr>`:''}
+        ${accommodationDetails ? `<tr><td style="color:#6b7280;">Accommodation Details</td><td>${accommodationDetails}</td></tr>`:''}
+        ${dietaryRequirements && Array.isArray(dietaryRequirements) && dietaryRequirements.length > 0 ? `<tr><td style="color:#6b7280;">Dietary Requirements</td><td>${dietaryRequirements.join(', ')}${dietaryRequirementsOther ? ` (Other: ${dietaryRequirementsOther})` : ''}</td></tr>`:''}
+        ${specialPhysicalNeeds !== undefined ? `<tr><td style="color:#6b7280;">Special Physical Needs</td><td>${specialPhysicalNeeds ? 'Yes' : 'No'}</td></tr>`:''}
+        ${specialPhysicalNeedsDetails ? `<tr><td style="color:#6b7280;">Special Physical Needs Details</td><td>${specialPhysicalNeedsDetails}</td></tr>`:''}
         ${emergencyContactName ? `<tr><td style="color:#6b7280;">Emergency Contact Name</td><td>${emergencyContactName}</td></tr>`:''}
         ${emergencyContactPhone ? `<tr><td style="color:#6b7280;">Emergency Contact Phone</td><td>${emergencyContactPhone}</td></tr>`:''}
         ${spouseDinnerTicket ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Spouse/Guest Information</strong></td></tr>`:''}
