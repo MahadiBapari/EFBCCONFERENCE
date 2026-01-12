@@ -54,7 +54,7 @@ const getAdminEmail = (): string | null => {
          'planner@efbcconference.org';
 };
 
-// Generic send helper with HTTP API fallback (Resend)
+// Generic send helper with HTTP API fallback (Brevo)
 type MailPayload = { to: string; subject: string; text: string; html: string };
 
 // Spam-triggering words and phrases to avoid in subject lines
@@ -164,23 +164,52 @@ const sendUsingTransporter = async (payload: MailPayload): Promise<void> => {
   await transporter.sendMail({ from, ...payload });
 };
 
-const sendUsingResend = async (payload: MailPayload): Promise<void> => {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error('RESEND_API_KEY not set');
+const sendUsingBrevo = async (payload: MailPayload): Promise<void> => {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) throw new Error('BREVO_API_KEY not set');
   const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
+  const fromName = process.env.EMAIL_FROM_NAME || 'EFBC Conference';
+  
+  // Extract email and name from EMAIL_FROM if it's in format "Name <email@domain.com>"
+  let fromEmail = from;
+  let fromNameValue = fromName;
+  const fromMatch = from.match(/^(.+?)\s*<(.+?)>$/);
+  if (fromMatch) {
+    fromNameValue = fromMatch[1].trim();
+    fromEmail = fromMatch[2].trim();
+  }
+  
   const fetchAny: any = (globalThis as any).fetch;
-  const res = await fetchAny('https://api.resend.com/emails', {
+  const res = await fetchAny('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
+      'api-key': apiKey,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
     },
-    body: JSON.stringify({ from, to: payload.to, subject: payload.subject, html: payload.html, text: payload.text })
+    body: JSON.stringify({
+      sender: {
+        name: fromNameValue,
+        email: fromEmail
+      },
+      to: [
+        {
+          email: payload.to
+        }
+      ],
+      subject: payload.subject,
+      htmlContent: payload.html,
+      textContent: payload.text
+    })
   });
+  
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Resend API failed (${res.status}): ${body}`);
+    throw new Error(`Brevo API failed (${res.status}): ${body}`);
   }
+  
+  const responseData = await res.json();
+  console.log(`[BREVO] Email sent successfully. Message ID: ${responseData.messageId || 'N/A'}`);
 };
 
 // Internal function to actually send email (used by queue)
@@ -193,11 +222,11 @@ const sendMail = async (payload: MailPayload): Promise<void> => {
   } catch (e) {
     console.error('SMTP send failed, falling back to HTTP API:', (e as any)?.message || e);
   }
-  if (process.env.RESEND_API_KEY) {
-    await sendUsingResend(payload);
+  if (process.env.BREVO_API_KEY) {
+    await sendUsingBrevo(payload);
     return;
   }
-  console.warn('No email transport available (SMTP or RESEND_API_KEY). Email not sent.');
+  console.warn('No email transport available (SMTP or BREVO_API_KEY). Email not sent.');
   throw new Error('No email transport available');
 };
 
@@ -212,7 +241,9 @@ interface QueuedEmail {
 class EmailQueue {
   private queue: QueuedEmail[] = [];
   private processing: boolean = false;
-  private readonly delayBetweenEmails = 800; // 800ms = 1.25 req/sec, well under 2 req/sec limit for Resend
+  // Brevo allows 300 emails/day on free plan, 10,000/day on paid
+  // For safety, use 1 email per second (1000ms delay)
+  private readonly delayBetweenEmails = 1000; // 1 second = 1 req/sec
 
   // Add email to queue
   enqueue(payload: MailPayload, maxRetries: number = 3): void {
@@ -249,17 +280,19 @@ class EmailQueue {
         const errorMsg = error?.message || String(error);
         console.error(`[EMAIL QUEUE] Failed to send email ${email.id} to ${email.payload.to} (attempt ${email.retries}/${email.maxRetries + 1}):`, errorMsg);
 
-        // Check if it's a rate limit error (429) from Resend
+        // Check if it's a rate limit error (429) from Brevo
         const isRateLimit = errorMsg.includes('429') || 
                            errorMsg.includes('rate_limit') || 
                            errorMsg.includes('rate_limit_exceeded') ||
-                           errorMsg.includes('Too many requests');
+                           errorMsg.includes('Too many requests') ||
+                           errorMsg.includes('quota') ||
+                           errorMsg.includes('limit');
 
         if (email.retries <= email.maxRetries) {
-          // For rate limit errors, use longer backoff to respect Resend's 2 req/sec limit
+          // For rate limit errors, use longer backoff
           // For other errors, use exponential backoff
           const retryDelay = isRateLimit 
-            ? 5000 + (email.retries * 2000) // 5s, 7s, 9s for rate limits (gives time for rate limit to reset)
+            ? 60000 + (email.retries * 30000) // 60s, 90s, 120s for rate limits
             : Math.min(1000 * email.retries, 5000); // 1s, 2s, 3s, max 5s for other errors
           
           console.log(`[EMAIL QUEUE] Retrying email ${email.id} in ${retryDelay}ms...${isRateLimit ? ' (rate limit detected)' : ''}`);
