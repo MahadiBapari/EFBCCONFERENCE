@@ -221,6 +221,16 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       ...((registration as any).specialRequests ? [['Special Requests', (registration as any).specialRequests]] : []),
     ];
 
+    mealData.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${label}:`, margin, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value || '-', margin + 60, yPos);
+      yPos += 6;
+    });
+
+    yPos += 5;
+
     // Additional Information
     if ((registration as any).transportationMethod || (registration as any).transportationDetails || 
         (registration as any).stayingAtBeachClub !== undefined || (registration as any).accommodationDetails ||
@@ -260,16 +270,6 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       });
       yPos += 5;
     }
-
-    mealData.forEach(([label, value]) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${label}:`, margin, yPos);
-      doc.setFont('helvetica', 'normal');
-      doc.text(value || '-', margin + 60, yPos);
-      yPos += 6;
-    });
-
-    yPos += 5;
 
     // Spouse/Guest
     if (registration.spouseDinnerTicket) {
@@ -649,7 +649,7 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
                   </div>
                 ))}
               </>
-            ))}
+            )}
             {((registration as any).childLunchTicket || (registration as any).childFirstName || (registration as any).childLastName) && (
               <>
                 <div className="preview-item">
