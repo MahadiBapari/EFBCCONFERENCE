@@ -28,6 +28,7 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
   const [draggedItem, setDraggedItem] = useState<{ groupId: number, index: number } | null>(null);
   const [editingGroup, setEditingGroup] = useState({ id: null as number | null, name: "" });
   const [draggedUnassignedId, setDraggedUnassignedId] = useState<number | null>(null);
+  const [unassignedSearchQuery, setUnassignedSearchQuery] = useState("");
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -220,6 +221,13 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
   const categoryRegistrations = activeTab ? eventFilteredRegistrations.filter(r => r.category === activeTab) : [];
   const categoryGroups = activeTab ? eventFilteredGroups.filter(g => g.category === activeTab) : [];
   const unassigned = categoryRegistrations.filter(r => !categoryGroups.some(g => g.members.includes(r.id)));
+  
+  // Filter unassigned based on search query
+  const filteredUnassigned = unassigned.filter(reg => {
+    if (!unassignedSearchQuery.trim()) return true;
+    const query = unassignedSearchQuery.toLowerCase();
+    return reg.name.toLowerCase().includes(query);
+  });
 
   return (
     <div className="container">
@@ -366,9 +374,19 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
         <div className="card attendees-column">
           <h4>Unassigned Attendees</h4>
           <span className="drag-hint">Drag a member to a group on the left.</span>
-          {unassigned.length > 0 ? (
+          <div className="search-bar" style={{ marginTop: '10px', marginBottom: '10px' }}>
+            <input
+              type="search"
+              placeholder="Search unassigned attendees..."
+              className="form-control"
+              value={unassignedSearchQuery}
+              onChange={(e) => setUnassignedSearchQuery(e.target.value)}
+              style={{ width: '100%' }}
+            />
+          </div>
+          {filteredUnassigned.length > 0 ? (
             <ul className="unassigned-list">
-              {unassigned.map(reg => (
+              {filteredUnassigned.map(reg => (
                 <li 
                   key={reg.id} 
                   className="unassigned-item"
@@ -381,7 +399,7 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
               ))}
             </ul>
           ) : (
-            <p>No unassigned members in this category.</p>
+            <p>{unassignedSearchQuery.trim() ? 'No attendees found matching your search.' : 'No unassigned members in this category.'}</p>
           )}
         </div>
       </div>
