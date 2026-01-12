@@ -409,7 +409,13 @@ export class Registration {
         // Parse kids from JSON or migrate from legacy fields
         if (row.kids_data) {
           try {
-            return JSON.parse(row.kids_data);
+            // Check if it's already an object (MySQL JSON columns may return as objects)
+            if (typeof row.kids_data === 'string') {
+              return JSON.parse(row.kids_data);
+            } else if (typeof row.kids_data === 'object') {
+              return row.kids_data;
+            }
+            return undefined;
           } catch (e) {
             console.error('Error parsing kids_data:', e);
             return undefined;

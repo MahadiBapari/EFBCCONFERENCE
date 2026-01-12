@@ -1,4 +1,107 @@
-# Migration Scripts
+# Scripts
+
+## Test SMTP Configuration
+
+This script verifies that your SMTP configuration is correct and can send emails.
+
+### How to run
+
+From the `backend` directory:
+
+**Just verify SMTP connection:**
+```bash
+npm run test-smtp
+```
+
+**Verify connection and send a test email:**
+```bash
+npm run test-smtp your-email@example.com
+```
+
+Or directly with ts-node:
+```bash
+npx ts-node src/scripts/testSMTP.ts [test-email@example.com]
+```
+
+### What it checks
+
+1. **Environment Variables**: Verifies that all required SMTP environment variables are set:
+   - `SMTP_HOST` - SMTP server hostname
+   - `SMTP_PORT` - SMTP server port (defaults to 587)
+   - `SMTP_USER` - SMTP username
+   - `SMTP_PASS` - SMTP password
+   - `SMTP_SECURE` - Whether to use secure connection (optional, defaults based on port)
+   - `EMAIL_FROM` - Email address to send from (optional, defaults to 'no-reply@efbc.local')
+
+2. **Connection Test**: Attempts to verify the SMTP connection using `transporter.verify()`
+
+3. **Test Email** (if email provided): Sends a test email to verify the full email sending flow
+
+### Required Environment Variables
+
+Make sure your `.env` file (or environment) contains:
+
+```env
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-username
+SMTP_PASS=your-password
+EMAIL_FROM=noreply@yourdomain.com
+```
+
+### Example Output
+
+**Successful connection:**
+```
+=== SMTP Configuration Test ===
+
+Configuration:
+  SMTP_HOST: smtp.example.com
+  SMTP_PORT: 587
+  SMTP_USER: user@example.com
+  SMTP_PASS: ***word
+  SMTP_SECURE: false
+  EMAIL_FROM: noreply@yourdomain.com
+
+Creating SMTP transporter...
+Testing SMTP connection...
+✅ SMTP connection verified successfully!
+
+ℹ️  No test email address provided.
+   To send a test email, run:
+   npx ts-node src/scripts/testSMTP.ts your-email@example.com
+
+=== Test Complete ===
+```
+
+**Failed connection:**
+```
+=== SMTP Configuration Test ===
+
+Configuration:
+  SMTP_HOST: smtp.example.com
+  SMTP_PORT: 587
+  SMTP_USER: user@example.com
+  SMTP_PASS: ***word
+  SMTP_SECURE: false
+  EMAIL_FROM: noreply@yourdomain.com
+
+Creating SMTP transporter...
+Testing SMTP connection...
+❌ SMTP connection failed!
+Error: Invalid login: 535 Authentication failed
+Error code: EAUTH
+Failed command: AUTH PLAIN
+```
+
+### Troubleshooting
+
+- **"SMTP configuration incomplete"**: Make sure all required environment variables are set
+- **"EAUTH" error**: Check that your SMTP_USER and SMTP_PASS are correct
+- **Connection timeout**: Verify SMTP_HOST and SMTP_PORT are correct, and that your firewall allows outbound connections
+- **TLS errors**: Try setting `SMTP_SECURE=true` for port 465, or `SMTP_SECURE=false` for port 587
+
+---
 
 ## Fix Registration Prices
 

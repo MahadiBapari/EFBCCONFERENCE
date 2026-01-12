@@ -10,7 +10,8 @@
     "dev": "nodemon --exec npx ts-node src/server.ts",
     "postinstall": "npm run build",
     "dev:build": "tsc --watch",
-    "fix-prices": "npx ts-node src/scripts/fixRegistrationPrices.ts"
+    "fix-prices": "npx ts-node src/scripts/fixRegistrationPrices.ts",
+    "test-smtp": "npx ts-node src/scripts/testSMTP.ts"
   },
   "keywords": [],
   "author": "",
