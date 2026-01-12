@@ -228,7 +228,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     
     // Kids Information
     kids: registration?.kids || [],
-    kidsTotalPrice: registration?.kidsTotalPrice,
+    // kidsTotalPrice: registration?.kidsTotalPrice, // Commented out - using coupon codes instead
     
     // Child Information (legacy)
     // childLunchTicket: (registration as any)?.childLunchTicket || false,
@@ -239,6 +239,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     totalPrice: registration?.totalPrice || 675,
     paymentMethod: registration?.paymentMethod || 'Card',
     paid: registration?.paid ?? false,
+    discountCode: registration?.discountCode,
+    discountAmount: registration?.discountAmount,
 
     // Legacy fields
     name: registration?.name || user.name,
@@ -286,6 +288,18 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const [addrCountry, setAddrCountry] = useState<string>(initialAddr.country);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cardInstance, setCardInstance] = useState<any | null>(null);
+  const [discountCodeInput, setDiscountCodeInput] = useState(registration?.discountCode || '');
+  const [discountCodeData, setDiscountCodeData] = useState<any | null>(null);
+  const [discountCodeError, setDiscountCodeError] = useState('');
+  const [validatingDiscountCode, setValidatingDiscountCode] = useState(false);
+  
+  // Load discount code data if registration already has a discount code
+  useEffect(() => {
+    if (registration?.discountCode && event && !discountCodeData) {
+      validateDiscountCode(registration.discountCode);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registration?.discountCode, event?.id]);
   
   // Club rentals state: track if user needs rentals (Yes/No) and their preference
   const initialNeedsRentals = useMemo(() => {
@@ -402,16 +416,17 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     const kidsActive = pickTier(withBounds(kidsTiers));
     let total = regActive?.price ?? 675;
     if (spouseDinnerSelected) total += spouseActive?.price ?? 200;
-    // Calculate kids price: use admin override if set, otherwise calculate from tiers
+    // Calculate kids price: calculate from tiers (admin override commented out)
     if (kids.length > 0) {
-      const kidsPrice = formData.kidsTotalPrice !== undefined 
-        ? formData.kidsTotalPrice 
-        : (kidsActive?.price ?? 0) * kids.length;
+      // const kidsPrice = formData.kidsTotalPrice !== undefined 
+      //   ? formData.kidsTotalPrice 
+      //   : (kidsActive?.price ?? 0) * kids.length;
+      const kidsPrice = (kidsActive?.price ?? 0) * kids.length;
       total += kidsPrice;
     }
     // if (childLunchSelected) total += childLunchPrice;
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, formData.kidsTotalPrice, spouseDinnerSelected, registration?.totalPrice, kids, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers]);
+  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration?.totalPrice, kids, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -718,6 +733,17 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           squarePaymentId: (registration as any)?.squarePaymentId,
           spousePaymentId: (registration as any)?.spousePaymentId,
         } : {}),
+        // Include discount code if provided
+        discountCode: discountCodeInput.trim() || undefined,
+        discountAmount: discountCodeData ? (() => {
+          let discountAmount = 0;
+          if (discountCodeData.discountType === 'percentage') {
+            discountAmount = ((formData.totalPrice || 0) * discountCodeData.discountValue) / 100;
+          } else {
+            discountAmount = discountCodeData.discountValue;
+          }
+          return discountAmount;
+        })() : undefined,
       } as Registration;
       
       // For card payments, ensure payment was completed (has payment ID) - only check for new registrations
@@ -788,7 +814,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       // Find active tier: now >= startDate AND now < endDate (end date is exclusive - start of next day)
       const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
         (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
-      const spousePrice = active?.price ?? 0;
+      let spousePrice = active?.price ?? 0;
+      
+      // Apply discount if discount code is valid
+      if (discountCodeData) {
+        let discountAmount = 0;
+        if (discountCodeData.discountType === 'percentage') {
+          discountAmount = (spousePrice * discountCodeData.discountValue) / 100;
+        } else {
+          discountAmount = discountCodeData.discountValue;
+        }
+        spousePrice = Math.max(0, spousePrice - discountAmount);
+      }
+      
       const baseAmountCents = Math.round(spousePrice * 100);
       // Backend will calculate the final amount with fee when applyCardFee is true
       const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
@@ -884,6 +922,26 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         // Add spouse payment ID and timestamp
         spousePaymentId: payload.paymentId,
         spousePaidAt: new Date().toISOString(), // Set spouse payment timestamp
+        // Include discount code if provided
+        discountCode: discountCodeInput.trim() || undefined,
+        discountAmount: discountCodeData ? (() => {
+          const now = getCurrentEasternTime();
+          const tiers = (event.spousePricing || []).map((t: any) => ({
+            ...t,
+            s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+            e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+          })).sort((a: any, b: any) => a.s - b.s);
+          const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
+            (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
+          const spousePrice = active?.price ?? 0;
+          let discountAmount = 0;
+          if (discountCodeData.discountType === 'percentage') {
+            discountAmount = (spousePrice * discountCodeData.discountValue) / 100;
+          } else {
+            discountAmount = discountCodeData.discountValue;
+          }
+          return discountAmount;
+        })() : undefined,
       } as Registration;
       
       onSave(registrationData);
@@ -966,9 +1024,22 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
         (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
       const pricePerKid = active?.price ?? 0;
-      const kidsPrice = formData.kidsTotalPrice !== undefined 
-        ? formData.kidsTotalPrice 
-        : pricePerKid * kids.length;
+      // const kidsPrice = formData.kidsTotalPrice !== undefined 
+      //   ? formData.kidsTotalPrice 
+      //   : pricePerKid * kids.length;
+      let kidsPrice = pricePerKid * kids.length;
+      
+      // Apply discount if discount code is valid
+      if (discountCodeData) {
+        let discountAmount = 0;
+        if (discountCodeData.discountType === 'percentage') {
+          discountAmount = (kidsPrice * discountCodeData.discountValue) / 100;
+        } else {
+          discountAmount = discountCodeData.discountValue;
+        }
+        kidsPrice = Math.max(0, kidsPrice - discountAmount);
+      }
+      
       const baseAmountCents = Math.round(kidsPrice * 100);
       
       // Backend will calculate the final amount with fee when applyCardFee is true
@@ -1067,6 +1138,27 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         // Add kids payment ID and timestamp
         kidsPaymentId: payload.paymentId,
         kidsPaidAt: new Date().toISOString(), // Set kids payment timestamp
+        // Include discount code if provided
+        discountCode: discountCodeInput.trim() || undefined,
+        discountAmount: discountCodeData ? (() => {
+          const now = getCurrentEasternTime();
+          const tiers = (event.kidsPricing || []).map((t: any) => ({
+            ...t,
+            s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+            e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+          })).sort((a: any, b: any) => a.s - b.s);
+          const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
+            (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
+          const pricePerKid = active?.price ?? 0;
+          const kidsPrice = pricePerKid * kids.length;
+          let discountAmount = 0;
+          if (discountCodeData.discountType === 'percentage') {
+            discountAmount = (kidsPrice * discountCodeData.discountValue) / 100;
+          } else {
+            discountAmount = discountCodeData.discountValue;
+          }
+          return discountAmount;
+        })() : undefined,
         kids: kids.map(kid => ({
           ...kid,
           badgeName: (kid.badgeName || '').toUpperCase(), // Ensure kids badge names are uppercase
@@ -1172,11 +1264,24 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const kidsActive = kidsTiers.find((t: any) => now >= t.s && now < t.e) ||
         (now < kidsTiers[0]?.s ? kidsTiers[0] : (now >= kidsTiers[kidsTiers.length - 1]?.e ? kidsTiers[kidsTiers.length - 1] : (kidsTiers.find((t: any) => now < t.s) || kidsTiers[kidsTiers.length - 1])));
       const pricePerKid = kidsActive?.price ?? 0;
-      const kidsPrice = formData.kidsTotalPrice !== undefined 
-        ? formData.kidsTotalPrice 
-        : pricePerKid * kids.length;
+      // const kidsPrice = formData.kidsTotalPrice !== undefined 
+      //   ? formData.kidsTotalPrice 
+      //   : pricePerKid * kids.length;
+      const kidsPrice = pricePerKid * kids.length;
       
-      const combinedPrice = spousePrice + kidsPrice;
+      let combinedPrice = spousePrice + kidsPrice;
+      
+      // Apply discount if discount code is valid
+      if (discountCodeData) {
+        let discountAmount = 0;
+        if (discountCodeData.discountType === 'percentage') {
+          discountAmount = (combinedPrice * discountCodeData.discountValue) / 100;
+        } else {
+          discountAmount = discountCodeData.discountValue;
+        }
+        combinedPrice = Math.max(0, combinedPrice - discountAmount);
+      }
+      
       const baseAmountCents = Math.round(combinedPrice * 100);
       
       // Backend will calculate the final amount with fee when applyCardFee is true
@@ -1277,6 +1382,36 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         spousePaidAt: paymentTimestamp,
         kidsPaymentId: payload.paymentId, // Same payment ID for combined transaction
         kidsPaidAt: paymentTimestamp, // Same timestamp for combined transaction
+        // Include discount code if provided
+        discountCode: discountCodeInput.trim() || undefined,
+        discountAmount: discountCodeData ? (() => {
+          const now = getCurrentEasternTime();
+          const spouseTiers = (event.spousePricing || []).map((t: any) => ({
+            ...t,
+            s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+            e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+          })).sort((a: any, b: any) => a.s - b.s);
+          const spouseActive = spouseTiers.find((t: any) => now >= t.s && now < t.e) ||
+            (now < spouseTiers[0]?.s ? spouseTiers[0] : (now >= spouseTiers[spouseTiers.length - 1]?.e ? spouseTiers[spouseTiers.length - 1] : (spouseTiers.find((t: any) => now < t.s) || spouseTiers[spouseTiers.length - 1])));
+          const spousePrice = spouseActive?.price ?? 0;
+          const kidsTiers = (event.kidsPricing || []).map((t: any) => ({
+            ...t,
+            s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+            e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+          })).sort((a: any, b: any) => a.s - b.s);
+          const kidsActive = kidsTiers.find((t: any) => now >= t.s && now < t.e) ||
+            (now < kidsTiers[0]?.s ? kidsTiers[0] : (now >= kidsTiers[kidsTiers.length - 1]?.e ? kidsTiers[kidsTiers.length - 1] : (kidsTiers.find((t: any) => now < t.s) || kidsTiers[kidsTiers.length - 1])));
+          const pricePerKid = kidsActive?.price ?? 0;
+          const kidsPrice = pricePerKid * kids.length;
+          const combinedPrice = spousePrice + kidsPrice;
+          let discountAmount = 0;
+          if (discountCodeData.discountType === 'percentage') {
+            discountAmount = (combinedPrice * discountCodeData.discountValue) / 100;
+          } else {
+            discountAmount = discountCodeData.discountValue;
+          }
+          return discountAmount;
+        })() : undefined,
         kids: kids.map(kid => ({
           ...kid,
           badgeName: (kid.badgeName || '').toUpperCase(), // Ensure kids badge names are uppercase
@@ -1305,6 +1440,45 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       
       alert(`Payment Error: ${errorMessage}`);
       setIsSubmitting(false);
+    }
+  };
+
+  // Validate discount code
+  const validateDiscountCode = async (code: string) => {
+    if (!code.trim() || !event) {
+      setDiscountCodeData(null);
+      setDiscountCodeError('');
+      handleInputChange('discountCode', '');
+      handleInputChange('discountAmount', undefined);
+      return;
+    }
+    
+    setValidatingDiscountCode(true);
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/discount-codes/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code.trim().toUpperCase(), eventId: event.id })
+      });
+      
+      const data = await res.json();
+      if (data.success && data.valid) {
+        setDiscountCodeData(data.data);
+        setDiscountCodeError('');
+        handleInputChange('discountCode', code.trim().toUpperCase());
+      } else {
+        setDiscountCodeData(null);
+        setDiscountCodeError(data.error || 'Invalid discount code');
+        handleInputChange('discountCode', '');
+        handleInputChange('discountAmount', undefined);
+      }
+    } catch (error) {
+      setDiscountCodeData(null);
+      setDiscountCodeError('Failed to validate discount code');
+      handleInputChange('discountCode', '');
+      handleInputChange('discountAmount', undefined);
+    } finally {
+      setValidatingDiscountCode(false);
     }
   };
 
@@ -1404,7 +1578,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         throw new Error(userFriendlyMessage);
       }
       const nonce = res.token;
-      const baseTotal = Number(formData.totalPrice || 0);
+      let baseTotal = Number(formData.totalPrice || 0);
+      
+      // Apply discount if discount code is valid
+      if (discountCodeData) {
+        let discountAmount = 0;
+        if (discountCodeData.discountType === 'percentage') {
+          discountAmount = (baseTotal * discountCodeData.discountValue) / 100;
+        } else {
+          discountAmount = discountCodeData.discountValue;
+        }
+        baseTotal = Math.max(0, baseTotal - discountAmount);
+      }
+      
       const baseAmountCents = Math.round(baseTotal * 100);
       // Backend will calculate the final amount with fee when applyCardFee is true
       const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
@@ -1503,6 +1689,17 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
         paidAt: new Date().toISOString(), // Set payment timestamp
+        // Include discount code if provided
+        discountCode: discountCodeInput.trim() || undefined,
+        discountAmount: discountCodeData ? (() => {
+          let discountAmount = 0;
+          if (discountCodeData.discountType === 'percentage') {
+            discountAmount = (Number(formData.totalPrice || 0) * discountCodeData.discountValue) / 100;
+          } else {
+            discountAmount = discountCodeData.discountValue;
+          }
+          return discountAmount;
+        })() : undefined,
       } as Registration;
       
       // Payment has been verified above, now save the registration
@@ -2592,7 +2789,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               Add Child
             </button>
             
-            {isAdminEdit && kids.length > 0 && (
+            {/* Kids price override commented out - using coupon codes instead */}
+            {/* {isAdminEdit && kids.length > 0 && (
               <div className="form-group" style={{ marginTop: '1rem' }}>
                 <label htmlFor="kidsTotalPrice" className="form-label">
                   Children Total Price Override
@@ -2613,7 +2811,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   Override the total price for all children. If not set, price will be calculated from the active pricing tier.
                 </small>
               </div>
-            )}
+            )} */}
           </div>
 
           {/* Child section - only visible to admins */}
@@ -2806,9 +3004,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     const kidsActive = kidsTiers.find((t: any) => now >= t.s && now < t.e) ||
                       (now < kidsTiers[0]?.s ? kidsTiers[0] : (now >= kidsTiers[kidsTiers.length - 1]?.e ? kidsTiers[kidsTiers.length - 1] : (kidsTiers.find((t: any) => now < t.s) || kidsTiers[kidsTiers.length - 1])));
                     const pricePerKid = kidsActive?.price ?? 0;
-                    const kidsPrice = formData.kidsTotalPrice !== undefined 
-                      ? formData.kidsTotalPrice 
-                      : pricePerKid * kids.length;
+                    // const kidsPrice = formData.kidsTotalPrice !== undefined 
+                    //   ? formData.kidsTotalPrice 
+                    //   : pricePerKid * kids.length;
+                    const kidsPrice = pricePerKid * kids.length;
                     
                     baseTotal = spousePrice + kidsPrice;
                   } else if (isAddingSpouse) {
@@ -2833,18 +3032,31 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
                       (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
                     const pricePerKid = active?.price ?? 0;
-                    baseTotal = formData.kidsTotalPrice !== undefined 
-                      ? formData.kidsTotalPrice 
-                      : pricePerKid * kids.length;
+                    // baseTotal = formData.kidsTotalPrice !== undefined 
+                    //   ? formData.kidsTotalPrice 
+                    //   : pricePerKid * kids.length;
+                    baseTotal = pricePerKid * kids.length;
                   } else {
                     // Normal flow: show full registration price
                     baseTotal = Number(formData.totalPrice || 0);
                   }
                   
+                  // Apply discount if discount code is valid
+                  let finalTotal = baseTotal;
+                  if (discountCodeData) {
+                    let discountAmount = 0;
+                    if (discountCodeData.discountType === 'percentage') {
+                      discountAmount = (baseTotal * discountCodeData.discountValue) / 100;
+                    } else {
+                      discountAmount = discountCodeData.discountValue;
+                    }
+                    finalTotal = Math.max(0, baseTotal - discountAmount);
+                  }
+                  
                   const isCard = (formData.paymentMethod || 'Card') === 'Card';
-                  // Calculate 3.5% convenience fee for card payments
-                  const convenienceFee = isCard ? baseTotal * 0.035 : 0;
-                  const totalWithFee = baseTotal + convenienceFee;
+                  // Calculate 3.5% convenience fee for card payments (on final total after discount)
+                  const convenienceFee = isCard ? finalTotal * 0.035 : 0;
+                  const totalWithFee = finalTotal + convenienceFee;
                   return (
                 <div className="payment-summary">
                   {!isAddingSpouse && !isAddingKids && (
@@ -2863,9 +3075,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     <div className="payment-item">
                       <span>Child/Children Registration ({kids.length} {kids.length === 1 ? 'child' : 'children'}):</span>
                       <span>${(function () {
-                        if (formData.kidsTotalPrice !== undefined) {
-                          return formData.kidsTotalPrice.toFixed(2);
-                        }
+                        // if (formData.kidsTotalPrice !== undefined) {
+                        //   return formData.kidsTotalPrice.toFixed(2);
+                        // }
                         const now = getCurrentEasternTime();
                         const tiers = (event.kidsPricing || []).map((t: any) => ({ 
                           ...t, 
@@ -2881,6 +3093,20 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       })()}</span>
                     </div>
                   ) : null}
+                  {discountCodeData && (() => {
+                    let discountAmount = 0;
+                    if (discountCodeData.discountType === 'percentage') {
+                      discountAmount = (baseTotal * discountCodeData.discountValue) / 100;
+                    } else {
+                      discountAmount = discountCodeData.discountValue;
+                    }
+                    return discountAmount > 0 ? (
+                      <div className="payment-item" style={{ color: '#10b981' }}>
+                        <span>Discount ({discountCodeData.code}):</span>
+                        <span>-${discountAmount.toFixed(2)}</span>
+                      </div>
+                    ) : null;
+                  })()}
                   {isCard && convenienceFee > 0 && (
                     <div className="payment-item" style={{ color: '#6b7280', fontSize: '0.9rem' }}>
                       <span>Convenience Fee (3.5%):</span>
@@ -2899,6 +3125,37 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 </div>
                   );
                 })()}
+                <div className="form-group">
+                  <label className="form-label">Discount Code (Optional)</label>
+                  <input
+                    type="text"
+                    className={`form-control ${discountCodeError ? 'error' : ''}`}
+                    value={discountCodeInput}
+                    onChange={(e) => {
+                      const code = e.target.value.toUpperCase();
+                      setDiscountCodeInput(code);
+                      validateDiscountCode(code);
+                    }}
+                    placeholder="Enter discount code"
+                    disabled={validatingDiscountCode || isSubmitting}
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                  {validatingDiscountCode && (
+                    <small className="form-text text-muted" style={{ display: 'block', marginTop: '0.25rem' }}>
+                      Validating...
+                    </small>
+                  )}
+                  {discountCodeError && (
+                    <div className="error-message" style={{ marginTop: '0.25rem' }}>{discountCodeError}</div>
+                  )}
+                  {discountCodeData && !discountCodeError && (
+                    <div style={{ marginTop: '0.25rem', color: '#10b981', fontSize: '0.875rem' }}>
+                      ✓ Discount code applied: {discountCodeData.discountType === 'percentage' 
+                        ? `${discountCodeData.discountValue}% off`
+                        : `$${discountCodeData.discountValue} off`}
+                    </div>
+                  )}
+                </div>
                 <div className="form-group">
                   <label className="form-label">Payment Method</label>
                   <div className="segmented-group">

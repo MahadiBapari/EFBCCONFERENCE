@@ -253,6 +253,8 @@ useEffect(() => {
         spousePaidAt: r.spousePaidAt ?? r.spouse_paid_at,
         kidsPaymentId: r.kidsPaymentId ?? r.kids_payment_id,
         kidsPaidAt: r.kidsPaidAt ?? r.kids_paid_at,
+        discountCode: r.discountCode ?? r.discount_code,
+        discountAmount: r.discountAmount ?? r.discount_amount ?? undefined,
         groupAssigned: r.groupAssigned ?? r.group_assigned ?? undefined,
         // Legacy
         name: r.name ?? `${r.firstName || ''} ${r.lastName || ''}`.trim(),

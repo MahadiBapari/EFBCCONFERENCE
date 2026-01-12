@@ -219,6 +219,30 @@ export interface CreateRegistrationRequest {
 
 export interface UpdateRegistrationRequest extends Partial<CreateRegistrationRequest> {}
 
+export interface DiscountCode {
+  id?: number;
+  code: string;
+  eventId: number;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  expiryDate?: string;
+  usageLimit?: number;
+  usedCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateDiscountCodeRequest {
+  code: string;
+  eventId: number;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  expiryDate?: string;
+  usageLimit?: number;
+}
+
+export interface UpdateDiscountCodeRequest extends Partial<CreateDiscountCodeRequest> {}
+
 export interface CreateGroupRequest {
   eventId: number;
   category: string;

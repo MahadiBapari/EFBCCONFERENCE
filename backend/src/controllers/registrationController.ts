@@ -294,7 +294,52 @@ export class RegistrationController {
           if (base && typeof base.price==='number') total += base.price; else total += Number(ev.default_price || 0);
           if (spouse && typeof spouse.price==='number') total += spouse.price;
           if ((registration as any).spouseBreakfast && now <= bEnd) total += (isNaN(breakfastPrice)?0:breakfastPrice);
+          
+          // Calculate kids price
+          const kidsTiers: any[] = parseJson(ev.kids_pricing);
+          const kidsActive = pick(kidsTiers);
+          if (registration.kids && registration.kids.length > 0) {
+            const pricePerKid = kidsActive?.price ?? 0;
+            total += pricePerKid * registration.kids.length;
+          }
+          
           registration.totalPrice = total || registration.totalPrice || 0;
+          
+          // Apply discount code if provided
+          if (registration.discountCode) {
+            try {
+              const codeRows = await this.db.query(
+                'SELECT * FROM discount_codes WHERE code = ? AND event_id = ?',
+                [registration.discountCode.toUpperCase().trim(), registration.eventId]
+              );
+              
+              if (codeRows.length > 0) {
+                const { DiscountCode } = await import('../models/DiscountCode');
+                const discountCode = DiscountCode.fromDatabase(codeRows[0]);
+                const validation = discountCode.isValid();
+                
+                if (validation.valid) {
+                  let discountAmount = 0;
+                  if (discountCode.discountType === 'percentage') {
+                    discountAmount = (registration.totalPrice * discountCode.discountValue) / 100;
+                  } else {
+                    discountAmount = discountCode.discountValue;
+                  }
+                  registration.discountAmount = discountAmount;
+                  registration.totalPrice = Math.max(0, registration.totalPrice - discountAmount);
+                  
+                  // Increment used count
+                  await this.db.query(
+                    'UPDATE discount_codes SET used_count = used_count + 1 WHERE id = ?',
+                    [discountCode.id]
+                  );
+                }
+              }
+            } catch (discountError: any) {
+              console.error('Error applying discount code:', discountError);
+              // Continue without discount if validation fails
+            }
+          }
         }
       } catch (e) {
         // fallback to existing total if compute fails
@@ -433,6 +478,8 @@ export class RegistrationController {
         squarePaymentId: 'square_payment_id',
         paidAt: 'paid_at',
         spousePaidAt: 'spouse_paid_at',
+        discountCode: 'discount_code',
+        discountAmount: 'discount_amount',
       };
       
       // Build update payload by mapping fields and converting values

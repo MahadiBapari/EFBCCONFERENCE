@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Event } from '../../types';
+import { Event, DiscountCode } from '../../types';
 import '../../styles/EventFormModal.css';
 
 interface AdminEventFormProps {
@@ -33,6 +33,14 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     { label: 'On-Site Child/Children Registration', price: undefined },
   ]);
   // const [childLunchPrice, setChildLunchPrice] = useState<number | undefined>(undefined);
+  const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([]);
+  const [newDiscountCode, setNewDiscountCode] = useState({
+    code: '',
+    discountType: 'percentage' as 'percentage' | 'fixed',
+    discountValue: 0,
+    expiryDate: '',
+    usageLimit: '',
+  });
   const [errors, setErrors] = useState<{ name?: string; startDate?: string; endDate?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -57,8 +65,82 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     setSpousePricing(event.spousePricing && event.spousePricing.length ? event.spousePricing : spousePricing);
     setKidsPricing(event.kidsPricing && event.kidsPricing.length ? event.kidsPricing : kidsPricing);
     // setChildLunchPrice(event.childLunchPrice);
+    
+    // Load discount codes for this event
+    if (event?.id) {
+      loadDiscountCodes(event.id);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  const loadDiscountCodes = async (eventId: number) => {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/discount-codes/events/${eventId}`);
+      const data = await res.json();
+      if (data.success) {
+        setDiscountCodes(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading discount codes:', error);
+    }
+  };
+  
+  const addDiscountCode = async () => {
+    if (!event?.id || !newDiscountCode.code.trim() || newDiscountCode.discountValue <= 0) {
+      alert('Please fill in all required fields (code and discount value)');
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/discount-codes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newDiscountCode,
+          eventId: event.id,
+          usageLimit: newDiscountCode.usageLimit ? parseInt(newDiscountCode.usageLimit) : undefined,
+          expiryDate: newDiscountCode.expiryDate || undefined,
+        })
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        setDiscountCodes([...discountCodes, data.data]);
+        setNewDiscountCode({
+          code: '',
+          discountType: 'percentage',
+          discountValue: 0,
+          expiryDate: '',
+          usageLimit: '',
+        });
+      } else {
+        alert(data.error || 'Failed to create discount code');
+      }
+    } catch (error) {
+      console.error('Error creating discount code:', error);
+      alert('Failed to create discount code');
+    }
+  };
+  
+  const deleteDiscountCode = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this discount code?')) return;
+    
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/discount-codes/${id}`, {
+        method: 'DELETE'
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        setDiscountCodes(discountCodes.filter(dc => dc.id !== id));
+      } else {
+        alert(data.error || 'Failed to delete discount code');
+      }
+    } catch (error) {
+      console.error('Error deleting discount code:', error);
+      alert('Failed to delete discount code');
+    }
+  };
 
   useEffect(() => { if (errors.name && name.trim()) setErrors(prev => ({ ...prev, name: undefined })); }, [name, errors.name]);
   useEffect(() => { if (errors.startDate && startDate) setErrors(prev => ({ ...prev, startDate: undefined })); }, [startDate, errors.startDate]);
@@ -394,6 +476,96 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
               />
             </div> */}
 
+            {/* Discount Codes Section */}
+            {event?.id && (
+              <div className="form-section">
+                <h3 className="section-title">Discount Codes</h3>
+                <div className="discount-codes-list" style={{ marginBottom: '1rem' }}>
+                  {discountCodes.map((dc) => (
+                    <div key={dc.id} className="discount-code-item" style={{ 
+                      border: '1px solid #ddd', 
+                      padding: '0.75rem', 
+                      marginBottom: '0.5rem', 
+                      borderRadius: '4px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <strong>{dc.code}</strong> - {dc.discountType === 'percentage' ? `${dc.discountValue}%` : `$${dc.discountValue}`} off
+                        {dc.expiryDate && <span style={{ marginLeft: '0.5rem', color: '#6b7280' }}>(Expires: {new Date(dc.expiryDate).toLocaleDateString()})</span>}
+                        {dc.usageLimit && <span style={{ marginLeft: '0.5rem', color: '#6b7280' }}>(Limit: {dc.usedCount || 0}/{dc.usageLimit})</span>}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        onClick={() => dc.id && deleteDiscountCode(dc.id)}
+                        disabled={isSubmitting}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Add New Discount Code</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: '0.5rem', alignItems: 'end' }}>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Code (e.g., SAVE10)"
+                      value={newDiscountCode.code}
+                      onChange={(e) => setNewDiscountCode({ ...newDiscountCode, code: e.target.value.toUpperCase() })}
+                      disabled={isSubmitting}
+                    />
+                    <select
+                      className="form-control"
+                      value={newDiscountCode.discountType}
+                      onChange={(e) => setNewDiscountCode({ ...newDiscountCode, discountType: e.target.value as 'percentage' | 'fixed' })}
+                      disabled={isSubmitting}
+                    >
+                      <option value="percentage">%</option>
+                      <option value="fixed">$</option>
+                    </select>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Value"
+                      min="0"
+                      step="0.01"
+                      value={newDiscountCode.discountValue || ''}
+                      onChange={(e) => setNewDiscountCode({ ...newDiscountCode, discountValue: parseFloat(e.target.value) || 0 })}
+                      disabled={isSubmitting}
+                    />
+                    <input
+                      type="date"
+                      className="form-control"
+                      placeholder="Expiry (optional)"
+                      value={newDiscountCode.expiryDate}
+                      onChange={(e) => setNewDiscountCode({ ...newDiscountCode, expiryDate: e.target.value })}
+                      disabled={isSubmitting}
+                    />
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Usage limit (optional)"
+                      min="1"
+                      value={newDiscountCode.usageLimit}
+                      onChange={(e) => setNewDiscountCode({ ...newDiscountCode, usageLimit: e.target.value })}
+                      disabled={isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={addDiscountCode}
+                      disabled={isSubmitting || !newDiscountCode.code.trim() || newDiscountCode.discountValue <= 0}
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Spouse breakfast/lunch fields removed per requirement */}
 

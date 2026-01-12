@@ -14,6 +14,7 @@ import authRoutes from './routes/authRoutes';
 import cancellationRoutes from './routes/cancellationRoutes';
 import paymentsRoutes from './routes/paymentsRoutes';
 import customizationRoutes from './routes/customizationRoutes';
+import discountCodeRoutes from './routes/discountCodeRoutes';
 
 // Load environment variables (only from .env in non-production)
 if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
@@ -40,6 +41,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api', cancellationRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/customization', customizationRoutes);
+app.use('/api/discount-codes', discountCodeRoutes);
 
 // Global database service
 let databaseService: DatabaseService;
@@ -157,6 +159,7 @@ const createTables = async () => {
     await migrateKidsRegistration();
     await migrateAdditionalRegistrationQuestions();
     await migratePickleballEquipment();
+    await migrateDiscountCodes();
 
     // Activity Groups table (basic definition; columns may be extended by migrations)
     await databaseService.query(`
@@ -764,6 +767,53 @@ const migrateFaqs = async (): Promise<void> => {
     console.log('🛠️ FAQs table created/verified');
   } catch (error: any) {
     console.error('Error migrating FAQs:', error?.message || error);
+  }
+};
+
+// Migration helper to create discount_codes table and add discount fields to registrations
+const migrateDiscountCodes = async (): Promise<void> => {
+  try {
+    // Create discount_codes table
+    await databaseService.query(`
+      CREATE TABLE IF NOT EXISTS discount_codes (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        code VARCHAR(50) UNIQUE NOT NULL,
+        event_id INT NOT NULL,
+        discount_type ENUM('percentage', 'fixed') NOT NULL,
+        discount_value DECIMAL(10,2) NOT NULL,
+        expiry_date DATETIME,
+        usage_limit INT,
+        used_count INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+        INDEX idx_code (code),
+        INDEX idx_event_id (event_id)
+      )
+    `);
+    console.log('🛠️ Discount codes table created/verified');
+
+    // Add discount fields to registrations table
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (dbName) {
+      const cols = await databaseService.query(
+        'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+        [dbName, 'registrations']
+      );
+      const columnNames = cols.map((c: any) => c.COLUMN_NAME);
+
+      if (!columnNames.includes('discount_code')) {
+        await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `discount_code` VARCHAR(50) NULL');
+        console.log('🛠️ Added registrations.discount_code column');
+      }
+      if (!columnNames.includes('discount_amount')) {
+        await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `discount_amount` DECIMAL(10,2) DEFAULT 0');
+        console.log('🛠️ Added registrations.discount_amount column');
+      }
+    }
+  } catch (error: any) {
+    console.error('Error migrating discount codes:', error?.message || error);
   }
 };
 

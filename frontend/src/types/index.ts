@@ -36,6 +36,19 @@ export interface Event {
   kidsPricing?: Array<{ label: string; price: number; startDate?: string; endDate?: string }>;
 }
 
+export interface DiscountCode {
+  id?: number;
+  code: string;
+  eventId: number;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  expiryDate?: string;
+  usageLimit?: number;
+  usedCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Registration {
   id: number;
   userId: number;
@@ -118,6 +131,10 @@ export interface Registration {
   spousePaidAt?: string;
   kidsPaymentId?: string;
   kidsPaidAt?: string;
+  
+  // Discount Information
+  discountCode?: string;
+  discountAmount?: number;
   
   // Group Assignment
   groupAssigned?: number;

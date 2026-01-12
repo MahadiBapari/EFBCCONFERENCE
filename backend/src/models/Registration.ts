@@ -72,6 +72,8 @@ export class Registration {
   public kidsPaymentId?: string;
   public kidsPaidAt?: string;
   public groupAssigned?: number;
+  public discountCode?: string;
+  public discountAmount?: number;
 
   // Helper method to format dates for MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
   private formatDateForDB(dateValue: string | Date | undefined): string {
@@ -155,6 +157,8 @@ export class Registration {
     this.spouseDinnerTicket = sdt === true || sdt === 'Yes' || sdt === 'yes' || sdt === 1;
     this.kids = (data as any).kids || undefined;
     this.kidsTotalPrice = (data as any).kidsTotalPrice ?? undefined;
+    this.discountCode = (data as any).discountCode;
+    this.discountAmount = (data as any).discountAmount ?? undefined;
     this.childFirstName = (data as any).childFirstName;
     this.childLastName = (data as any).childLastName;
     const clt: any = (data as any).childLunchTicket;
@@ -315,6 +319,8 @@ export class Registration {
       spouse_last_name: this.nullIfUndefined(this.spouseLastName),
       kids_data: this.kids && this.kids.length > 0 ? JSON.stringify(this.kids) : null,
       kids_total_price: this.kidsTotalPrice ?? null,
+      discount_code: this.nullIfUndefined(this.discountCode),
+      discount_amount: this.discountAmount ?? 0,
       child_first_name: this.nullIfUndefined(this.childFirstName),
       child_last_name: this.nullIfUndefined(this.childLastName),
       child_lunch_ticket: this.childLunchTicket ?? false,
@@ -421,6 +427,8 @@ export class Registration {
         return undefined;
       })(),
       kidsTotalPrice: row.kids_total_price ?? undefined,
+      discountCode: row.discount_code,
+      discountAmount: row.discount_amount ?? undefined,
       childFirstName: row.child_first_name,
       childLastName: row.child_last_name,
       childLunchTicket: !!row.child_lunch_ticket,
