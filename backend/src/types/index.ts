@@ -121,6 +121,10 @@ export interface Registration {
   kidsPaymentId?: string;
   kidsPaidAt?: string;
   
+  // Discount Information
+  discountCode?: string;
+  discountAmount?: number;
+  
   // Group Assignment
   groupAssigned?: number;
   

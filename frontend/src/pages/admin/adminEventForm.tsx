@@ -123,7 +123,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   };
   
   const deleteDiscountCode = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this discount code?')) return;
+    if (!window.confirm('Are you sure you want to delete this discount code?')) return;
     
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/discount-codes/${id}`, {
@@ -523,6 +523,8 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
                       value={newDiscountCode.discountType}
                       onChange={(e) => setNewDiscountCode({ ...newDiscountCode, discountType: e.target.value as 'percentage' | 'fixed' })}
                       disabled={isSubmitting}
+                      aria-label="Discount Type"
+                      title="Discount Type"
                     >
                       <option value="percentage">%</option>
                       <option value="fixed">$</option>

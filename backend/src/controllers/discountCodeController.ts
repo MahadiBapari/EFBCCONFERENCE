@@ -19,7 +19,7 @@ export class DiscountCodeController {
       
       const response: ApiResponse = {
         success: true,
-        data: codes.map(c => c.toJSON()),
+        data: codes.map((c: DiscountCode) => c.toJSON()),
       };
       res.json(response);
     } catch (error: any) {
