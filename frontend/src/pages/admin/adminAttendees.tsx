@@ -101,6 +101,26 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     spouseLastName: 120,
     spouseDinnerTicket: 150,
     kidsCount: 100,
+    child1FirstName: 120,
+    child1LastName: 120,
+    child1BadgeName: 120,
+    child1Age: 80,
+    child2FirstName: 120,
+    child2LastName: 120,
+    child2BadgeName: 120,
+    child2Age: 80,
+    child3FirstName: 120,
+    child3LastName: 120,
+    child3BadgeName: 120,
+    child3Age: 80,
+    child4FirstName: 120,
+    child4LastName: 120,
+    child4BadgeName: 120,
+    child4Age: 80,
+    child5FirstName: 120,
+    child5LastName: 120,
+    child5BadgeName: 120,
+    child5Age: 80,
     paymentMethod: 120,
     paid: 80,
     paymentId: 200,
@@ -632,6 +652,7 @@ const confirmSingleDelete = async () => {
   const handleExportXlsx = () => {
     // Build row objects matching the detailed table
     const rows = filteredRegistrations.map((reg) => ({
+      'ID': reg.id,
       'Badge Name': reg.badgeName,
       'First Name': reg.firstName,
       'Last Name': reg.lastName,
@@ -676,6 +697,26 @@ const confirmSingleDelete = async () => {
       'Spouse Last Name': reg.spouseLastName,
       'Spouse Dinner Ticket': reg.spouseDinnerTicket ? 'Yes' : 'No',
       'Children Count': reg.kids && reg.kids.length > 0 ? reg.kids.length : 0,
+      'Child 1 First Name': reg.kids && reg.kids.length > 0 ? (reg.kids[0]?.firstName || '') : '',
+      'Child 1 Last Name': reg.kids && reg.kids.length > 0 ? (reg.kids[0]?.lastName || '') : '',
+      'Child 1 Badge Name': reg.kids && reg.kids.length > 0 ? (reg.kids[0]?.badgeName || '') : '',
+      'Child 1 Age': reg.kids && reg.kids.length > 0 ? (reg.kids[0]?.age ? String(reg.kids[0].age) : '') : '',
+      'Child 2 First Name': reg.kids && reg.kids.length > 1 ? (reg.kids[1]?.firstName || '') : '',
+      'Child 2 Last Name': reg.kids && reg.kids.length > 1 ? (reg.kids[1]?.lastName || '') : '',
+      'Child 2 Badge Name': reg.kids && reg.kids.length > 1 ? (reg.kids[1]?.badgeName || '') : '',
+      'Child 2 Age': reg.kids && reg.kids.length > 1 ? (reg.kids[1]?.age ? String(reg.kids[1].age) : '') : '',
+      'Child 3 First Name': reg.kids && reg.kids.length > 2 ? (reg.kids[2]?.firstName || '') : '',
+      'Child 3 Last Name': reg.kids && reg.kids.length > 2 ? (reg.kids[2]?.lastName || '') : '',
+      'Child 3 Badge Name': reg.kids && reg.kids.length > 2 ? (reg.kids[2]?.badgeName || '') : '',
+      'Child 3 Age': reg.kids && reg.kids.length > 2 ? (reg.kids[2]?.age ? String(reg.kids[2].age) : '') : '',
+      'Child 4 First Name': reg.kids && reg.kids.length > 3 ? (reg.kids[3]?.firstName || '') : '',
+      'Child 4 Last Name': reg.kids && reg.kids.length > 3 ? (reg.kids[3]?.lastName || '') : '',
+      'Child 4 Badge Name': reg.kids && reg.kids.length > 3 ? (reg.kids[3]?.badgeName || '') : '',
+      'Child 4 Age': reg.kids && reg.kids.length > 3 ? (reg.kids[3]?.age ? String(reg.kids[3].age) : '') : '',
+      'Child 5 First Name': reg.kids && reg.kids.length > 4 ? (reg.kids[4]?.firstName || '') : '',
+      'Child 5 Last Name': reg.kids && reg.kids.length > 4 ? (reg.kids[4]?.lastName || '') : '',
+      'Child 5 Badge Name': reg.kids && reg.kids.length > 4 ? (reg.kids[4]?.badgeName || '') : '',
+      'Child 5 Age': reg.kids && reg.kids.length > 4 ? (reg.kids[4]?.age ? String(reg.kids[4].age) : '') : '',
       'Payment Method': reg.paymentMethod,
       'Paid?': (reg as any).paid ? 'Yes' : 'No',
       'Payment ID': (reg as any).squarePaymentId || '',
@@ -1173,6 +1214,78 @@ const confirmSingleDelete = async () => {
                     />
                   </th>
                   <th 
+                    style={{ width: `${columnWidths.transportationMethod}px`, minWidth: `${columnWidths.transportationMethod}px`, position: 'relative' }}
+                  >
+                    Transportation Method
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'transportationMethod')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.transportationDetails}px`, minWidth: `${columnWidths.transportationDetails}px`, position: 'relative' }}
+                  >
+                    Transportation Details
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'transportationDetails')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.stayingAtBeachClub}px`, minWidth: `${columnWidths.stayingAtBeachClub}px`, position: 'relative' }}
+                  >
+                    Staying at Beach Club Resort
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'stayingAtBeachClub')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.accommodationDetails}px`, minWidth: `${columnWidths.accommodationDetails}px`, position: 'relative' }}
+                  >
+                    Accommodation Details
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'accommodationDetails')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.dietaryRequirements}px`, minWidth: `${columnWidths.dietaryRequirements}px`, position: 'relative' }}
+                  >
+                    Dietary Requirements
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'dietaryRequirements')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.dietaryRequirementsOther}px`, minWidth: `${columnWidths.dietaryRequirementsOther}px`, position: 'relative' }}
+                  >
+                    Dietary Requirements (Other)
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'dietaryRequirementsOther')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.specialPhysicalNeeds}px`, minWidth: `${columnWidths.specialPhysicalNeeds}px`, position: 'relative' }}
+                  >
+                    Special Physical Needs
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'specialPhysicalNeeds')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.specialPhysicalNeedsDetails}px`, minWidth: `${columnWidths.specialPhysicalNeedsDetails}px`, position: 'relative' }}
+                  >
+                    Special Physical Needs Details
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'specialPhysicalNeedsDetails')}
+                    />
+                  </th>
+                  <th 
                     style={{ width: `${columnWidths.spouseFirstName}px`, minWidth: `${columnWidths.spouseFirstName}px`, position: 'relative' }}
                   >
                     Spouse First Name
@@ -1206,6 +1319,186 @@ const confirmSingleDelete = async () => {
                     <span 
                       className="resize-handle"
                       onMouseDown={(e) => handleResizeStart(e, 'kidsCount')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child1FirstName}px`, minWidth: `${columnWidths.child1FirstName}px`, position: 'relative' }}
+                  >
+                    Child 1 First Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child1FirstName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child1LastName}px`, minWidth: `${columnWidths.child1LastName}px`, position: 'relative' }}
+                  >
+                    Child 1 Last Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child1LastName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child1BadgeName}px`, minWidth: `${columnWidths.child1BadgeName}px`, position: 'relative' }}
+                  >
+                    Child 1 Badge Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child1BadgeName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child1Age}px`, minWidth: `${columnWidths.child1Age}px`, position: 'relative' }}
+                  >
+                    Child 1 Age
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child1Age')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child2FirstName}px`, minWidth: `${columnWidths.child2FirstName}px`, position: 'relative' }}
+                  >
+                    Child 2 First Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child2FirstName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child2LastName}px`, minWidth: `${columnWidths.child2LastName}px`, position: 'relative' }}
+                  >
+                    Child 2 Last Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child2LastName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child2BadgeName}px`, minWidth: `${columnWidths.child2BadgeName}px`, position: 'relative' }}
+                  >
+                    Child 2 Badge Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child2BadgeName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child2Age}px`, minWidth: `${columnWidths.child2Age}px`, position: 'relative' }}
+                  >
+                    Child 2 Age
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child2Age')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child3FirstName}px`, minWidth: `${columnWidths.child3FirstName}px`, position: 'relative' }}
+                  >
+                    Child 3 First Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child3FirstName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child3LastName}px`, minWidth: `${columnWidths.child3LastName}px`, position: 'relative' }}
+                  >
+                    Child 3 Last Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child3LastName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child3BadgeName}px`, minWidth: `${columnWidths.child3BadgeName}px`, position: 'relative' }}
+                  >
+                    Child 3 Badge Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child3BadgeName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child3Age}px`, minWidth: `${columnWidths.child3Age}px`, position: 'relative' }}
+                  >
+                    Child 3 Age
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child3Age')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child4FirstName}px`, minWidth: `${columnWidths.child4FirstName}px`, position: 'relative' }}
+                  >
+                    Child 4 First Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child4FirstName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child4LastName}px`, minWidth: `${columnWidths.child4LastName}px`, position: 'relative' }}
+                  >
+                    Child 4 Last Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child4LastName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child4BadgeName}px`, minWidth: `${columnWidths.child4BadgeName}px`, position: 'relative' }}
+                  >
+                    Child 4 Badge Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child4BadgeName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child4Age}px`, minWidth: `${columnWidths.child4Age}px`, position: 'relative' }}
+                  >
+                    Child 4 Age
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child4Age')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child5FirstName}px`, minWidth: `${columnWidths.child5FirstName}px`, position: 'relative' }}
+                  >
+                    Child 5 First Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child5FirstName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child5LastName}px`, minWidth: `${columnWidths.child5LastName}px`, position: 'relative' }}
+                  >
+                    Child 5 Last Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child5LastName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child5BadgeName}px`, minWidth: `${columnWidths.child5BadgeName}px`, position: 'relative' }}
+                  >
+                    Child 5 Badge Name
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child5BadgeName')}
+                    />
+                  </th>
+                  <th 
+                    style={{ width: `${columnWidths.child5Age}px`, minWidth: `${columnWidths.child5Age}px`, position: 'relative' }}
+                  >
+                    Child 5 Age
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'child5Age')}
                     />
                   </th>
                   <th 
@@ -1295,6 +1588,26 @@ const confirmSingleDelete = async () => {
                     <td style={{ width: `${columnWidths.spouseLastName}px`, minWidth: `${columnWidths.spouseLastName}px` }}>{displayValue(reg.spouseLastName)}</td>
                     <td style={{ width: `${columnWidths.spouseDinnerTicket}px`, minWidth: `${columnWidths.spouseDinnerTicket}px` }}>{reg.spouseDinnerTicket ? 'Yes' : 'No'}</td>
                     <td style={{ width: `${columnWidths.kidsCount}px`, minWidth: `${columnWidths.kidsCount}px` }}>{reg.kids && reg.kids.length > 0 ? reg.kids.length : '0'}</td>
+                    <td style={{ width: `${columnWidths.child1FirstName}px`, minWidth: `${columnWidths.child1FirstName}px` }}>{reg.kids && reg.kids.length > 0 ? displayValue(reg.kids[0]?.firstName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child1LastName}px`, minWidth: `${columnWidths.child1LastName}px` }}>{reg.kids && reg.kids.length > 0 ? displayValue(reg.kids[0]?.lastName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child1BadgeName}px`, minWidth: `${columnWidths.child1BadgeName}px` }}>{reg.kids && reg.kids.length > 0 ? displayValue(reg.kids[0]?.badgeName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child1Age}px`, minWidth: `${columnWidths.child1Age}px` }}>{reg.kids && reg.kids.length > 0 ? (reg.kids[0]?.age ? String(reg.kids[0].age) : '') : ''}</td>
+                    <td style={{ width: `${columnWidths.child2FirstName}px`, minWidth: `${columnWidths.child2FirstName}px` }}>{reg.kids && reg.kids.length > 1 ? displayValue(reg.kids[1]?.firstName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child2LastName}px`, minWidth: `${columnWidths.child2LastName}px` }}>{reg.kids && reg.kids.length > 1 ? displayValue(reg.kids[1]?.lastName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child2BadgeName}px`, minWidth: `${columnWidths.child2BadgeName}px` }}>{reg.kids && reg.kids.length > 1 ? displayValue(reg.kids[1]?.badgeName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child2Age}px`, minWidth: `${columnWidths.child2Age}px` }}>{reg.kids && reg.kids.length > 1 ? (reg.kids[1]?.age ? String(reg.kids[1].age) : '') : ''}</td>
+                    <td style={{ width: `${columnWidths.child3FirstName}px`, minWidth: `${columnWidths.child3FirstName}px` }}>{reg.kids && reg.kids.length > 2 ? displayValue(reg.kids[2]?.firstName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child3LastName}px`, minWidth: `${columnWidths.child3LastName}px` }}>{reg.kids && reg.kids.length > 2 ? displayValue(reg.kids[2]?.lastName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child3BadgeName}px`, minWidth: `${columnWidths.child3BadgeName}px` }}>{reg.kids && reg.kids.length > 2 ? displayValue(reg.kids[2]?.badgeName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child3Age}px`, minWidth: `${columnWidths.child3Age}px` }}>{reg.kids && reg.kids.length > 2 ? (reg.kids[2]?.age ? String(reg.kids[2].age) : '') : ''}</td>
+                    <td style={{ width: `${columnWidths.child4FirstName}px`, minWidth: `${columnWidths.child4FirstName}px` }}>{reg.kids && reg.kids.length > 3 ? displayValue(reg.kids[3]?.firstName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child4LastName}px`, minWidth: `${columnWidths.child4LastName}px` }}>{reg.kids && reg.kids.length > 3 ? displayValue(reg.kids[3]?.lastName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child4BadgeName}px`, minWidth: `${columnWidths.child4BadgeName}px` }}>{reg.kids && reg.kids.length > 3 ? displayValue(reg.kids[3]?.badgeName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child4Age}px`, minWidth: `${columnWidths.child4Age}px` }}>{reg.kids && reg.kids.length > 3 ? (reg.kids[3]?.age ? String(reg.kids[3].age) : '') : ''}</td>
+                    <td style={{ width: `${columnWidths.child5FirstName}px`, minWidth: `${columnWidths.child5FirstName}px` }}>{reg.kids && reg.kids.length > 4 ? displayValue(reg.kids[4]?.firstName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child5LastName}px`, minWidth: `${columnWidths.child5LastName}px` }}>{reg.kids && reg.kids.length > 4 ? displayValue(reg.kids[4]?.lastName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child5BadgeName}px`, minWidth: `${columnWidths.child5BadgeName}px` }}>{reg.kids && reg.kids.length > 4 ? displayValue(reg.kids[4]?.badgeName) : ''}</td>
+                    <td style={{ width: `${columnWidths.child5Age}px`, minWidth: `${columnWidths.child5Age}px` }}>{reg.kids && reg.kids.length > 4 ? (reg.kids[4]?.age ? String(reg.kids[4].age) : '') : ''}</td>
                     <td style={{ width: `${columnWidths.paymentMethod}px`, minWidth: `${columnWidths.paymentMethod}px` }}>{displayValue(reg.paymentMethod)}</td>
                     <td style={{ width: `${columnWidths.paid}px`, minWidth: `${columnWidths.paid}px` }}>{(reg as any).paid ? 'Yes' : 'No'}</td>
                     <td style={{ width: `${columnWidths.paymentId}px`, minWidth: `${columnWidths.paymentId}px` }}>{displayValue((reg as any).squarePaymentId)}</td>
