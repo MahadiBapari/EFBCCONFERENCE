@@ -21,6 +21,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   const [newActivity, setNewActivity] = useState('');
   const [newActivitySeatLimit, setNewActivitySeatLimit] = useState<number | ''>('');
   const [editingActivityIndex, setEditingActivityIndex] = useState<number | null>(null);
+  const [editActivityName, setEditActivityName] = useState<string>('');
   const [editActivitySeatLimit, setEditActivitySeatLimit] = useState<number | ''>('');
   const [activityToDelete, setActivityToDelete] = useState<string | null>(null);
   const [registrationPricing, setRegistrationPricing] = useState<Array<{ label: string; price?: number; startDate?: string; endDate?: string }>>([
@@ -183,15 +184,43 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   
   const startEditActivity = (index: number) => {
     setEditingActivityIndex(index);
+    setEditActivityName(activities[index].name);
     setEditActivitySeatLimit(activities[index].seatLimit || '');
   };
   
-  const saveEditActivity = (index: number) => {
+  const saveEditActivity = () => {
+    if (editingActivityIndex === null) return;
+    
     const newLimit = editActivitySeatLimit === '' ? undefined : Number(editActivitySeatLimit);
+    const newName = editActivityName.trim();
+    
+    if (!newName) {
+      alert('Activity name cannot be empty');
+      return;
+    }
+    
+    // Check if the new name conflicts with another activity (excluding the current one)
+    const nameExists = activities.some((act, i) => 
+      i !== editingActivityIndex && act.name.toLowerCase() === newName.toLowerCase()
+    );
+    
+    if (nameExists) {
+      alert('An activity with this name already exists');
+      return;
+    }
+    
     setActivities(prev => prev.map((act, i) => 
-      i === index ? { ...act, seatLimit: newLimit } : act
+      i === editingActivityIndex ? { name: newName, seatLimit: newLimit } : act
     ));
+    
     setEditingActivityIndex(null);
+    setEditActivityName('');
+    setEditActivitySeatLimit('');
+  };
+
+  const cancelEditActivity = () => {
+    setEditingActivityIndex(null);
+    setEditActivityName('');
     setEditActivitySeatLimit('');
   };
 
@@ -345,39 +374,21 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
                     {activities.map((activity, i) => (
                       <span key={i} className="activity-tag">
                         {activity.name}
-                        {editingActivityIndex === i ? (
-                          <>
-                            <input
-                              type="number"
-                              value={editActivitySeatLimit}
-                              onChange={(e) => setEditActivitySeatLimit(e.target.value === '' ? '' : Number(e.target.value))}
-                              placeholder="Seat limit"
-                              min="1"
-                              style={{ width: '80px', marginLeft: '8px', fontSize: '0.9em' }}
-                              onBlur={() => saveEditActivity(i)}
-                              onKeyPress={(e) => e.key === 'Enter' && saveEditActivity(i)}
-                              autoFocus
-                            />
-                          </>
-                        ) : (
-                          <>
-                            {activity.seatLimit && (
-                              <span style={{ marginLeft: '8px', fontSize: '0.85em', color: '#666' }}>
-                                (Limit: {activity.seatLimit})
-                              </span>
-                            )}
-                            <button 
-                              type="button" 
-                              className="activity-edit" 
-                              onClick={() => startEditActivity(i)}
-                              disabled={isSubmitting}
-                              style={{ marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9em' }}
-                              title="Edit seat limit"
-                            >
-                              ✏️
-                            </button>
-                          </>
+                        {activity.seatLimit && (
+                          <span style={{ marginLeft: '8px', fontSize: '0.85em', color: '#666' }}>
+                            (Limit: {activity.seatLimit})
+                          </span>
                         )}
+                        <button 
+                          type="button" 
+                          className="activity-edit" 
+                          onClick={() => startEditActivity(i)}
+                          disabled={isSubmitting}
+                          style={{ marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9em' }}
+                          title="Edit activity"
+                        >
+                          ✏️
+                        </button>
                         <button type="button" className="activity-remove" onClick={() => handleRemoveActivityClick(activity.name)} disabled={isSubmitting}>×</button>
                       </span>
                     ))}
@@ -671,6 +682,64 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
         <button className="btn btn-primary" form="admin-event-form" type="submit" disabled={isSubmitting}>{isSubmitting ? (event ? 'Updating...' : 'Creating...') : (event ? 'Update Event' : 'Create Event')}</button>
       </div>
 
+      {editingActivityIndex !== null && (
+        <Modal
+          title="Edit Activity"
+          onClose={cancelEditActivity}
+          footer={
+            <div className="modal-footer-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={cancelEditActivity}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={saveEditActivity}
+              >
+                Save Changes
+              </button>
+            </div>
+          }
+        >
+          <div className="form-group">
+            <label htmlFor="editActivityName" className="form-label">
+              Activity Name
+              <span className="required-asterisk">*</span>
+            </label>
+            <input
+              id="editActivityName"
+              type="text"
+              className="form-control"
+              value={editActivityName}
+              onChange={(e) => setEditActivityName(e.target.value)}
+              placeholder="e.g., Golf, Fishing"
+              autoFocus
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="editActivitySeatLimit" className="form-label">
+              Seat Limit (Optional)
+            </label>
+            <input
+              id="editActivitySeatLimit"
+              type="number"
+              className="form-control"
+              value={editActivitySeatLimit}
+              onChange={(e) => setEditActivitySeatLimit(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="Leave empty for unlimited"
+              min="1"
+            />
+            <small style={{ color: '#666', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
+              Set a limit to restrict the number of registrations for this activity
+            </small>
+          </div>
+        </Modal>
+      )}
+
       {activityToDelete && (
         <Modal
           title="Delete Activity"
@@ -698,7 +767,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
             Are you sure you want to delete <strong>"{activityToDelete}"</strong>?
           </p>
           <p className="modal-helper-text" style={{ color: '#e74c3c', fontWeight: '500' }}>
-            ⚠️ This action cannot be undone. All registrations associated with this activity will be affected.
+            This action cannot be undone. All registrations associated with this activity will be affected.
           </p>
         </Modal>
       )}
