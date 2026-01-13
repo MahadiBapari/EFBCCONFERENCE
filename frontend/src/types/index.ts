@@ -129,7 +129,7 @@ export interface Registration {
   squarePaymentId?: string;
   spousePaymentId?: string;
   spousePaidAt?: string;
-  kidsPaymentId?: string;
+  kidsPaymentId?: string | string[]; // Support both formats for backward compatibility
   kidsPaidAt?: string;
   
   // Discount Information

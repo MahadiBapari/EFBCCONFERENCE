@@ -693,7 +693,20 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
             <Line label="Square Payment ID" value={(registration as any).squarePaymentId} />
           )}
           {(registration as any).spousePaymentId && (
-            <Line label="Spouse Payment ID" value={(registration as any).spousePaymentId} />
+            <Line 
+              label={`Spouse Payment ID${Array.isArray((registration as any).spousePaymentId) && (registration as any).spousePaymentId.length > 1 ? 's' : ''}`} 
+              value={Array.isArray((registration as any).spousePaymentId) 
+                ? (registration as any).spousePaymentId.join(', ') 
+                : (registration as any).spousePaymentId} 
+            />
+          )}
+          {(registration as any).kidsPaymentId && (
+            <Line 
+              label={`Children Payment ID${Array.isArray((registration as any).kidsPaymentId) && (registration as any).kidsPaymentId.length > 1 ? 's' : ''}`} 
+              value={Array.isArray((registration as any).kidsPaymentId) 
+                ? (registration as any).kidsPaymentId.join(', ') 
+                : (registration as any).kidsPaymentId} 
+            />
           )}
           {(registration as any).paid && registration.paymentMethod === 'Card' && ((registration as any).paidAt || registration.createdAt) && (
             <Line 

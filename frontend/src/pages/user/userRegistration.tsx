@@ -176,7 +176,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const hadSpouseTicket = toBooleanYesNo((registration as any)?.spouseDinnerTicket);
   const hadSpousePayment = !!(registration as any)?.spousePaymentId;
   const hadKidsBefore = registration?.kids && Array.isArray(registration.kids) && registration.kids.length > 0;
-  const hadKidsPayment = !!(registration as any)?.kidsPaymentId;
+  const originalKidsCount = registration?.kids && Array.isArray(registration.kids) ? registration.kids.length : 0;
+  const hadKidsPayment = !!(registration as any)?.kidsPaymentId && 
+    (Array.isArray((registration as any).kidsPaymentId) 
+      ? (registration as any).kidsPaymentId.length > 0 
+      : true);
 
   // Helper function to count active registrations for an activity
   const getActivityRegistrationCount = (activityName: string): number => {
@@ -1166,8 +1170,14 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         squarePaymentId: (registration as any)?.squarePaymentId,
         spousePaymentId: (registration as any)?.spousePaymentId,
         spousePaidAt: (registration as any)?.spousePaidAt,
-        // Add kids payment ID and timestamp
-        kidsPaymentId: payload.paymentId,
+        // Append new kids payment ID to existing ones (handle both string and array)
+        kidsPaymentId: (() => {
+          const existing = (registration as any)?.kidsPaymentId;
+          const existingIds = existing 
+            ? (Array.isArray(existing) ? existing : [existing])
+            : [];
+          return [...existingIds, payload.paymentId];
+        })(),
         kidsPaidAt: new Date().toISOString(), // Set kids payment timestamp
         // Include discount code if provided
         discountCode: discountCodeInput.trim() || undefined,
@@ -1408,10 +1418,22 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         // Preserve existing payment info
         paid: (registration as any)?.paid,
         squarePaymentId: (registration as any)?.squarePaymentId,
-        // Store same payment ID in both fields for combined payment
-        spousePaymentId: payload.paymentId,
+        // Append new payment ID to existing ones for combined payment (handle both string and array)
+        spousePaymentId: (() => {
+          const existing = (registration as any)?.spousePaymentId;
+          const existingIds = existing 
+            ? (Array.isArray(existing) ? existing : [existing])
+            : [];
+          return [...existingIds, payload.paymentId];
+        })(),
         spousePaidAt: paymentTimestamp,
-        kidsPaymentId: payload.paymentId, // Same payment ID for combined transaction
+        kidsPaymentId: (() => {
+          const existing = (registration as any)?.kidsPaymentId;
+          const existingIds = existing 
+            ? (Array.isArray(existing) ? existing : [existing])
+            : [];
+          return [...existingIds, payload.paymentId];
+        })(),
         kidsPaidAt: paymentTimestamp, // Same timestamp for combined transaction
         // Include discount code if provided
         discountCode: discountCodeInput.trim() || undefined,
@@ -2514,7 +2536,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               </div>
               {(formData.dietaryRequirements || []).includes('Other') && (
                 <div className="form-group" style={{ marginTop: '0.5rem' }}>
-                  <label htmlFor="dietaryRequirementsOther" className="form-label">Please specify other dietary requirement <span className="required-asterisk">*</span></label>
+                  <label htmlFor="dietaryRequirementsOther" className="form-label">Please specify<span className="required-asterisk">*</span></label>
                   <input 
                     id="dietaryRequirementsOther" 
                     type="text" 
@@ -2992,8 +3014,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           {!isAdminEdit && (() => {
             // Check if spouse is being added (wasn't there before, but now is)
             const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
-            // Check if kids are being added (wasn't there before, but now is)
-            const isAddingKids = isEditing && !hadKidsBefore && kids.length > 0 && !hadKidsPayment;
+            // Check if kids are being added (current count > original count)
+            const isAddingKids = isEditing && kids.length > originalKidsCount && !hadKidsPayment;
             
             // Show payment section if:
             // 1. New registration (!isEditing)
@@ -3012,7 +3034,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               {(() => {
                 // Re-check these flags for the payment summary logic
                 const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
-                const isAddingKids = isEditing && !hadKidsBefore && kids.length > 0 && !hadKidsPayment;
+                const isAddingKids = isEditing && kids.length > originalKidsCount && !hadKidsPayment;
 
                 if (isAlreadyPaid && !isAddingSpouse && !isAddingKids) {
                   return (
@@ -3035,9 +3057,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       )}
                       {hadKidsBefore && (registration as any)?.kidsPaymentId && (
                         <div className="payment-item">
-                          <span>Children Payment ID:</span>
-                          <span>{(registration as any).kidsPaymentId}</span>
-                </div>
+                          <span>Children Payment ID{Array.isArray((registration as any).kidsPaymentId) && (registration as any).kidsPaymentId.length > 1 ? 's' : ''}:</span>
+                          <span>{Array.isArray((registration as any).kidsPaymentId) 
+                            ? (registration as any).kidsPaymentId.join(', ') 
+                            : (registration as any).kidsPaymentId}</span>
+                        </div>
                       )}
                     </div>
                   );
@@ -3048,7 +3072,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   // Check if this is a spouse-only payment (adding spouse to already-paid registration)
                   const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
                   // Check if this is a kids-only payment (adding kids to already-paid registration)
-                  const isAddingKids = isEditing && !hadKidsBefore && kids.length > 0 && !hadKidsPayment;
+                  const isAddingKids = isEditing && kids.length > originalKidsCount && !hadKidsPayment;
                   
                   // If adding spouse or kids to paid registration, only calculate the new amount
                   let baseTotal: number;
@@ -3277,7 +3301,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             {(() => {
               const paymentMethod = formData.paymentMethod || 'Card';
               const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
-              const isAddingKids = isEditing && !hadKidsBefore && kids.length > 0 && !hadKidsPayment;
+              const isAddingKids = isEditing && kids.length > originalKidsCount && !hadKidsPayment;
               const isAddingBoth = isAddingSpouse && isAddingKids;
               
               // Show combined payment button if both spouse and kids are being added

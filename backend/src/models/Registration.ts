@@ -69,7 +69,7 @@ export class Registration {
   public squarePaymentId?: string;
   public spousePaymentId?: string;
   public spousePaidAt?: string;
-  public kidsPaymentId?: string;
+  public kidsPaymentId?: string | string[]; // Support both single string (backward compat) and array
   public kidsPaidAt?: string;
   public groupAssigned?: number;
   public discountCode?: string;
@@ -177,7 +177,24 @@ export class Registration {
     this.squarePaymentId = (data as any).squarePaymentId as any;
     this.spousePaymentId = (data as any).spousePaymentId ?? (data as any).spouse_payment_id ?? undefined;
     this.spousePaidAt = (data as any).spousePaidAt ?? (data as any).spouse_paid_at ?? undefined;
-    this.kidsPaymentId = (data as any).kidsPaymentId ?? (data as any).kids_payment_id ?? undefined;
+    // Handle both string (legacy) and array (new) formats for kidsPaymentId
+    const kidsPaymentIdRaw = (data as any).kidsPaymentId ?? (data as any).kids_payment_id;
+    if (kidsPaymentIdRaw !== undefined && kidsPaymentIdRaw !== null) {
+      if (typeof kidsPaymentIdRaw === 'string') {
+        // Try to parse as JSON array, fallback to single string
+        try {
+          const parsed = JSON.parse(kidsPaymentIdRaw);
+          this.kidsPaymentId = Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+          // Not JSON, treat as single payment ID
+          this.kidsPaymentId = [kidsPaymentIdRaw];
+        }
+      } else if (Array.isArray(kidsPaymentIdRaw)) {
+        this.kidsPaymentId = kidsPaymentIdRaw;
+      } else {
+        this.kidsPaymentId = [String(kidsPaymentIdRaw)];
+      }
+    }
     this.kidsPaidAt = (data as any).kidsPaidAt ?? (data as any).kids_paid_at ?? undefined;
     this.groupAssigned = (data as any).groupAssigned ?? (data as any).group_assigned ?? undefined;
   }
@@ -331,7 +348,11 @@ export class Registration {
       square_payment_id: this.nullIfUndefined(this.squarePaymentId),
       spouse_payment_id: this.nullIfUndefined(this.spousePaymentId),
       spouse_paid_at: this.spousePaidAt ? this.formatDateForDB(this.spousePaidAt) : null,
-      kids_payment_id: this.nullIfUndefined(this.kidsPaymentId),
+      kids_payment_id: this.kidsPaymentId 
+        ? (Array.isArray(this.kidsPaymentId) 
+            ? JSON.stringify(this.kidsPaymentId) 
+            : JSON.stringify([this.kidsPaymentId]))
+        : null,
       kids_paid_at: this.kidsPaidAt ? this.formatDateForDB(this.kidsPaidAt) : null,
       group_assigned: this.nullIfUndefined(this.groupAssigned),
       updated_at: this.formatDateForDB(this.updatedAt || new Date().toISOString()),
