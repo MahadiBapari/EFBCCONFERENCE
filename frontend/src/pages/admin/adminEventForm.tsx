@@ -15,6 +15,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   const [endDate, setEndDate] = useState('');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState<string[]>([]);
+  // Activities state: Fixed to use object array format for type safety (supports both old string[] and new object[] formats)
   const [activities, setActivities] = useState<Array<{ name: string; seatLimit?: number }>>([]);
   const [newActivity, setNewActivity] = useState('');
   const [newActivitySeatLimit, setNewActivitySeatLimit] = useState<number | ''>('');
@@ -66,6 +67,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     setDescription(Array.isArray(event.description) ? event.description : (event.description ? [event.description] : []));
     // Handle both old format (string[]) and new format (object[]) using normalizeActivities
     // This ensures type safety by converting both formats to the object array format
+    // IMPORTANT: This fix resolves the TypeScript compilation error for activities initialization
     setActivities(normalizeActivities(event.activities));
     setRegistrationPricing(event.registrationPricing || registrationPricing);
     setSpousePricing(event.spousePricing && event.spousePricing.length ? event.spousePricing : spousePricing);
@@ -225,10 +227,6 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     <div className="container">
       <div className="page-header">
         <h1>{event ? 'Edit Event' : 'Create New Event'}</h1>
-        <div className="page-actions">
-          <button className="btn btn-secondary" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
-          <button className="btn btn-primary" form="admin-event-form" type="submit" disabled={isSubmitting}>{isSubmitting ? (event ? 'Updating...' : 'Creating...') : (event ? 'Update Event' : 'Create Event')}</button>
-        </div>
       </div>
 
       <div className="event-form-container">
@@ -651,6 +649,11 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
 
           </div>
         </form>
+      </div>
+
+      <div className="page-actions" style={{ marginTop: '20px', padding: '20px', borderTop: '1px solid #e0e0e0' }}>
+        <button className="btn btn-secondary" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
+        <button className="btn btn-primary" form="admin-event-form" type="submit" disabled={isSubmitting}>{isSubmitting ? (event ? 'Updating...' : 'Creating...') : (event ? 'Update Event' : 'Create Event')}</button>
       </div>
     </div>
   );
