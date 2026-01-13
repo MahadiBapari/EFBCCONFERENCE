@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Event, DiscountCode } from '../../types';
 import { normalizeActivities } from '../../utils/eventUtils';
+import { Modal } from '../../components/Modal';
 import '../../styles/EventFormModal.css';
 
 interface AdminEventFormProps {
@@ -21,6 +22,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   const [newActivitySeatLimit, setNewActivitySeatLimit] = useState<number | ''>('');
   const [editingActivityIndex, setEditingActivityIndex] = useState<number | null>(null);
   const [editActivitySeatLimit, setEditActivitySeatLimit] = useState<number | ''>('');
+  const [activityToDelete, setActivityToDelete] = useState<string | null>(null);
   const [registrationPricing, setRegistrationPricing] = useState<Array<{ label: string; price?: number; startDate?: string; endDate?: string }>>([
     { label: 'Priority Registration Fee', price: undefined },
     { label: 'Early Bird Registration Fee', price: undefined },
@@ -164,7 +166,20 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     setNewActivity('');
     setNewActivitySeatLimit('');
   };
-  const removeActivity = (activityName: string) => setActivities(prev => prev.filter(x => x.name !== activityName));
+  const handleRemoveActivityClick = (activityName: string) => {
+    setActivityToDelete(activityName);
+  };
+
+  const confirmRemoveActivity = () => {
+    if (activityToDelete) {
+      setActivities(prev => prev.filter(x => x.name !== activityToDelete));
+      setActivityToDelete(null);
+    }
+  };
+
+  const cancelRemoveActivity = () => {
+    setActivityToDelete(null);
+  };
   
   const startEditActivity = (index: number) => {
     setEditingActivityIndex(index);
@@ -363,7 +378,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
                             </button>
                           </>
                         )}
-                        <button type="button" className="activity-remove" onClick={() => removeActivity(activity.name)} disabled={isSubmitting}>×</button>
+                        <button type="button" className="activity-remove" onClick={() => handleRemoveActivityClick(activity.name)} disabled={isSubmitting}>×</button>
                       </span>
                     ))}
                   </div>
@@ -655,6 +670,38 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
         <button className="btn btn-secondary" onClick={onCancel} disabled={isSubmitting}>Cancel</button>
         <button className="btn btn-primary" form="admin-event-form" type="submit" disabled={isSubmitting}>{isSubmitting ? (event ? 'Updating...' : 'Creating...') : (event ? 'Update Event' : 'Create Event')}</button>
       </div>
+
+      {activityToDelete && (
+        <Modal
+          title="Delete Activity"
+          onClose={cancelRemoveActivity}
+          footer={
+            <div className="modal-footer-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={cancelRemoveActivity}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={confirmRemoveActivity}
+              >
+                Delete
+              </button>
+            </div>
+          }
+        >
+          <p>
+            Are you sure you want to delete <strong>"{activityToDelete}"</strong>?
+          </p>
+          <p className="modal-helper-text" style={{ color: '#e74c3c', fontWeight: '500' }}>
+            ⚠️ This action cannot be undone. All registrations associated with this activity will be affected.
+          </p>
+        </Modal>
+      )}
     </div>
   );
 };
