@@ -124,6 +124,8 @@ const App: React.FC = () => {
         spousePricing: parseArr(e.spousePricing ?? e.spouse_pricing),
         breakfastPrice: numOrUndef(e.breakfastPrice ?? e.breakfast_price),
         breakfastEndDate: (e.breakfastEndDate ?? e.breakfast_end_date) || undefined,
+        childLunchPrice: numOrUndef(e.childLunchPrice ?? e.child_lunch_price),
+        kidsPricing: parseArr(e.kidsPricing ?? e.kids_pricing),
       }));
       setEvents(normalized);
     } catch (err) {

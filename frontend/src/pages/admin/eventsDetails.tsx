@@ -36,9 +36,13 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
       const data = await res.json();
       if (data.success) {
         setDiscountCodes(data.data || []);
+      } else {
+        console.error('Failed to load discount codes:', data.error);
+        setDiscountCodes([]);
       }
     } catch (error) {
       console.error('Error loading discount codes:', error);
+      setDiscountCodes([]);
     }
   };
 
@@ -247,11 +251,11 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
         )}
 
         {/* Children Pricing Tiers */}
-        {event.kidsPricing && event.kidsPricing.length > 0 && (
-          <div className="card" style={{ marginBottom: '20px' }}>
-            <h2 style={{ marginTop: '0', marginBottom: '20px', borderBottom: '2px solid #e0e0e0', paddingBottom: '10px' }}>
-              Child/Children Pricing Tiers
-            </h2>
+        <div className="card" style={{ marginBottom: '20px' }}>
+          <h2 style={{ marginTop: '0', marginBottom: '20px', borderBottom: '2px solid #e0e0e0', paddingBottom: '10px' }}>
+            Child/Children Pricing Tiers
+          </h2>
+          {event.kidsPricing && event.kidsPricing.length > 0 ? (
             <div className="table-wrapper">
               <table className="table">
                 <thead>
@@ -274,15 +278,17 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+          ) : (
+            <p style={{ color: '#666', fontStyle: 'italic' }}>No children pricing tiers configured for this event.</p>
+          )}
+        </div>
 
         {/* Discount Codes */}
-        {discountCodes.length > 0 && (
-          <div className="card" style={{ marginBottom: '20px' }}>
-            <h2 style={{ marginTop: '0', marginBottom: '20px', borderBottom: '2px solid #e0e0e0', paddingBottom: '10px' }}>
-              Discount Codes
-            </h2>
+        <div className="card" style={{ marginBottom: '20px' }}>
+          <h2 style={{ marginTop: '0', marginBottom: '20px', borderBottom: '2px solid #e0e0e0', paddingBottom: '10px' }}>
+            Discount Codes
+          </h2>
+          {discountCodes.length > 0 ? (
             <div className="table-wrapper">
               <table className="table">
                 <thead>
@@ -327,8 +333,10 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+          ) : (
+            <p style={{ color: '#666', fontStyle: 'italic' }}>No discount codes configured for this event.</p>
+          )}
+        </div>
 
         {/* Additional Event Information */}
         <div className="card" style={{ marginBottom: '20px' }}>
