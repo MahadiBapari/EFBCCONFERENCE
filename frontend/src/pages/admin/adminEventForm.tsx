@@ -65,6 +65,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     setLocation(event.location || '');
     setDescription(Array.isArray(event.description) ? event.description : (event.description ? [event.description] : []));
     // Handle both old format (string[]) and new format (object[]) using normalizeActivities
+    // This ensures type safety by converting both formats to the object array format
     setActivities(normalizeActivities(event.activities));
     setRegistrationPricing(event.registrationPricing || registrationPricing);
     setSpousePricing(event.spousePricing && event.spousePricing.length ? event.spousePricing : spousePricing);
