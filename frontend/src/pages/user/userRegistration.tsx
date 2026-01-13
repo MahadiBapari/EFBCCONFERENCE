@@ -1059,10 +1059,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
         (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
       const pricePerKid = active?.price ?? 0;
-      // const kidsPrice = formData.kidsTotalPrice !== undefined 
-      //   ? formData.kidsTotalPrice 
-      //   : pricePerKid * kids.length;
-      let kidsPrice = pricePerKid * kids.length;
+      // Only calculate price for NEW children being added
+      const newKidsCount = kids.length - originalKidsCount;
+      let kidsPrice = pricePerKid * newKidsCount;
       
       // Apply discount if discount code is valid
       if (discountCodeData) {
@@ -1191,7 +1190,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
             (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
           const pricePerKid = active?.price ?? 0;
-          const kidsPrice = pricePerKid * kids.length;
+          // Only calculate price for NEW children being added
+          const newKidsCount = kids.length - originalKidsCount;
+          const kidsPrice = pricePerKid * newKidsCount;
           let discountAmount = 0;
           if (discountCodeData.discountType === 'percentage') {
             discountAmount = (kidsPrice * discountCodeData.discountValue) / 100;
@@ -1305,10 +1306,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const kidsActive = kidsTiers.find((t: any) => now >= t.s && now < t.e) ||
         (now < kidsTiers[0]?.s ? kidsTiers[0] : (now >= kidsTiers[kidsTiers.length - 1]?.e ? kidsTiers[kidsTiers.length - 1] : (kidsTiers.find((t: any) => now < t.s) || kidsTiers[kidsTiers.length - 1])));
       const pricePerKid = kidsActive?.price ?? 0;
-      // const kidsPrice = formData.kidsTotalPrice !== undefined 
-      //   ? formData.kidsTotalPrice 
-      //   : pricePerKid * kids.length;
-      const kidsPrice = pricePerKid * kids.length;
+      // Only calculate price for NEW children being added
+      const newKidsCount = kids.length - originalKidsCount;
+      const kidsPrice = pricePerKid * newKidsCount;
       
       let combinedPrice = spousePrice + kidsPrice;
       
@@ -1455,7 +1455,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           const kidsActive = kidsTiers.find((t: any) => now >= t.s && now < t.e) ||
             (now < kidsTiers[0]?.s ? kidsTiers[0] : (now >= kidsTiers[kidsTiers.length - 1]?.e ? kidsTiers[kidsTiers.length - 1] : (kidsTiers.find((t: any) => now < t.s) || kidsTiers[kidsTiers.length - 1])));
           const pricePerKid = kidsActive?.price ?? 0;
-          const kidsPrice = pricePerKid * kids.length;
+          // Only calculate price for NEW children being added
+          const newKidsCount = kids.length - originalKidsCount;
+          const kidsPrice = pricePerKid * newKidsCount;
           const combinedPrice = spousePrice + kidsPrice;
           let discountAmount = 0;
           if (discountCodeData.discountType === 'percentage') {
@@ -3099,10 +3101,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     const kidsActive = kidsTiers.find((t: any) => now >= t.s && now < t.e) ||
                       (now < kidsTiers[0]?.s ? kidsTiers[0] : (now >= kidsTiers[kidsTiers.length - 1]?.e ? kidsTiers[kidsTiers.length - 1] : (kidsTiers.find((t: any) => now < t.s) || kidsTiers[kidsTiers.length - 1])));
                     const pricePerKid = kidsActive?.price ?? 0;
-                    // const kidsPrice = formData.kidsTotalPrice !== undefined 
-                    //   ? formData.kidsTotalPrice 
-                    //   : pricePerKid * kids.length;
-                    const kidsPrice = pricePerKid * kids.length;
+                    // Only calculate price for NEW children being added
+                    const newKidsCount = kids.length - originalKidsCount;
+                    const kidsPrice = pricePerKid * newKidsCount;
                     
                     baseTotal = spousePrice + kidsPrice;
                   } else if (isAddingSpouse) {
@@ -3117,7 +3118,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
                     baseTotal = active?.price ?? 0;
                   } else if (isAddingKids) {
-                    // Calculate only kids price using current tier
+                    // Calculate only NEW kids price using current tier (not all kids)
                     const now = getCurrentEasternTime();
                     const tiers = (event.kidsPricing || []).map((t: any) => ({
                       ...t,
@@ -3127,10 +3128,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     const active = tiers.find((t: any) => now >= t.s && now < t.e) ||
                       (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
                     const pricePerKid = active?.price ?? 0;
-                    // baseTotal = formData.kidsTotalPrice !== undefined 
-                    //   ? formData.kidsTotalPrice 
-                    //   : pricePerKid * kids.length;
-                    baseTotal = pricePerKid * kids.length;
+                    // Only calculate price for NEW children being added
+                    const newKidsCount = kids.length - originalKidsCount;
+                    baseTotal = pricePerKid * newKidsCount;
                   } else {
                     // Normal flow: show full registration price (already discounted if discount was applied)
                     baseTotal = Number(formData.totalPrice || 0);
@@ -3168,7 +3168,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   ) : null}
                   {(kids.length > 0 && !isAddingKids && !isAddingSpouse) || isAddingKids || (isAddingSpouse && isAddingKids) ? (
                     <div className="payment-item">
-                      <span>Child/Children Registration ({kids.length} {kids.length === 1 ? 'child' : 'children'}):</span>
+                      <span>Child/Children Registration ({isAddingKids || (isAddingSpouse && isAddingKids) 
+                        ? `${kids.length - originalKidsCount} ${(kids.length - originalKidsCount) === 1 ? 'child' : 'children'}`
+                        : `${kids.length} ${kids.length === 1 ? 'child' : 'children'}`}):</span>
                       <span>${(function () {
                         // if (formData.kidsTotalPrice !== undefined) {
                         //   return formData.kidsTotalPrice.toFixed(2);
@@ -3184,7 +3186,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                           (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : 
                           (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
                         const pricePerKid = active?.price ?? 0;
-                        return (pricePerKid * kids.length).toFixed(2);
+                        // When adding kids, only calculate for new children
+                        const kidsCount = (isAddingKids || (isAddingSpouse && isAddingKids)) 
+                          ? (kids.length - originalKidsCount) 
+                          : kids.length;
+                        return (pricePerKid * kidsCount).toFixed(2);
                       })()}</span>
                     </div>
                   ) : null}
