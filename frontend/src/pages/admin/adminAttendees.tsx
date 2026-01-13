@@ -240,7 +240,10 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
       results = results.filter(r => 
         r.name.toLowerCase().includes(lowercasedQuery) || 
         r.email.toLowerCase().includes(lowercasedQuery) ||
-        (r.organization && r.organization.toLowerCase().includes(lowercasedQuery))
+        (r.organization && r.organization.toLowerCase().includes(lowercasedQuery)) ||
+        (r.id && String(r.id).includes(searchQuery.trim())) ||
+        (r.mobile && r.mobile.includes(searchQuery.trim())) ||
+        (r.officePhone && r.officePhone.includes(searchQuery.trim()))
       );
     }
     return results;
