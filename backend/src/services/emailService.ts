@@ -437,7 +437,7 @@ const renderEmailTemplate = async (params: {
             </tr>
             ${params.cta ? `<tr><td style="padding:16px 24px 8px 24px;">${buttonHtml}</td></tr>` : ''}
             <tr>
-              <td style="padding:20px 24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:12px;">
+              <td style="padding:20px 24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:12px;line-height:1.6;">
                 ${footerHtml}
               </td>
             </tr>
