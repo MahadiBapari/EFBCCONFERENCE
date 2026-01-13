@@ -2294,9 +2294,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 const seatLimit = getActivitySeatLimit(event.activities, formData.wednesdayActivity);
                 const currentCount = getActivityRegistrationCount(formData.wednesdayActivity);
                 if (seatLimit !== undefined) {
+                  const isFull = currentCount >= seatLimit;
+                  const availableSeats = seatLimit - currentCount;
                   return (
-                    <div style={{ marginTop: '5px', fontSize: '0.9em', color: '#666' }}>
-                      {seatLimit - currentCount} of {seatLimit} seats available
+                    <div style={{ marginTop: '5px', fontSize: '0.9em', color: isFull ? '#dc2626' : '#666' }}>
+                      {isFull ? (
+                        <strong>This activity is FULL ({currentCount}/{seatLimit} seats registered). Please select a different activity.</strong>
+                      ) : (
+                        `${availableSeats} of ${seatLimit} seats available`
+                      )}
                     </div>
                   );
                 }
@@ -3226,37 +3232,40 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 </div>
                   );
                 })()}
-                <div className="form-group">
-                  <label className="form-label">Discount Code (Optional)</label>
-                  <input
-                    type="text"
-                    className={`form-control ${discountCodeError ? 'error' : ''}`}
-                    value={discountCodeInput}
-                    onChange={(e) => {
-                      const code = e.target.value.toUpperCase();
-                      setDiscountCodeInput(code);
-                      validateDiscountCode(code);
-                    }}
-                    placeholder="Enter discount code"
-                    disabled={validatingDiscountCode || isSubmitting}
-                    style={{ textTransform: 'uppercase' }}
-                  />
-                  {validatingDiscountCode && (
-                    <small className="form-text text-muted" style={{ display: 'block', marginTop: '0.25rem' }}>
-                      Validating...
-                    </small>
-                  )}
-                  {discountCodeError && (
-                    <div className="error-message" style={{ marginTop: '0.25rem' }}>{discountCodeError}</div>
-                  )}
-                  {discountCodeData && !discountCodeError && (
-                    <div style={{ marginTop: '0.25rem', color: '#10b981', fontSize: '0.875rem' }}>
-                      ✓ Discount code applied: {discountCodeData.discountType === 'percentage' 
-                        ? `${discountCodeData.discountValue}% off`
-                        : `$${discountCodeData.discountValue} off`}
-                    </div>
-                  )}
-                </div>
+                {/* Only show discount code for new registrations, not updates */}
+                {!isEditing && (
+                  <div className="form-group">
+                    <label className="form-label">Discount Code (Optional)</label>
+                    <input
+                      type="text"
+                      className={`form-control ${discountCodeError ? 'error' : ''}`}
+                      value={discountCodeInput}
+                      onChange={(e) => {
+                        const code = e.target.value.toUpperCase();
+                        setDiscountCodeInput(code);
+                        validateDiscountCode(code);
+                      }}
+                      placeholder="Enter discount code"
+                      disabled={validatingDiscountCode || isSubmitting}
+                      style={{ textTransform: 'uppercase' }}
+                    />
+                    {validatingDiscountCode && (
+                      <small className="form-text text-muted" style={{ display: 'block', marginTop: '0.25rem' }}>
+                        Validating...
+                      </small>
+                    )}
+                    {discountCodeError && (
+                      <div className="error-message" style={{ marginTop: '0.25rem' }}>{discountCodeError}</div>
+                    )}
+                    {discountCodeData && !discountCodeError && (
+                      <div style={{ marginTop: '0.25rem', color: '#10b981', fontSize: '0.875rem' }}>
+                        ✓ Discount code applied: {discountCodeData.discountType === 'percentage' 
+                          ? `${discountCodeData.discountValue}% off`
+                          : `$${discountCodeData.discountValue} off`}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="form-group">
                   <label className="form-label">Payment Method</label>
                   <div className="segmented-group">
