@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Event, DiscountCode } from '../../types';
+import { normalizeActivities } from '../../utils/eventUtils';
 import '../../styles/EventFormModal.css';
 
 interface AdminEventFormProps {
@@ -63,16 +64,8 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     setStartDate(normalizedStartDate.includes('T') ? normalizedStartDate.slice(0, 10) : normalizedStartDate);
     setLocation(event.location || '');
     setDescription(Array.isArray(event.description) ? event.description : (event.description ? [event.description] : []));
-    // Handle both old format (string[]) and new format (object[])
-    const eventActivities = event.activities || [];
-    if (eventActivities.length > 0 && typeof eventActivities[0] === 'string') {
-      setActivities((eventActivities as string[]).map(name => ({ name })));
-    } else {
-      const normalized = eventActivities.length > 0 && typeof eventActivities[0] === 'object'
-        ? (eventActivities as Array<{ name: string; seatLimit?: number }>)
-        : [];
-      setActivities(normalized);
-    }
+    // Handle both old format (string[]) and new format (object[]) using normalizeActivities
+    setActivities(normalizeActivities(event.activities));
     setRegistrationPricing(event.registrationPricing || registrationPricing);
     setSpousePricing(event.spousePricing && event.spousePricing.length ? event.spousePricing : spousePricing);
     setKidsPricing(event.kidsPricing && event.kidsPricing.length ? event.kidsPricing : kidsPricing);
