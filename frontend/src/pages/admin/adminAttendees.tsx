@@ -102,29 +102,14 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     spouseLastName: 120,
     spouseDinnerTicket: 150,
     kidsCount: 100,
-    child1FirstName: 120,
-    child1LastName: 120,
-    child1BadgeName: 120,
-    child1Age: 80,
-    child2FirstName: 120,
-    child2LastName: 120,
-    child2BadgeName: 120,
-    child2Age: 80,
-    child3FirstName: 120,
-    child3LastName: 120,
-    child3BadgeName: 120,
-    child3Age: 80,
-    child4FirstName: 120,
-    child4LastName: 120,
-    child4BadgeName: 120,
-    child4Age: 80,
-    child5FirstName: 120,
-    child5LastName: 120,
-    child5BadgeName: 120,
-    child5Age: 80,
     paymentMethod: 120,
     paid: 80,
     paymentId: 200,
+    paymentDate: 180,
+    spousePaymentId: 200,
+    spousePaymentDate: 180,
+    kidsPaymentId: 200,
+    kidsPaymentDate: 180,
     totalPrice: 100,
   });
   
@@ -261,6 +246,28 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
     return results;
   }, [filter, registrations, searchQuery, selectedEventId]);
 
+  // Calculate maximum number of children across all registrations
+  const maxChildrenCount = useMemo(() => {
+    if (filteredRegistrations.length === 0) return 0;
+    return Math.max(
+      ...filteredRegistrations.map(reg => (reg.kids && Array.isArray(reg.kids) ? reg.kids.length : 0)),
+      0
+    );
+  }, [filteredRegistrations]);
+
+  // Check if any registration has spouse payment ID
+  const hasSpousePaymentIds = useMemo(() => {
+    return filteredRegistrations.some(reg => (reg as any).spousePaymentId);
+  }, [filteredRegistrations]);
+
+  // Check if any registration has children payment IDs
+  const hasKidsPaymentIds = useMemo(() => {
+    return filteredRegistrations.some(reg => {
+      const kidsPaymentId = (reg as any).kidsPaymentId;
+      return kidsPaymentId && (Array.isArray(kidsPaymentId) ? kidsPaymentId.length > 0 : true);
+    });
+  }, [filteredRegistrations]);
+
   // Sort registrations
   const sortedRegistrations = useMemo(() => {
     const sorted = [...filteredRegistrations].sort((a, b) => {
@@ -336,6 +343,30 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   useEffect(() => {
     setCurrentPage(1);
   }, [filter, searchQuery, selectedEventId, sortField, sortDirection]);
+
+  // Update column widths when maxChildrenCount changes
+  useEffect(() => {
+    if (maxChildrenCount > 0) {
+      setColumnWidths(prev => {
+        const updated = { ...prev };
+        // Remove old child columns (child1-child5)
+        for (let i = 1; i <= 5; i++) {
+          delete updated[`child${i}FirstName`];
+          delete updated[`child${i}LastName`];
+          delete updated[`child${i}BadgeName`];
+          delete updated[`child${i}Age`];
+        }
+        // Add columns for actual max children
+        for (let i = 1; i <= maxChildrenCount; i++) {
+          updated[`child${i}FirstName`] = 120;
+          updated[`child${i}LastName`] = 120;
+          updated[`child${i}BadgeName`] = 120;
+          updated[`child${i}Age`] = 80;
+        }
+        return updated;
+      });
+    }
+  }, [maxChildrenCount]);
 
   // Sorting handler
   const handleSort = (field: string) => {
@@ -698,29 +729,65 @@ const confirmSingleDelete = async () => {
       'Spouse Last Name': reg.spouseLastName,
       'Spouse Dinner Ticket': reg.spouseDinnerTicket ? 'Yes' : 'No',
       'Children Count': reg.kids && reg.kids.length > 0 ? reg.kids.length : 0,
-      'Child 1 First Name': reg.kids && reg.kids.length > 0 ? (reg.kids[0]?.firstName || '') : '',
-      'Child 1 Last Name': reg.kids && reg.kids.length > 0 ? (reg.kids[0]?.lastName || '') : '',
-      'Child 1 Badge Name': reg.kids && reg.kids.length > 0 ? (reg.kids[0]?.badgeName || '') : '',
-      'Child 1 Age': reg.kids && reg.kids.length > 0 ? (reg.kids[0]?.age ? String(reg.kids[0].age) : '') : '',
-      'Child 2 First Name': reg.kids && reg.kids.length > 1 ? (reg.kids[1]?.firstName || '') : '',
-      'Child 2 Last Name': reg.kids && reg.kids.length > 1 ? (reg.kids[1]?.lastName || '') : '',
-      'Child 2 Badge Name': reg.kids && reg.kids.length > 1 ? (reg.kids[1]?.badgeName || '') : '',
-      'Child 2 Age': reg.kids && reg.kids.length > 1 ? (reg.kids[1]?.age ? String(reg.kids[1].age) : '') : '',
-      'Child 3 First Name': reg.kids && reg.kids.length > 2 ? (reg.kids[2]?.firstName || '') : '',
-      'Child 3 Last Name': reg.kids && reg.kids.length > 2 ? (reg.kids[2]?.lastName || '') : '',
-      'Child 3 Badge Name': reg.kids && reg.kids.length > 2 ? (reg.kids[2]?.badgeName || '') : '',
-      'Child 3 Age': reg.kids && reg.kids.length > 2 ? (reg.kids[2]?.age ? String(reg.kids[2].age) : '') : '',
-      'Child 4 First Name': reg.kids && reg.kids.length > 3 ? (reg.kids[3]?.firstName || '') : '',
-      'Child 4 Last Name': reg.kids && reg.kids.length > 3 ? (reg.kids[3]?.lastName || '') : '',
-      'Child 4 Badge Name': reg.kids && reg.kids.length > 3 ? (reg.kids[3]?.badgeName || '') : '',
-      'Child 4 Age': reg.kids && reg.kids.length > 3 ? (reg.kids[3]?.age ? String(reg.kids[3].age) : '') : '',
-      'Child 5 First Name': reg.kids && reg.kids.length > 4 ? (reg.kids[4]?.firstName || '') : '',
-      'Child 5 Last Name': reg.kids && reg.kids.length > 4 ? (reg.kids[4]?.lastName || '') : '',
-      'Child 5 Badge Name': reg.kids && reg.kids.length > 4 ? (reg.kids[4]?.badgeName || '') : '',
-      'Child 5 Age': reg.kids && reg.kids.length > 4 ? (reg.kids[4]?.age ? String(reg.kids[4].age) : '') : '',
+      // Dynamically add children columns
+      ...(Array.from({ length: maxChildrenCount }, (_, index) => {
+        const childNum = index + 1;
+        const child = reg.kids && reg.kids.length > index ? reg.kids[index] : null;
+        return {
+          [`Child ${childNum} First Name`]: child?.firstName || '',
+          [`Child ${childNum} Last Name`]: child?.lastName || '',
+          [`Child ${childNum} Badge Name`]: child?.badgeName || '',
+          [`Child ${childNum} Age`]: child?.age ? String(child.age) : '',
+        };
+      }).reduce((acc, obj) => ({ ...acc, ...obj }), {})),
       'Payment Method': reg.paymentMethod,
       'Paid?': (reg as any).paid ? 'Yes' : 'No',
       'Payment ID': (reg as any).squarePaymentId || '',
+      'Payment Date/Time (EST)': (reg as any).paid && (reg as any).paidAt
+        ? new Date((reg as any).paidAt).toLocaleString('en-US', {
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+            timeZoneName: 'short'
+          })
+        : '',
+      'Spouse Payment ID': (reg as any).spousePaymentId || '',
+      'Spouse Payment Date/Time (EST)': (reg as any).spousePaymentId && (reg as any).spousePaidAt
+        ? new Date((reg as any).spousePaidAt).toLocaleString('en-US', {
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+            timeZoneName: 'short'
+          })
+        : '',
+      'Children Payment ID(s)': (reg as any).kidsPaymentId
+        ? (Array.isArray((reg as any).kidsPaymentId)
+            ? (reg as any).kidsPaymentId.join(', ')
+            : String((reg as any).kidsPaymentId))
+        : '',
+      'Children Payment Date/Time (EST)': (reg as any).kidsPaymentId && (reg as any).kidsPaidAt
+        ? new Date((reg as any).kidsPaidAt).toLocaleString('en-US', {
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+            timeZoneName: 'short'
+          })
+        : '',
       'Total Price': reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : '',
     }));
 
@@ -1323,186 +1390,50 @@ const confirmSingleDelete = async () => {
                       onMouseDown={(e) => handleResizeStart(e, 'kidsCount')}
                     />
                   </th>
-                  <th 
-                    style={{ width: `${columnWidths.child1FirstName}px`, minWidth: `${columnWidths.child1FirstName}px`, position: 'relative' }}
-                  >
-                    Child 1 First Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child1FirstName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child1LastName}px`, minWidth: `${columnWidths.child1LastName}px`, position: 'relative' }}
-                  >
-                    Child 1 Last Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child1LastName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child1BadgeName}px`, minWidth: `${columnWidths.child1BadgeName}px`, position: 'relative' }}
-                  >
-                    Child 1 Badge Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child1BadgeName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child1Age}px`, minWidth: `${columnWidths.child1Age}px`, position: 'relative' }}
-                  >
-                    Child 1 Age
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child1Age')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child2FirstName}px`, minWidth: `${columnWidths.child2FirstName}px`, position: 'relative' }}
-                  >
-                    Child 2 First Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child2FirstName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child2LastName}px`, minWidth: `${columnWidths.child2LastName}px`, position: 'relative' }}
-                  >
-                    Child 2 Last Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child2LastName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child2BadgeName}px`, minWidth: `${columnWidths.child2BadgeName}px`, position: 'relative' }}
-                  >
-                    Child 2 Badge Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child2BadgeName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child2Age}px`, minWidth: `${columnWidths.child2Age}px`, position: 'relative' }}
-                  >
-                    Child 2 Age
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child2Age')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child3FirstName}px`, minWidth: `${columnWidths.child3FirstName}px`, position: 'relative' }}
-                  >
-                    Child 3 First Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child3FirstName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child3LastName}px`, minWidth: `${columnWidths.child3LastName}px`, position: 'relative' }}
-                  >
-                    Child 3 Last Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child3LastName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child3BadgeName}px`, minWidth: `${columnWidths.child3BadgeName}px`, position: 'relative' }}
-                  >
-                    Child 3 Badge Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child3BadgeName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child3Age}px`, minWidth: `${columnWidths.child3Age}px`, position: 'relative' }}
-                  >
-                    Child 3 Age
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child3Age')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child4FirstName}px`, minWidth: `${columnWidths.child4FirstName}px`, position: 'relative' }}
-                  >
-                    Child 4 First Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child4FirstName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child4LastName}px`, minWidth: `${columnWidths.child4LastName}px`, position: 'relative' }}
-                  >
-                    Child 4 Last Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child4LastName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child4BadgeName}px`, minWidth: `${columnWidths.child4BadgeName}px`, position: 'relative' }}
-                  >
-                    Child 4 Badge Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child4BadgeName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child4Age}px`, minWidth: `${columnWidths.child4Age}px`, position: 'relative' }}
-                  >
-                    Child 4 Age
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child4Age')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child5FirstName}px`, minWidth: `${columnWidths.child5FirstName}px`, position: 'relative' }}
-                  >
-                    Child 5 First Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child5FirstName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child5LastName}px`, minWidth: `${columnWidths.child5LastName}px`, position: 'relative' }}
-                  >
-                    Child 5 Last Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child5LastName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child5BadgeName}px`, minWidth: `${columnWidths.child5BadgeName}px`, position: 'relative' }}
-                  >
-                    Child 5 Badge Name
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child5BadgeName')}
-                    />
-                  </th>
-                  <th 
-                    style={{ width: `${columnWidths.child5Age}px`, minWidth: `${columnWidths.child5Age}px`, position: 'relative' }}
-                  >
-                    Child 5 Age
-                    <span 
-                      className="resize-handle"
-                      onMouseDown={(e) => handleResizeStart(e, 'child5Age')}
-                    />
-                  </th>
+                  {/* Dynamically render children columns */}
+                  {Array.from({ length: maxChildrenCount }, (_, index) => {
+                    const childNum = index + 1;
+                    return (
+                      <React.Fragment key={`child-${childNum}`}>
+                        <th 
+                          style={{ width: `${columnWidths[`child${childNum}FirstName`]}px`, minWidth: `${columnWidths[`child${childNum}FirstName`]}px`, position: 'relative' }}
+                        >
+                          Child {childNum} First Name
+                          <span 
+                            className="resize-handle"
+                            onMouseDown={(e) => handleResizeStart(e, `child${childNum}FirstName`)}
+                          />
+                        </th>
+                        <th 
+                          style={{ width: `${columnWidths[`child${childNum}LastName`]}px`, minWidth: `${columnWidths[`child${childNum}LastName`]}px`, position: 'relative' }}
+                        >
+                          Child {childNum} Last Name
+                          <span 
+                            className="resize-handle"
+                            onMouseDown={(e) => handleResizeStart(e, `child${childNum}LastName`)}
+                          />
+                        </th>
+                        <th 
+                          style={{ width: `${columnWidths[`child${childNum}BadgeName`]}px`, minWidth: `${columnWidths[`child${childNum}BadgeName`]}px`, position: 'relative' }}
+                        >
+                          Child {childNum} Badge Name
+                          <span 
+                            className="resize-handle"
+                            onMouseDown={(e) => handleResizeStart(e, `child${childNum}BadgeName`)}
+                          />
+                        </th>
+                        <th 
+                          style={{ width: `${columnWidths[`child${childNum}Age`]}px`, minWidth: `${columnWidths[`child${childNum}Age`]}px`, position: 'relative' }}
+                        >
+                          Child {childNum} Age
+                          <span 
+                            className="resize-handle"
+                            onMouseDown={(e) => handleResizeStart(e, `child${childNum}Age`)}
+                          />
+                        </th>
+                      </React.Fragment>
+                    );
+                  })}
                   <th 
                     style={{ width: `${columnWidths.paymentMethod}px`, minWidth: `${columnWidths.paymentMethod}px`, position: 'relative' }}
                   >
@@ -1530,6 +1461,59 @@ const confirmSingleDelete = async () => {
                       onMouseDown={(e) => handleResizeStart(e, 'paymentId')}
                     />
                   </th>
+                  <th 
+                    style={{ width: `${columnWidths.paymentDate}px`, minWidth: `${columnWidths.paymentDate}px`, position: 'relative' }}
+                  >
+                    Payment Date/Time (EST)
+                    <span 
+                      className="resize-handle"
+                      onMouseDown={(e) => handleResizeStart(e, 'paymentDate')}
+                    />
+                  </th>
+                  {hasSpousePaymentIds && (
+                    <>
+                      <th 
+                        style={{ width: `${columnWidths.spousePaymentId}px`, minWidth: `${columnWidths.spousePaymentId}px`, position: 'relative' }}
+                      >
+                        Spouse Payment ID
+                        <span 
+                          className="resize-handle"
+                          onMouseDown={(e) => handleResizeStart(e, 'spousePaymentId')}
+                        />
+                      </th>
+                      <th 
+                        style={{ width: `${columnWidths.spousePaymentDate}px`, minWidth: `${columnWidths.spousePaymentDate}px`, position: 'relative' }}
+                      >
+                        Spouse Payment Date/Time (EST)
+                        <span 
+                          className="resize-handle"
+                          onMouseDown={(e) => handleResizeStart(e, 'spousePaymentDate')}
+                        />
+                      </th>
+                    </>
+                  )}
+                  {hasKidsPaymentIds && (
+                    <>
+                      <th 
+                        style={{ width: `${columnWidths.kidsPaymentId}px`, minWidth: `${columnWidths.kidsPaymentId}px`, position: 'relative' }}
+                      >
+                        Children Payment ID(s)
+                        <span 
+                          className="resize-handle"
+                          onMouseDown={(e) => handleResizeStart(e, 'kidsPaymentId')}
+                        />
+                      </th>
+                      <th 
+                        style={{ width: `${columnWidths.kidsPaymentDate}px`, minWidth: `${columnWidths.kidsPaymentDate}px`, position: 'relative' }}
+                      >
+                        Children Payment Date/Time (EST)
+                        <span 
+                          className="resize-handle"
+                          onMouseDown={(e) => handleResizeStart(e, 'kidsPaymentDate')}
+                        />
+                      </th>
+                    </>
+                  )}
                   <th 
                     style={{ width: `${columnWidths.totalPrice}px`, minWidth: `${columnWidths.totalPrice}px`, position: 'relative' }}
                   >
@@ -1589,30 +1573,94 @@ const confirmSingleDelete = async () => {
                     <td style={{ width: `${columnWidths.spouseFirstName}px`, minWidth: `${columnWidths.spouseFirstName}px` }}>{displayValue(reg.spouseFirstName)}</td>
                     <td style={{ width: `${columnWidths.spouseLastName}px`, minWidth: `${columnWidths.spouseLastName}px` }}>{displayValue(reg.spouseLastName)}</td>
                     <td style={{ width: `${columnWidths.spouseDinnerTicket}px`, minWidth: `${columnWidths.spouseDinnerTicket}px` }}>{reg.spouseDinnerTicket ? 'Yes' : 'No'}</td>
-                    <td style={{ width: `${columnWidths.kidsCount}px`, minWidth: `${columnWidths.kidsCount}px` }}>{reg.kids && reg.kids.length > 0 ? reg.kids.length : '0'}</td>
-                    <td style={{ width: `${columnWidths.child1FirstName}px`, minWidth: `${columnWidths.child1FirstName}px` }}>{reg.kids && reg.kids.length > 0 ? displayValue(reg.kids[0]?.firstName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child1LastName}px`, minWidth: `${columnWidths.child1LastName}px` }}>{reg.kids && reg.kids.length > 0 ? displayValue(reg.kids[0]?.lastName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child1BadgeName}px`, minWidth: `${columnWidths.child1BadgeName}px` }}>{reg.kids && reg.kids.length > 0 ? displayValue(reg.kids[0]?.badgeName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child1Age}px`, minWidth: `${columnWidths.child1Age}px` }}>{reg.kids && reg.kids.length > 0 ? (reg.kids[0]?.age ? String(reg.kids[0].age) : '') : ''}</td>
-                    <td style={{ width: `${columnWidths.child2FirstName}px`, minWidth: `${columnWidths.child2FirstName}px` }}>{reg.kids && reg.kids.length > 1 ? displayValue(reg.kids[1]?.firstName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child2LastName}px`, minWidth: `${columnWidths.child2LastName}px` }}>{reg.kids && reg.kids.length > 1 ? displayValue(reg.kids[1]?.lastName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child2BadgeName}px`, minWidth: `${columnWidths.child2BadgeName}px` }}>{reg.kids && reg.kids.length > 1 ? displayValue(reg.kids[1]?.badgeName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child2Age}px`, minWidth: `${columnWidths.child2Age}px` }}>{reg.kids && reg.kids.length > 1 ? (reg.kids[1]?.age ? String(reg.kids[1].age) : '') : ''}</td>
-                    <td style={{ width: `${columnWidths.child3FirstName}px`, minWidth: `${columnWidths.child3FirstName}px` }}>{reg.kids && reg.kids.length > 2 ? displayValue(reg.kids[2]?.firstName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child3LastName}px`, minWidth: `${columnWidths.child3LastName}px` }}>{reg.kids && reg.kids.length > 2 ? displayValue(reg.kids[2]?.lastName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child3BadgeName}px`, minWidth: `${columnWidths.child3BadgeName}px` }}>{reg.kids && reg.kids.length > 2 ? displayValue(reg.kids[2]?.badgeName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child3Age}px`, minWidth: `${columnWidths.child3Age}px` }}>{reg.kids && reg.kids.length > 2 ? (reg.kids[2]?.age ? String(reg.kids[2].age) : '') : ''}</td>
-                    <td style={{ width: `${columnWidths.child4FirstName}px`, minWidth: `${columnWidths.child4FirstName}px` }}>{reg.kids && reg.kids.length > 3 ? displayValue(reg.kids[3]?.firstName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child4LastName}px`, minWidth: `${columnWidths.child4LastName}px` }}>{reg.kids && reg.kids.length > 3 ? displayValue(reg.kids[3]?.lastName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child4BadgeName}px`, minWidth: `${columnWidths.child4BadgeName}px` }}>{reg.kids && reg.kids.length > 3 ? displayValue(reg.kids[3]?.badgeName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child4Age}px`, minWidth: `${columnWidths.child4Age}px` }}>{reg.kids && reg.kids.length > 3 ? (reg.kids[3]?.age ? String(reg.kids[3].age) : '') : ''}</td>
-                    <td style={{ width: `${columnWidths.child5FirstName}px`, minWidth: `${columnWidths.child5FirstName}px` }}>{reg.kids && reg.kids.length > 4 ? displayValue(reg.kids[4]?.firstName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child5LastName}px`, minWidth: `${columnWidths.child5LastName}px` }}>{reg.kids && reg.kids.length > 4 ? displayValue(reg.kids[4]?.lastName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child5BadgeName}px`, minWidth: `${columnWidths.child5BadgeName}px` }}>{reg.kids && reg.kids.length > 4 ? displayValue(reg.kids[4]?.badgeName) : ''}</td>
-                    <td style={{ width: `${columnWidths.child5Age}px`, minWidth: `${columnWidths.child5Age}px` }}>{reg.kids && reg.kids.length > 4 ? (reg.kids[4]?.age ? String(reg.kids[4].age) : '') : ''}</td>
+                    <td style={{ width: `${columnWidths.kidsCount}px`, minWidth: `${columnWidths.kidsCount}px` }}>
+                      {reg.kids && reg.kids.length > 0 ? reg.kids.length : '0'}
+                    </td>
+                    {/* Dynamically render children data */}
+                    {Array.from({ length: maxChildrenCount }, (_, index) => {
+                      const childNum = index + 1;
+                      const child = reg.kids && reg.kids.length > index ? reg.kids[index] : null;
+                      return (
+                        <React.Fragment key={`child-${childNum}`}>
+                          <td style={{ width: `${columnWidths[`child${childNum}FirstName`]}px`, minWidth: `${columnWidths[`child${childNum}FirstName`]}px` }}>
+                            {child ? displayValue(child.firstName) : ''}
+                          </td>
+                          <td style={{ width: `${columnWidths[`child${childNum}LastName`]}px`, minWidth: `${columnWidths[`child${childNum}LastName`]}px` }}>
+                            {child ? displayValue(child.lastName) : ''}
+                          </td>
+                          <td style={{ width: `${columnWidths[`child${childNum}BadgeName`]}px`, minWidth: `${columnWidths[`child${childNum}BadgeName`]}px` }}>
+                            {child ? displayValue(child.badgeName) : ''}
+                          </td>
+                          <td style={{ width: `${columnWidths[`child${childNum}Age`]}px`, minWidth: `${columnWidths[`child${childNum}Age`]}px` }}>
+                            {child && child.age ? String(child.age) : ''}
+                          </td>
+                        </React.Fragment>
+                      );
+                    })}
                     <td style={{ width: `${columnWidths.paymentMethod}px`, minWidth: `${columnWidths.paymentMethod}px` }}>{displayValue(reg.paymentMethod)}</td>
                     <td style={{ width: `${columnWidths.paid}px`, minWidth: `${columnWidths.paid}px` }}>{(reg as any).paid ? 'Yes' : 'No'}</td>
                     <td style={{ width: `${columnWidths.paymentId}px`, minWidth: `${columnWidths.paymentId}px` }}>{displayValue((reg as any).squarePaymentId)}</td>
+                    <td style={{ width: `${columnWidths.paymentDate}px`, minWidth: `${columnWidths.paymentDate}px` }}>
+                      {(reg as any).paid && (reg as any).paidAt 
+                        ? new Date((reg as any).paidAt).toLocaleString('en-US', {
+                            timeZone: 'America/New_York',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true,
+                            timeZoneName: 'short'
+                          })
+                        : ''}
+                    </td>
+                    {hasSpousePaymentIds && (
+                      <>
+                        <td style={{ width: `${columnWidths.spousePaymentId}px`, minWidth: `${columnWidths.spousePaymentId}px` }}>{displayValue((reg as any).spousePaymentId)}</td>
+                        <td style={{ width: `${columnWidths.spousePaymentDate}px`, minWidth: `${columnWidths.spousePaymentDate}px` }}>
+                          {(reg as any).spousePaymentId && (reg as any).spousePaidAt
+                            ? new Date((reg as any).spousePaidAt).toLocaleString('en-US', {
+                                timeZone: 'America/New_York',
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: true,
+                                timeZoneName: 'short'
+                              })
+                            : ''}
+                        </td>
+                      </>
+                    )}
+                    {hasKidsPaymentIds && (
+                      <>
+                        <td style={{ width: `${columnWidths.kidsPaymentId}px`, minWidth: `${columnWidths.kidsPaymentId}px` }}>
+                          {(reg as any).kidsPaymentId 
+                            ? (Array.isArray((reg as any).kidsPaymentId) 
+                                ? (reg as any).kidsPaymentId.join(', ')
+                                : String((reg as any).kidsPaymentId))
+                            : ''}
+                        </td>
+                        <td style={{ width: `${columnWidths.kidsPaymentDate}px`, minWidth: `${columnWidths.kidsPaymentDate}px` }}>
+                          {(reg as any).kidsPaymentId && (reg as any).kidsPaidAt
+                            ? new Date((reg as any).kidsPaidAt).toLocaleString('en-US', {
+                                timeZone: 'America/New_York',
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: true,
+                                timeZoneName: 'short'
+                              })
+                            : ''}
+                        </td>
+                      </>
+                    )}
                     <td style={{ width: `${columnWidths.totalPrice}px`, minWidth: `${columnWidths.totalPrice}px` }}>{reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : ''}</td>
                     
                   </tr>
