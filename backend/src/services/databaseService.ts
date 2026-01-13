@@ -51,8 +51,10 @@ export class DatabaseService {
     const placeholders = columns.map(() => '?').join(', ');
     
     const sql = `INSERT INTO \`${table}\` (${columns.join(', ')}) VALUES (${placeholders})`;
-    const result = await this.query(sql, values);
-    return result;
+    // For INSERT, execute returns [ResultSetHeader, FieldPacket[]]
+    // We need to get the ResultSetHeader which has insertId
+    const [result] = await this.connection.execute(sql, values);
+    return result as any; // ResultSetHeader has insertId property
   }
 
   // Generic update method

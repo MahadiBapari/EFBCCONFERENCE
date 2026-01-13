@@ -3,14 +3,55 @@ import { DiscountCodeController } from '../controllers/discountCodeController';
 import { DatabaseService } from '../services/databaseService';
 
 const router = Router();
-const db = (globalThis as any).databaseService as DatabaseService;
-const controller = new DiscountCodeController(db);
 
-router.get('/events/:eventId', (req: Request, res: Response) => controller.getDiscountCodesByEvent(req, res));
-router.post('/', (req: Request, res: Response) => controller.createDiscountCode(req, res));
-router.put('/:id', (req: Request, res: Response) => controller.updateDiscountCode(req, res));
-router.delete('/:id', (req: Request, res: Response) => controller.deleteDiscountCode(req, res));
-router.post('/validate', (req: Request, res: Response) => controller.validateDiscountCode(req, res));
+// Lazy initialization to ensure database is ready
+const getController = (): DiscountCodeController => {
+  const db = (globalThis as any).databaseService as DatabaseService;
+  if (!db) {
+    throw new Error('Database service not initialized');
+  }
+  return new DiscountCodeController(db);
+};
+
+router.get('/events/:eventId', (req: Request, res: Response) => {
+  try {
+    getController().getDiscountCodesByEvent(req, res);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/', (req: Request, res: Response) => {
+  try {
+    getController().createDiscountCode(req, res);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.put('/:id', (req: Request, res: Response) => {
+  try {
+    getController().updateDiscountCode(req, res);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.delete('/:id', (req: Request, res: Response) => {
+  try {
+    getController().deleteDiscountCode(req, res);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/validate', (req: Request, res: Response) => {
+  try {
+    getController().validateDiscountCode(req, res);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 export default router;
 
