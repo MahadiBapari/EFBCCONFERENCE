@@ -51,16 +51,17 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
     );
   }, [registrations, event.id]);
 
-  // Count registrations per activity
-  const getActivityRegistrationCount = (activityName: string): number => {
-    return activeRegistrations.filter(reg => 
-      reg.wednesdayActivity === activityName
-    ).length;
-  };
-
   // Get activity details with seat availability
   const activityDetails = useMemo(() => {
     const activities = getActivityNames(event.activities || []);
+    
+    // Count registrations per activity (moved inside useMemo to avoid dependency issues)
+    const getActivityRegistrationCount = (activityName: string): number => {
+      return activeRegistrations.filter(reg => 
+        reg.wednesdayActivity === activityName
+      ).length;
+    };
+    
     return activities.map(activityName => {
       const seatLimit = getActivitySeatLimit(event.activities, activityName);
       const currentCount = getActivityRegistrationCount(activityName);
