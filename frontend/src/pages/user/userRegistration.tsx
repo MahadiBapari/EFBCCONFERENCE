@@ -251,6 +251,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     // childLastName: (registration as any)?.childLastName || '',
 
     // Payment Information
+    // Backend stores the discounted price in totalPrice, so use it directly
     totalPrice: registration?.totalPrice || 675,
     paymentMethod: registration?.paymentMethod || 'Card',
     paid: registration?.paid ?? false,
@@ -359,11 +360,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     // If registration is already paid and spouse status hasn't changed, preserve the original totalPrice
     // Only recalculate for new registrations, unpaid registrations, or when adding spouse to paid registration
     if (isAlreadyPaid && formData.spouseDinnerTicket === hadSpouseTicket) {
-      // Registration is paid and spouse status unchanged - preserve original price
-      const originalPrice = registration?.totalPrice || 675;
+      // Registration is paid and spouse status unchanged - preserve the stored price (already discounted)
+      const storedPrice = registration?.totalPrice || 675;
       setFormData(prev => {
-        if (prev.totalPrice !== originalPrice) {
-          return { ...prev, totalPrice: originalPrice };
+        if (prev.totalPrice !== storedPrice) {
+          return { ...prev, totalPrice: storedPrice };
         }
         return prev;
       });
@@ -1608,10 +1609,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         throw new Error(userFriendlyMessage);
       }
       const nonce = res.token;
+      // Use formData.totalPrice (already discounted if editing with discount)
       let baseTotal = Number(formData.totalPrice || 0);
       
-      // Apply discount if discount code is valid
-      if (discountCodeData) {
+      // Apply discount ONLY for new registrations (not when editing)
+      if (discountCodeData && !isEditing) {
         let discountAmount = 0;
         if (discountCodeData.discountType === 'percentage') {
           discountAmount = (baseTotal * discountCodeData.discountValue) / 100;
@@ -3106,13 +3108,13 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     //   : pricePerKid * kids.length;
                     baseTotal = pricePerKid * kids.length;
                   } else {
-                    // Normal flow: show full registration price
+                    // Normal flow: show full registration price (already discounted if discount was applied)
                     baseTotal = Number(formData.totalPrice || 0);
                   }
                   
-                  // Apply discount if discount code is valid
+                  // Apply discount ONLY for new registrations (not when editing existing ones)
                   let finalTotal = baseTotal;
-                  if (discountCodeData) {
+                  if (discountCodeData && !isEditing) {
                     let discountAmount = 0;
                     if (discountCodeData.discountType === 'percentage') {
                       discountAmount = (baseTotal * discountCodeData.discountValue) / 100;
