@@ -23,7 +23,7 @@ export interface Event {
   date: string; // End date (kept for backward compatibility)
   startDate?: string; // Start date
   endDate?: string; // Alias for date
-  activities?: string[];
+  activities?: Array<{ name: string; seatLimit?: number }> | string[]; // Support both formats for backward compatibility
   location?: string;
   description?: string[];
   createdAt?: string;

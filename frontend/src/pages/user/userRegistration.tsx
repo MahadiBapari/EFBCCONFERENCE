@@ -9,6 +9,7 @@ import {
   isEventExpired,
 } from '../../types';
 import { formatDateShort } from '../../utils/dateUtils';
+import { getActivityNames, getActivitySeatLimit } from '../../utils/eventUtils';
 import '../../styles/RegistrationModal.css';
 
 /**
@@ -176,6 +177,20 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const hadSpousePayment = !!(registration as any)?.spousePaymentId;
   const hadKidsBefore = registration?.kids && Array.isArray(registration.kids) && registration.kids.length > 0;
   const hadKidsPayment = !!(registration as any)?.kidsPaymentId;
+
+  // Helper function to count active registrations for an activity
+  const getActivityRegistrationCount = (activityName: string): number => {
+    if (!event) return 0;
+    return registrations.filter(reg => 
+      reg.eventId === event.id && 
+      reg.wednesdayActivity === activityName &&
+      // Exclude cancelled registrations
+      reg.status !== 'cancelled' &&
+      !(reg as any).cancellationAt &&
+      // If editing, exclude the current registration from the count
+      (!isEditing || reg.id !== registration?.id)
+    ).length;
+  };
 
   const [formData, setFormData] = useState<Partial<Registration>>({
     // Personal Information
@@ -2200,15 +2215,54 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             <h3 className="section-title">Conference Events</h3>
             <div className="form-group">
               <label htmlFor="wednesdayActivity" className="form-label">Please indicate which Wednesday activity you will be attending (Select ONE) <span className="required-asterisk">*</span></label>
-              <select id="wednesdayActivity" className={`form-control ${errors.wednesdayActivity ? 'error' : ''}`} value={formData.wednesdayActivity || ''} onChange={e => handleInputChange('wednesdayActivity', e.target.value)} required>
+              <select 
+                id="wednesdayActivity" 
+                className={`form-control ${errors.wednesdayActivity ? 'error' : ''}`} 
+                value={formData.wednesdayActivity || ''} 
+                onChange={e => handleInputChange('wednesdayActivity', e.target.value)} 
+                required
+              >
                 <option value="" disabled>Please Select Conference Event</option>
-                {(event.activities || []).map(activity => (
-                  <option key={activity} value={activity}>{activity}</option>
-                ))}
+                {getActivityNames(event.activities).map(activityName => {
+                  const seatLimit = getActivitySeatLimit(event.activities, activityName);
+                  const currentCount = getActivityRegistrationCount(activityName);
+                  const isFull = seatLimit !== undefined && currentCount >= seatLimit;
+                  const availableSeats = seatLimit !== undefined ? seatLimit - currentCount : null;
+                  
+                  // If editing and this is the currently selected activity, don't disable it
+                  const isCurrentActivity = isEditing && formData.wednesdayActivity === activityName;
+                  
+                  return (
+                    <option 
+                      key={activityName} 
+                      value={activityName}
+                      disabled={isFull && !isCurrentActivity}
+                    >
+                      {activityName}
+                      {seatLimit !== undefined && (
+                        isFull && !isCurrentActivity 
+                          ? ` (FULL - ${currentCount}/${seatLimit})` 
+                          : ` (${availableSeats} available, ${currentCount}/${seatLimit} registered)`
+                      )}
+                    </option>
+                  );
+                })}
               </select>
               {errors.wednesdayActivity && <div className="error-message">{errors.wednesdayActivity}</div>}
+              {formData.wednesdayActivity && (() => {
+                const seatLimit = getActivitySeatLimit(event.activities, formData.wednesdayActivity);
+                const currentCount = getActivityRegistrationCount(formData.wednesdayActivity);
+                if (seatLimit !== undefined) {
+                  return (
+                    <div style={{ marginTop: '5px', fontSize: '0.9em', color: '#666' }}>
+                      {seatLimit - currentCount} of {seatLimit} seats available
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
-            {((event.activities || []).some(a => a.toLowerCase().includes('golf')) && (formData.wednesdayActivity || '').toLowerCase().includes('golf')) && (
+            {(getActivityNames(event.activities).some(a => a.toLowerCase().includes('golf')) && (formData.wednesdayActivity || '').toLowerCase().includes('golf')) && (
               <>
                 <div className="form-group">
                   <label className="form-label">Club rentals needed?</label>
@@ -2272,7 +2326,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 </div>
               </>
             )}
-            {((event.activities || []).some(a => a.toLowerCase().includes('massage')) && (formData.wednesdayActivity || '').toLowerCase().includes('massage')) && (
+            {(getActivityNames(event.activities).some(a => a.toLowerCase().includes('massage')) && (formData.wednesdayActivity || '').toLowerCase().includes('massage')) && (
               <div className="form-group">
                 <label htmlFor="massageTimeSlot" className="form-label">If you Chose Massage: <span className="required-asterisk">*</span></label>
                 <label htmlFor="massageTimeSlot" className="form-label" style={{ fontWeight: 'normal', fontSize: '0.9rem', marginTop: '0.25rem', display: 'block' }}>
@@ -2302,7 +2356,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 {errors.massageTimeSlot && <div className="error-message">{errors.massageTimeSlot}</div>}
               </div>
             )}
-            {((event.activities || []).some(a => a.toLowerCase().includes('pickleball')) && (formData.wednesdayActivity || '').toLowerCase().includes('pickleball')) && (
+            {(getActivityNames(event.activities).some(a => a.toLowerCase().includes('pickleball')) && (formData.wednesdayActivity || '').toLowerCase().includes('pickleball')) && (
               <div className="form-group">
                 <label className="form-label">Will you bring your own equipment? <span className="required-asterisk">*</span></label>
                 <div className="radio-group">

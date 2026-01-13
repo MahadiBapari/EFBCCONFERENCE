@@ -14,8 +14,11 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   const [endDate, setEndDate] = useState('');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState<string[]>([]);
-  const [activities, setActivities] = useState<string[]>([]);
+  const [activities, setActivities] = useState<Array<{ name: string; seatLimit?: number }>>([]);
   const [newActivity, setNewActivity] = useState('');
+  const [newActivitySeatLimit, setNewActivitySeatLimit] = useState<number | ''>('');
+  const [editingActivityIndex, setEditingActivityIndex] = useState<number | null>(null);
+  const [editActivitySeatLimit, setEditActivitySeatLimit] = useState<number | ''>('');
   const [registrationPricing, setRegistrationPricing] = useState<Array<{ label: string; price?: number; startDate?: string; endDate?: string }>>([
     { label: 'Priority Registration Fee', price: undefined },
     { label: 'Early Bird Registration Fee', price: undefined },
@@ -60,7 +63,16 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     setStartDate(normalizedStartDate.includes('T') ? normalizedStartDate.slice(0, 10) : normalizedStartDate);
     setLocation(event.location || '');
     setDescription(Array.isArray(event.description) ? event.description : (event.description ? [event.description] : []));
-    setActivities(event.activities || []);
+    // Handle both old format (string[]) and new format (object[])
+    const eventActivities = event.activities || [];
+    if (eventActivities.length > 0 && typeof eventActivities[0] === 'string') {
+      setActivities((eventActivities as string[]).map(name => ({ name })));
+    } else {
+      const normalized = eventActivities.length > 0 && typeof eventActivities[0] === 'object'
+        ? (eventActivities as Array<{ name: string; seatLimit?: number }>)
+        : [];
+      setActivities(normalized);
+    }
     setRegistrationPricing(event.registrationPricing || registrationPricing);
     setSpousePricing(event.spousePricing && event.spousePricing.length ? event.spousePricing : spousePricing);
     setKidsPricing(event.kidsPricing && event.kidsPricing.length ? event.kidsPricing : kidsPricing);
@@ -149,10 +161,28 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   const addActivity = () => {
     const a = newActivity.trim();
     if (!a) return;
-    if (!activities.includes(a)) setActivities(prev => [...prev, a]);
+    const seatLimit = newActivitySeatLimit === '' ? undefined : Number(newActivitySeatLimit);
+    if (!activities.some(act => act.name === a)) {
+      setActivities(prev => [...prev, { name: a, seatLimit }]);
+    }
     setNewActivity('');
+    setNewActivitySeatLimit('');
   };
-  const removeActivity = (a: string) => setActivities(prev => prev.filter(x => x !== a));
+  const removeActivity = (activityName: string) => setActivities(prev => prev.filter(x => x.name !== activityName));
+  
+  const startEditActivity = (index: number) => {
+    setEditingActivityIndex(index);
+    setEditActivitySeatLimit(activities[index].seatLimit || '');
+  };
+  
+  const saveEditActivity = (index: number) => {
+    const newLimit = editActivitySeatLimit === '' ? undefined : Number(editActivitySeatLimit);
+    setActivities(prev => prev.map((act, i) => 
+      i === index ? { ...act, seatLimit: newLimit } : act
+    ));
+    setEditingActivityIndex(null);
+    setEditActivitySeatLimit('');
+  };
 
   const validate = () => {
     const e: { name?: string; startDate?: string; endDate?: string } = {};
@@ -280,15 +310,69 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
             <div className="form-group">
               <label className="form-label">Activities & Sports</label>
               <div className="activity-input-group">
-                <input className="form-control" type="text" value={newActivity} onChange={(e)=>setNewActivity(e.target.value)} placeholder="Add an activity (e.g., Tennis, Swimming, Hiking)" disabled={isSubmitting} onKeyPress={(e)=> e.key==='Enter' && (e.preventDefault(), addActivity())} />
+                <input 
+                  className="form-control" 
+                  type="text" 
+                  value={newActivity} 
+                  onChange={(e) => setNewActivity(e.target.value)} 
+                  placeholder="Activity name (e.g., Golf, Fishing)" 
+                  disabled={isSubmitting} 
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addActivity())} 
+                />
+                <input
+                  className="form-control"
+                  type="number"
+                  value={newActivitySeatLimit}
+                  onChange={(e) => setNewActivitySeatLimit(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="Seat limit (optional)"
+                  min="1"
+                  disabled={isSubmitting}
+                  style={{ width: '150px' }}
+                />
                 <button type="button" className="btn btn-secondary btn-add-activity" onClick={addActivity} disabled={isSubmitting || !newActivity.trim()}>Add</button>
               </div>
-              {activities.length>0 && (
+              {activities.length > 0 && (
                 <div className="activities-list">
                   <h4 className="activities-title">Current Activities:</h4>
                   <div className="activities-tags">
-                    {activities.map((a,i)=> (
-                      <span key={i} className="activity-tag">{a}<button type="button" className="activity-remove" onClick={()=>removeActivity(a)} disabled={isSubmitting}>×</button></span>
+                    {activities.map((activity, i) => (
+                      <span key={i} className="activity-tag">
+                        {activity.name}
+                        {editingActivityIndex === i ? (
+                          <>
+                            <input
+                              type="number"
+                              value={editActivitySeatLimit}
+                              onChange={(e) => setEditActivitySeatLimit(e.target.value === '' ? '' : Number(e.target.value))}
+                              placeholder="Seat limit"
+                              min="1"
+                              style={{ width: '80px', marginLeft: '8px', fontSize: '0.9em' }}
+                              onBlur={() => saveEditActivity(i)}
+                              onKeyPress={(e) => e.key === 'Enter' && saveEditActivity(i)}
+                              autoFocus
+                            />
+                          </>
+                        ) : (
+                          <>
+                            {activity.seatLimit && (
+                              <span style={{ marginLeft: '8px', fontSize: '0.85em', color: '#666' }}>
+                                (Limit: {activity.seatLimit})
+                              </span>
+                            )}
+                            <button 
+                              type="button" 
+                              className="activity-edit" 
+                              onClick={() => startEditActivity(i)}
+                              disabled={isSubmitting}
+                              style={{ marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9em' }}
+                              title="Edit seat limit"
+                            >
+                              ✏️
+                            </button>
+                          </>
+                        )}
+                        <button type="button" className="activity-remove" onClick={() => removeActivity(activity.name)} disabled={isSubmitting}>×</button>
+                      </span>
                     ))}
                   </div>
                 </div>

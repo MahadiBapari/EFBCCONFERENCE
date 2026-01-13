@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Registration, Event, Group } from '../../types';
 import { formatDateShort } from '../../utils/dateUtils';
+import { getActivityNames } from '../../utils/eventUtils';
 import '../../styles/AdminAttendees.css';
 import '../../styles/AdminUsers.css'; // Import pagination styles
 import { RegistrationPreview } from '../../components/RegistrationPreview';
@@ -821,7 +822,8 @@ const confirmSingleDelete = async () => {
       </div>
       <div className="category-tabs">
         {( (() => {
-          const activities = events.find(e => e.id === selectedEventId)?.activities || [];
+          const event = events.find(e => e.id === selectedEventId);
+          const activities = getActivityNames(event?.activities);
           const tabs = ["All", ...activities];
           return tabs;
         })() ).map(cat => (

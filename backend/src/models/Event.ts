@@ -6,7 +6,7 @@ export class Event {
   public name: string;
   public date: string; // End date
   public startDate?: string; // Start date
-  public activities?: string[];
+  public activities?: Array<{ name: string; seatLimit?: number }> | string[];
   public location?: string;
   public description?: string[];
   public createdAt?: string;
@@ -83,12 +83,24 @@ export class Event {
 
   // Create from database row
   static fromDatabase(row: any): Event {
-    let activities: string[] = [];
+    let activities: Array<{ name: string; seatLimit?: number }> | string[] = [];
     if (row.activities) {
       try {
-        activities = JSON.parse(row.activities);
+        const parsed = typeof row.activities === 'string' ? JSON.parse(row.activities) : row.activities;
+        if (Array.isArray(parsed)) {
+          if (parsed.length > 0 && typeof parsed[0] === 'string') {
+            // Old format: string[]
+            activities = parsed as string[];
+          } else {
+            // New format: Array<{ name: string; seatLimit?: number }>
+            activities = parsed as Array<{ name: string; seatLimit?: number }>;
+          }
+        }
       } catch (e) {
-        activities = Array.isArray(row.activities) ? row.activities : String(row.activities).split(',');
+        // Fallback: try to parse as comma-separated string
+        activities = Array.isArray(row.activities) 
+          ? (typeof row.activities[0] === 'string' ? row.activities : [])
+          : String(row.activities).split(',').map((s: string) => s.trim()).filter(Boolean);
       }
     }
     let spousePricing: any[] = [];

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Registration, Event, COMPANY_TYPES, MASSAGE_TIME_SLOTS, MEAL_OPTIONS, PAYMENT_METHODS } from '../types';
 import { Modal } from './Modal';
+import { getActivityNames } from '../utils/eventUtils';
 import '../styles/RegistrationModal.css';
 
 interface RegistrationModalProps {
@@ -512,7 +513,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 required
               >
                 <option value="" disabled>Please Select Conference Event</option>
-                {(event.activities || []).map(activity => (
+                {getActivityNames(event.activities).map(activity => (
                   <option key={activity} value={activity}>{activity}</option>
                 ))}
               </select>
@@ -520,7 +521,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             </div>
 
             {/**************** Golf-specific fields ****************/}
-            {((event.activities || []).some(a => a.toLowerCase().includes('golf')) && (formData.wednesdayActivity || '').toLowerCase().includes('golf')) && (
+            {(getActivityNames(event.activities).some(a => a.toLowerCase().includes('golf')) && (formData.wednesdayActivity || '').toLowerCase().includes('golf')) && (
               <>
                 <div className="form-group">
                   <label className="form-label">

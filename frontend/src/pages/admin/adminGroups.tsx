@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Registration, Group, Event } from '../../types';
 import { formatDateShort } from '../../utils/dateUtils';
+import { getActivityNames } from '../../utils/eventUtils';
 import '../../styles/AdminGroups.css';
 import { groupsApi } from '../../services/apiClient';
 
@@ -42,8 +43,9 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
         return new Date(current.date) > new Date(latest.date) ? current : latest;
       });
       setSelectedEventId(mostRecentEvent.id);
-      if (mostRecentEvent.activities && mostRecentEvent.activities.length) {
-        setActiveTab(mostRecentEvent.activities[0]);
+      const activityNames = getActivityNames(mostRecentEvent.activities);
+      if (activityNames.length > 0) {
+        setActiveTab(activityNames[0]);
       }
     }
   }, [events, selectedEventId]);
@@ -52,8 +54,11 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
   useEffect(() => {
     if (selectedEventId) {
       const ev = events.find(e => e.id === selectedEventId);
-      if (ev && ev.activities && ev.activities.length) {
-        setActiveTab(prev => ev.activities!.includes(prev) ? prev : ev.activities![0]);
+      if (ev) {
+        const activityNames = getActivityNames(ev.activities);
+        if (activityNames.length > 0) {
+          setActiveTab(prev => activityNames.includes(prev) ? prev : activityNames[0]);
+        }
       }
     }
   }, [selectedEventId, events]);
@@ -256,7 +261,7 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
       </div>
       
       <div className="category-tabs">
-        {(events.find(e => e.id === selectedEventId)?.activities || []).map(cat => (
+        {getActivityNames(events.find(e => e.id === selectedEventId)?.activities).map(cat => (
           <button 
             key={cat} 
             className={`tab-btn ${activeTab === cat ? 'tab-btn-active' : ''}`}

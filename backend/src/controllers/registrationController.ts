@@ -256,6 +256,45 @@ export class RegistrationController {
     try {
       const registrationData: CreateRegistrationRequest = req.body;
       
+      // Check activity seat limit if specified
+      if (registrationData.wednesdayActivity && registrationData.eventId) {
+        const event = await this.db.findById('events', registrationData.eventId);
+        if (event && event.activities) {
+          const activities = typeof event.activities === 'string' 
+            ? JSON.parse(event.activities) 
+            : event.activities;
+          
+          if (Array.isArray(activities) && activities.length > 0 && typeof activities[0] === 'object') {
+            const activity = (activities as Array<{ name: string; seatLimit?: number }>)
+              .find(a => a.name === registrationData.wednesdayActivity);
+            
+            if (activity?.seatLimit !== undefined) {
+              // Count existing ACTIVE registrations for this activity
+              // Exclude cancelled registrations
+              const existingRegs = await this.db.query(
+                `SELECT COUNT(*) as count FROM registrations 
+                 WHERE event_id = ? 
+                 AND wednesday_activity = ? 
+                 AND (status IS NULL OR status != 'cancelled')
+                 AND cancellation_at IS NULL`,
+                [registrationData.eventId, registrationData.wednesdayActivity]
+              );
+              
+              const currentCount = existingRegs[0]?.count || 0;
+              
+              if (currentCount >= activity.seatLimit) {
+                const response: ApiResponse = {
+                  success: false,
+                  error: `Sorry, ${activity.name} is full (${activity.seatLimit} seats). Please select another activity.`
+                };
+                res.status(400).json(response);
+                return;
+              }
+            }
+          }
+        }
+      }
+      
       // Clear activity-specific fields if activity doesn't match
       const activity = registrationData.wednesdayActivity || '';
       const isPickleball = activity.toLowerCase().includes('pickleball');
@@ -424,6 +463,48 @@ export class RegistrationController {
         };
         res.status(404).json(response);
         return;
+      }
+      
+      // If activity is being changed, check seat limit for the NEW activity
+      if (updateData.wednesdayActivity && 
+          updateData.wednesdayActivity !== existingRow.wednesday_activity) {
+        
+        const event = await this.db.findById('events', existingRow.event_id);
+        if (event && event.activities) {
+          const activities = typeof event.activities === 'string' 
+            ? JSON.parse(event.activities) 
+            : event.activities;
+          
+          if (Array.isArray(activities) && activities.length > 0 && typeof activities[0] === 'object') {
+            const activity = (activities as Array<{ name: string; seatLimit?: number }>)
+              .find(a => a.name === updateData.wednesdayActivity);
+            
+            if (activity?.seatLimit !== undefined) {
+              // Count existing registrations for the NEW activity
+              // Exclude the current registration (since it's changing activities)
+              const existingRegs = await this.db.query(
+                `SELECT COUNT(*) as count FROM registrations 
+                 WHERE event_id = ? 
+                 AND wednesday_activity = ? 
+                 AND (status IS NULL OR status != 'cancelled')
+                 AND cancellation_at IS NULL
+                 AND id != ?`,
+                [existingRow.event_id, updateData.wednesdayActivity, Number(id)]
+              );
+              
+              const currentCount = existingRegs[0]?.count || 0;
+              
+              if (currentCount >= activity.seatLimit) {
+                const response: ApiResponse = {
+                  success: false,
+                  error: `Sorry, ${activity.name} is full (${activity.seatLimit} seats). Please select another activity.`
+                };
+                res.status(400).json(response);
+                return;
+              }
+            }
+          }
+        }
       }
 
       console.log(`[UPDATE] Found existing registration ${id}`);
