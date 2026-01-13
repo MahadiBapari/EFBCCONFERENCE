@@ -45,6 +45,30 @@
   align-items: center;
 }
 
+/* Medium screens optimization (1366x768) */
+@media (min-width: 769px) and (max-width: 1440px) {
+  .modal {
+    max-width: 90%;
+    max-height: 90vh;
+  }
+
+  .modal-content {
+    padding: 1.5rem;
+  }
+}
+
+/* 1366x768 specific optimizations */
+@media (min-width: 1366px) and (max-width: 1366px) {
+  .modal {
+    max-width: 92%;
+    max-height: 92vh;
+  }
+
+  .modal-content {
+    padding: 1.25rem;
+  }
+}
+
 .btn-outline {
   background: transparent;
   border: 2px solid var(--primary-color);

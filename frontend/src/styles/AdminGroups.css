@@ -270,6 +270,54 @@
   background-color: rgba(59, 130, 246, 0.1) !important;
 }
 
+/* Medium screens optimization (1366x768) */
+@media (min-width: 769px) and (max-width: 1440px) {
+  .admin-groups-container {
+    padding: 1.5rem;
+  }
+
+  .admin-groups-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .admin-groups-header h1 {
+    font-size: 26px;
+  }
+
+  table {
+    font-size: 13px;
+  }
+
+  table th,
+  table td {
+    padding: 0.625rem 0.75rem;
+  }
+}
+
+/* 1366x768 specific optimizations */
+@media (min-width: 1366px) and (max-width: 1366px) {
+  .admin-groups-container {
+    padding: 1.25rem;
+  }
+
+  .admin-groups-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .admin-groups-header h1 {
+    font-size: 22px;
+  }
+
+  table {
+    font-size: 12px;
+  }
+
+  table th,
+  table td {
+    padding: 0.5rem 0.625rem;
+  }
+}
+
 @media (max-width: 768px) {
   .group-management-layout {
     grid-template-columns: 1fr;

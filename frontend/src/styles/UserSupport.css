@@ -190,6 +190,32 @@
   }
 }
 
+/* Medium screens optimization (1366x768) */
+@media (min-width: 769px) and (max-width: 1440px) {
+  .support-container {
+    padding: 1.5rem;
+  }
+
+  .contact-info-card,
+  .contact-form-card,
+  .faq-section {
+    padding: 1.25rem;
+  }
+}
+
+/* 1366x768 specific optimizations */
+@media (min-width: 1366px) and (max-width: 1366px) {
+  .support-container {
+    padding: 1.25rem;
+  }
+
+  .contact-info-card,
+  .contact-form-card,
+  .faq-section {
+    padding: 1rem;
+  }
+}
+
 @media (max-width: 768px) {
   .contact-info-card,
   .contact-form-card,

@@ -301,6 +301,46 @@ select {
   border-color: rgba(52, 152, 219, 0.2);
 }
 
+/* Medium screens optimization (1366x768) */
+@media (min-width: 769px) and (max-width: 1440px) {
+  .modal {
+    max-width: 90%;
+    max-height: 90vh;
+  }
+
+  .modal-content {
+    padding: 1.5rem;
+  }
+
+  .form-section {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+}
+
+/* 1366x768 specific optimizations */
+@media (min-width: 1366px) and (max-width: 1366px) {
+  .modal {
+    max-width: 92%;
+    max-height: 92vh;
+  }
+
+  .modal-content {
+    padding: 1.25rem;
+  }
+
+  .form-section {
+    margin-bottom: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 0.875rem;
+  }
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .modal-title-content {

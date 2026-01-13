@@ -430,3 +430,63 @@
   }
 }
 
+/* Medium screens optimization (1366x768) */
+@media (min-width: 769px) and (max-width: 1440px) {
+  .admin-users-container {
+    padding: 1.5rem;
+  }
+
+  .admin-users-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .admin-users-header h1 {
+    font-size: 26px;
+  }
+
+  .search-input {
+    min-width: 220px;
+    font-size: 14px;
+    padding: 0.5rem 0.875rem;
+  }
+
+  .admin-users-table {
+    font-size: 13px;
+  }
+
+  .admin-users-table th,
+  .admin-users-table td {
+    padding: 0.625rem 0.75rem;
+  }
+}
+
+/* 1366x768 specific optimizations */
+@media (min-width: 1366px) and (max-width: 1366px) {
+  .admin-users-container {
+    padding: 1.25rem;
+  }
+
+  .admin-users-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .admin-users-header h1 {
+    font-size: 22px;
+  }
+
+  .search-input {
+    min-width: 200px;
+    font-size: 13px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .admin-users-table {
+    font-size: 12px;
+  }
+
+  .admin-users-table th,
+  .admin-users-table td {
+    padding: 0.5rem 0.625rem;
+  }
+}
+
