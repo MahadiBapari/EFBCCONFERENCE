@@ -583,70 +583,95 @@
   }
 }
 
-/* 1366x768 specific optimizations */
+/* 1366x768 specific optimizations - scaled proportionally from 1920x1080 */
 @media (min-width: 1366px) and (max-width: 1366px) {
   .container {
-    padding: 1.25rem;
+    padding: 1.4rem; /* Scaled from 2rem */
   }
 
   .page-actions {
-    margin-bottom: 1rem;
-    gap: 0.625rem;
+    margin-bottom: 1.1rem; /* Scaled from 1.5rem */
+    gap: 0.7rem; /* Scaled from 1rem */
   }
 
   .page-header {
-    margin-bottom: 1rem;
+    margin-bottom: 1.4rem; /* Scaled from 2rem */
   }
 
   .page-header h1 {
-    font-size: 22px;
+    font-size: 20px; /* Scaled from 28px */
   }
 
   .filter-controls {
-    margin-bottom: 1rem;
+    margin-bottom: 1.1rem; /* Scaled from 1.5rem */
   }
 
   .category-tabs {
-    margin-bottom: 1rem;
+    margin-bottom: 1.1rem; /* Scaled from 1.5rem */
+    gap: 0.4rem; /* Scaled from 0.5rem */
   }
 
   .tab-btn {
-    padding: 0.5rem 1rem;
-    font-size: 12px;
+    padding: 0.55rem 1.1rem; /* Scaled from 0.75rem 1.5rem */
+    font-size: 12px; /* Scaled from 14px */
   }
 
   .search-bar {
-    max-width: 250px;
+    max-width: 210px; /* Scaled from 300px */
   }
 
-  table {
-    font-size: 12px;
+  .bulk-actions-bar {
+    padding: 0.7rem; /* Scaled from 1rem */
+    margin-bottom: 0.7rem; /* Scaled from 1rem */
   }
 
-  table th,
-  table td {
-    padding: 0.5rem 0.625rem;
+  /* Table - scaled proportionally to maintain visual similarity */
+  .table {
+    font-size: 12px; /* Scaled from 14px (86% scale for readability) */
+  }
+
+  .table th,
+  .table td {
+    padding: 0.55rem 0.7rem; /* Scaled from 0.75rem 1rem */
+  }
+
+  .table th {
+    font-size: 12px; /* Match table font */
+    padding: 0.55rem 0.7rem; /* Match cell padding */
+  }
+
+  .table td {
+    font-size: 12px; /* Match table font */
+  }
+
+  .detailed-table {
+    font-size: 12px; /* Scaled from 14px */
+  }
+
+  .detailed-table th,
+  .detailed-table td {
+    padding: 0.4rem 0.55rem; /* Scaled from 0.5rem 0.75rem */
   }
 
   .btn-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 11px;
+    padding: 0.4rem 0.7rem; /* Scaled proportionally */
+    font-size: 11px; /* Scaled from 12px */
   }
 
   .table-wrapper {
-    max-height: calc(100vh - 280px);
+    max-height: calc(100vh - 300px); /* Adjusted for scaled header */
   }
 
   .table-wrapper.printable-area {
-    max-height: calc(100vh - 280px);
+    max-height: calc(100vh - 300px);
   }
 
   .detailed-table-wrapper {
-    max-height: calc(100vh - 200px);
+    max-height: calc(100vh - 220px);
   }
 
   .detailed-table-container {
-    max-height: calc(100vh - 250px);
+    max-height: calc(100vh - 260px);
   }
 }
 

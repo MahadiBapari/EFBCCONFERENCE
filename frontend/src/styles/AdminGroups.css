@@ -297,24 +297,24 @@
 /* 1366x768 specific optimizations */
 @media (min-width: 1366px) and (max-width: 1366px) {
   .admin-groups-container {
-    padding: 1.25rem;
+    padding: 1.4rem; /* Scaled from 2rem */
   }
 
   .admin-groups-header {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.4rem; /* Scaled from 2rem */
   }
 
   .admin-groups-header h1 {
-    font-size: 22px;
+    font-size: 20px; /* Scaled from 28px */
   }
 
   table {
-    font-size: 12px;
+    font-size: 12px; /* Scaled from 14px */
   }
 
   table th,
   table td {
-    padding: 0.5rem 0.625rem;
+    padding: 0.55rem 0.7rem; /* Scaled from 0.75rem 1rem */
   }
 }
 

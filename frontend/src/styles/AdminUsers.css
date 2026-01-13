@@ -463,30 +463,30 @@
 /* 1366x768 specific optimizations */
 @media (min-width: 1366px) and (max-width: 1366px) {
   .admin-users-container {
-    padding: 1.25rem;
+    padding: 1.4rem; /* Scaled from 2rem */
   }
 
   .admin-users-header {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.4rem; /* Scaled from 2rem */
   }
 
   .admin-users-header h1 {
-    font-size: 22px;
+    font-size: 20px; /* Scaled from 28px */
   }
 
   .search-input {
-    min-width: 200px;
-    font-size: 13px;
-    padding: 0.5rem 0.75rem;
+    min-width: 180px; /* Scaled from 250px */
+    font-size: 12px; /* Scaled from 14px */
+    padding: 0.55rem 0.7rem; /* Scaled from 0.75rem 1rem */
   }
 
   .admin-users-table {
-    font-size: 12px;
+    font-size: 12px; /* Scaled from 14px */
   }
 
   .admin-users-table th,
   .admin-users-table td {
-    padding: 0.5rem 0.625rem;
+    padding: 0.55rem 0.7rem; /* Scaled from 0.75rem 1rem */
   }
 }
 
