@@ -20,7 +20,8 @@ export class DiscountCode {
     this.expiryDate = data.expiryDate !== undefined && data.expiryDate !== null && data.expiryDate !== '' 
       ? data.expiryDate 
       : undefined;
-    this.usageLimit = data.usageLimit !== undefined && data.usageLimit !== null && data.usageLimit !== ''
+    // usageLimit is a number, so only check for undefined/null, not empty string
+    this.usageLimit = data.usageLimit !== undefined && data.usageLimit !== null
       ? (typeof data.usageLimit === 'number' ? data.usageLimit : parseInt(String(data.usageLimit)))
       : undefined;
     this.usedCount = data.usedCount || 0;
