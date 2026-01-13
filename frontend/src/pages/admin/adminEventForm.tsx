@@ -103,15 +103,26 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     }
     
     try {
+      // Prepare the payload, converting empty strings and undefined to null
+      const payload: any = {
+        code: newDiscountCode.code.trim().toUpperCase(),
+        discountType: newDiscountCode.discountType,
+        discountValue: newDiscountCode.discountValue,
+        eventId: event.id,
+      };
+      
+      // Only include optional fields if they have values, otherwise set to null
+      payload.usageLimit = newDiscountCode.usageLimit && newDiscountCode.usageLimit.trim() 
+        ? parseInt(newDiscountCode.usageLimit) 
+        : null;
+      payload.expiryDate = newDiscountCode.expiryDate && newDiscountCode.expiryDate.trim()
+        ? newDiscountCode.expiryDate
+        : null;
+      
       const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/discount-codes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newDiscountCode,
-          eventId: event.id,
-          usageLimit: newDiscountCode.usageLimit ? parseInt(newDiscountCode.usageLimit) : undefined,
-          expiryDate: newDiscountCode.expiryDate || undefined,
-        })
+        body: JSON.stringify(payload)
       });
       
       const data = await res.json();

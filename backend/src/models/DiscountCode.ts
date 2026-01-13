@@ -16,22 +16,35 @@ export class DiscountCode {
     this.eventId = data.eventId || 0;
     this.discountType = data.discountType || 'percentage';
     this.discountValue = data.discountValue || 0;
-    this.expiryDate = data.expiryDate;
-    this.usageLimit = data.usageLimit;
+    // Explicitly handle undefined/null/empty - set to undefined (will be converted to null in toDatabase)
+    this.expiryDate = data.expiryDate !== undefined && data.expiryDate !== null && data.expiryDate !== '' 
+      ? data.expiryDate 
+      : undefined;
+    this.usageLimit = data.usageLimit !== undefined && data.usageLimit !== null && data.usageLimit !== ''
+      ? (typeof data.usageLimit === 'number' ? data.usageLimit : parseInt(String(data.usageLimit)))
+      : undefined;
     this.usedCount = data.usedCount || 0;
   }
 
   toDatabase(): any {
-    return {
-      id: this.id,
+    const data: any = {
       code: this.code.toUpperCase().trim(),
       event_id: this.eventId,
       discount_type: this.discountType,
       discount_value: this.discountValue,
-      expiry_date: this.expiryDate || null,
-      usage_limit: this.usageLimit || null,
       used_count: this.usedCount || 0,
     };
+    
+    // Only include id if it exists (for updates)
+    if (this.id !== undefined) {
+      data.id = this.id;
+    }
+    
+    // Convert undefined to null for optional fields
+    data.expiry_date = this.expiryDate !== undefined ? this.expiryDate : null;
+    data.usage_limit = this.usageLimit !== undefined ? this.usageLimit : null;
+    
+    return data;
   }
 
   static fromDatabase(row: any): DiscountCode {
