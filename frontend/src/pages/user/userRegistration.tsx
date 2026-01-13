@@ -2847,30 +2847,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   </div>
                 </div>
                 
-                {isAdminEdit && (
-                  <div className="form-group">
-                    <label htmlFor={`kid_${idx}_price`} className="form-label">
-                      Admin Price Override (per child)
-                    </label>
-                    <input
-                      id={`kid_${idx}_price`}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className="form-control"
-                      value={kid.price || ''}
-                      placeholder="Leave empty to use tier pricing"
-                      onChange={(e) => {
-                        const updatedKids = [...kids];
-                        updatedKids[idx] = { 
-                          ...updatedKids[idx], 
-                          price: e.target.value === '' ? undefined : parseFloat(e.target.value) 
-                        };
-                        handleInputChange('kids', updatedKids);
-                      }}
-                    />
-                  </div>
-                )}
               </div>
             ))}
             
