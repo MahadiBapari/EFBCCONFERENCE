@@ -103,27 +103,15 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    // Required fields validation
-    if (!formData.firstName?.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.lastName?.trim()) newErrors.lastName = 'Last name is required';
-    if (!formData.badgeName?.trim()) newErrors.badgeName = 'Badge name is required';
-    if (!formData.email?.trim()) newErrors.email = 'Email is required';
-    if (!formData.organization?.trim()) newErrors.organization = 'Organization is required';
-    if (!formData.jobTitle?.trim()) newErrors.jobTitle = 'Job title is required';
-    if (!formData.address?.trim()) newErrors.address = 'Address is required';
-    if (!formData.mobile?.trim()) newErrors.mobile = 'Mobile number is required';
-    if (!formData.companyType?.trim()) newErrors.companyType = 'Company type is required';
-    if (!formData.wednesdayActivity?.trim()) newErrors.wednesdayActivity = 'Wednesday activity is required';
-    
-    // Email validation
+    // RegistrationModal is used for admin edits - all fields are optional
+    // Only validate email format if email is provided
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
     
-    // Spouse information validation
-    if (formData.spouseDinnerTicket) {
-      if (!formData.spouseFirstName?.trim()) newErrors.spouseFirstName = 'Spouse first name is required';
-      if (!formData.spouseLastName?.trim()) newErrors.spouseLastName = 'Spouse last name is required';
+    // Only validate secondary email format if secondary email is provided
+    if (formData.secondaryEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.secondaryEmail)) {
+      newErrors.secondaryEmail = 'Please enter a valid email address';
     }
     
     setErrors(newErrors);

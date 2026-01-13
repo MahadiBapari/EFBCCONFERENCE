@@ -444,6 +444,21 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration?.totalPrice, kids, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers]);
 
   const validateForm = () => {
+    // Skip all required field validation for admin edits - all fields are optional
+    if (isAdminEdit) {
+      const newErrors: Record<string, string> = {};
+      // Only validate email format if email is provided
+      if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        newErrors.email = 'Please enter a valid email address';
+      }
+      // Only validate secondary email format if secondary email is provided
+      if (formData.secondaryEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.secondaryEmail)) {
+        newErrors.secondaryEmail = 'Please enter a valid email address';
+      }
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    }
+    
     const newErrors: Record<string, string> = {};
     if (!formData.firstName?.trim()) newErrors.firstName = 'First name is required';
     if (!formData.lastName?.trim()) newErrors.lastName = 'Last name is required';
