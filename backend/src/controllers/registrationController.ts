@@ -3,6 +3,7 @@ import { Registration } from '../models/Registration';
 import { ApiResponse, CreateRegistrationRequest, UpdateRegistrationRequest, RegistrationQuery } from '../types';
 import { DatabaseService } from '../services/databaseService';
 import { sendRegistrationConfirmationEmail, sendRegistrationUpdateEmail } from '../services/emailService';
+import jwt from 'jsonwebtoken';
 
 /**
  * Helper function to convert a date string (YYYY-MM-DD) to Eastern Time midnight
@@ -159,6 +160,20 @@ export class RegistrationController {
 
   constructor(db: DatabaseService) {
     this.db = db;
+  }
+
+  // Helper method to extract authentication info from request
+  private getAuth(req: Request): { id?: number; role?: string } {
+    try {
+      const hdr = (req.headers.authorization || '') as string;
+      const token = hdr.startsWith('Bearer ') ? hdr.slice(7) : '';
+      if (!token) return {};
+      const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+      const p: any = jwt.verify(token, JWT_SECRET);
+      return { id: Number(p.sub), role: p.role };
+    } catch { 
+      return {}; 
+    }
   }
 
   // Get all registrations
@@ -647,45 +662,53 @@ export class RegistrationController {
       // Convert the updated row back to Registration object for response
       const updatedRegistration = Registration.fromDatabase(verifyRow);
 
-      // Send update email after registration is updated (to user, admin, and secondary email if applicable)
-      try {
-        const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || process.env.SUPPORT_EMAIL || 'planner@efbcconference.org';
-        const eventRow: any = await this.db.findById('events', updatedRegistration.eventId);
-        const evName = eventRow?.name;
-        const evDate = eventRow?.date;
-        const evStartDate = eventRow?.start_date;
-        const toName = updatedRegistration.badgeName || `${updatedRegistration.firstName} ${updatedRegistration.lastName}`.trim();
-        const payload = {
-          name: toName,
-          eventName: evName,
-          eventDate: evDate,
-          eventStartDate: evStartDate,
-          totalPrice: updatedRegistration.totalPrice,
-          registration: updatedRegistration.toJSON ? updatedRegistration.toJSON() : updatedRegistration
-        } as any;
+      // Check if the requester is an admin - only send emails if it's a user update, not an admin update
+      // Admins can manually resend confirmation emails using the resend endpoint if needed
+      // This allows admins to make corrections (spelling, punctuation, etc.) without automatically sending emails
+      const auth = this.getAuth(req);
+      const isAdminUpdate = auth.role === 'admin';
 
-        // Send update emails via queue (emails will be sent sequentially with automatic retries)
-        // Primary email (to user)
-        sendRegistrationUpdateEmail({ to: updatedRegistration.email, ...payload }).catch((e) => 
-          console.warn('Failed to queue registration update email:', e)
-        );
+      // Only send update emails if the update is from a user (not an admin)
+      if (!isAdminUpdate) {
+        try {
+          const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || process.env.SUPPORT_EMAIL || 'planner@efbcconference.org';
+          const eventRow: any = await this.db.findById('events', updatedRegistration.eventId);
+          const evName = eventRow?.name;
+          const evDate = eventRow?.date;
+          const evStartDate = eventRow?.start_date;
+          const toName = updatedRegistration.badgeName || `${updatedRegistration.firstName} ${updatedRegistration.lastName}`.trim();
+          const payload = {
+            name: toName,
+            eventName: evName,
+            eventDate: evDate,
+            eventStartDate: evStartDate,
+            totalPrice: updatedRegistration.totalPrice,
+            registration: updatedRegistration.toJSON ? updatedRegistration.toJSON() : updatedRegistration
+          } as any;
 
-        // Admin copy (send separately to ensure it's sent)
-        if (adminCopy && adminCopy !== updatedRegistration.email) {
-          sendRegistrationUpdateEmail({ to: adminCopy, ...payload }).catch((e) => 
-            console.warn('Failed to queue admin update email:', e)
+          // Send update emails via queue (emails will be sent sequentially with automatic retries)
+          // Primary email (to user)
+          sendRegistrationUpdateEmail({ to: updatedRegistration.email, ...payload }).catch((e) => 
+            console.warn('Failed to queue registration update email:', e)
           );
-        }
 
-        // Secondary email if provided (no admin copy to avoid duplicates)
-        if ((updatedRegistration as any).secondaryEmail && (updatedRegistration as any).secondaryEmail !== updatedRegistration.email && (updatedRegistration as any).secondaryEmail !== adminCopy) {
-          sendRegistrationUpdateEmail({ to: (updatedRegistration as any).secondaryEmail, ...payload }).catch((e) => 
-            console.warn('Failed to queue secondary update email:', e)
-          );
+          // Admin copy (send separately to ensure it's sent)
+          if (adminCopy && adminCopy !== updatedRegistration.email) {
+            sendRegistrationUpdateEmail({ to: adminCopy, ...payload }).catch((e) => 
+              console.warn('Failed to queue admin update email:', e)
+            );
+          }
+
+          // Secondary email if provided (no admin copy to avoid duplicates)
+          if ((updatedRegistration as any).secondaryEmail && (updatedRegistration as any).secondaryEmail !== updatedRegistration.email && (updatedRegistration as any).secondaryEmail !== adminCopy) {
+            sendRegistrationUpdateEmail({ to: (updatedRegistration as any).secondaryEmail, ...payload }).catch((e) => 
+              console.warn('Failed to queue secondary update email:', e)
+            );
+          }
+        } catch (emailError) {
+          // Don't fail the update if email sending fails
+          console.warn('Failed to send update email after registration update:', (emailError as any)?.message || emailError);
         }
-      } catch (emailError) {
-        // Don't fail the update if email sending fails
-        console.warn('Failed to send update email after registration update:', (emailError as any)?.message || emailError);
       }
 
       const response: ApiResponse = {
