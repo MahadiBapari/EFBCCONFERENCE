@@ -48,7 +48,7 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  max-height: calc(100vh - 350px);
+  max-height: calc(100vh - 200px); /* Increased from 350px to show more users */
   overflow-y: auto;
   overflow-x: auto;
 }
@@ -458,9 +458,13 @@
   .admin-users-table td {
     padding: 0.625rem 0.75rem;
   }
+
+  .admin-users-table-container {
+    max-height: calc(100vh - 180px); /* Increased height for medium screens */
+  }
 }
 
-/* 1366x768 specific optimizations */
+/* 1366x768 specific optimizations - scaled proportionally from 1920x1080 */
 @media (min-width: 1366px) and (max-width: 1366px) {
   .admin-users-container {
     padding: 1.4rem; /* Scaled from 2rem */
@@ -468,25 +472,145 @@
 
   .admin-users-header {
     margin-bottom: 1.4rem; /* Scaled from 2rem */
+    gap: 0.7rem; /* Scaled from 1rem */
   }
 
   .admin-users-header h1 {
     font-size: 20px; /* Scaled from 28px */
   }
 
+  .admin-users-actions {
+    gap: 0.7rem; /* Scaled from 1rem */
+  }
+
   .search-input {
-    min-width: 180px; /* Scaled from 250px */
-    font-size: 12px; /* Scaled from 14px */
-    padding: 0.55rem 0.7rem; /* Scaled from 0.75rem 1rem */
+    min-width: 210px; /* Scaled from 250px */
+    font-size: 12px; /* Scaled from 16px (86% scale for readability) */
+    padding: 0.55rem 0.7rem; /* Scaled from 0.5rem 1rem */
+  }
+
+  .admin-users-table-container {
+    max-height: calc(100vh - 180px); /* Increased from 300px to show more users */
   }
 
   .admin-users-table {
+    font-size: 12px; /* Scaled from 14px (86% scale for readability) */
+  }
+
+  .admin-users-table th {
+    font-size: 12px; /* Match table font */
+    padding: 0.55rem 0.7rem; /* Scaled from 1rem */
+    font-weight: 600;
+  }
+
+  .admin-users-table td {
+    font-size: 12px; /* Match table font */
+    padding: 0.55rem 0.7rem; /* Scaled from 1rem */
+  }
+
+  .role-badge {
+    padding: 0.2rem 0.6rem; /* Scaled from 0.25rem 0.75rem */
     font-size: 12px; /* Scaled from 14px */
   }
 
-  .admin-users-table th,
-  .admin-users-table td {
-    padding: 0.55rem 0.7rem; /* Scaled from 0.75rem 1rem */
+  .status-badge {
+    padding: 0.2rem 0.6rem; /* Scaled from 0.25rem 0.75rem */
+    font-size: 12px; /* Scaled from 14px */
+  }
+
+  .admin-users-pagination {
+    margin-top: 1.4rem; /* Scaled from 2rem */
+    padding: 0.7rem; /* Scaled from 1rem */
+    gap: 0.4rem; /* Scaled from 0.5rem */
+  }
+
+  .pagination-number {
+    min-width: 35px; /* Scaled from 40px */
+    height: 35px; /* Scaled from 40px */
+    padding: 0.4rem 0.5rem; /* Scaled from 0.5rem */
+    font-size: 12px; /* Scaled from default */
+  }
+
+  .pagination-info {
+    font-size: 12px; /* Scaled proportionally */
+  }
+
+  .pagination-total {
+    font-size: 12px; /* Scaled from 14px */
+  }
+
+  .admin-users-footer {
+    margin-top: 1.1rem; /* Scaled from 1.5rem */
+    padding-top: 0.7rem; /* Scaled from 1rem */
+    font-size: 12px; /* Scaled from 14px */
+  }
+
+  .admin-users-row-actions {
+    gap: 0.4rem; /* Scaled from 0.5rem */
+  }
+
+  .error-message {
+    padding: 0.7rem; /* Scaled from 1rem */
+    font-size: 12px; /* Scaled proportionally */
+    margin-bottom: 0.7rem; /* Scaled from 1rem */
+  }
+
+  .no-users,
+  .loading {
+    padding: 2.1rem; /* Scaled from 3rem */
+    font-size: 12px; /* Scaled proportionally */
+  }
+
+  .table-loading {
+    padding: 2.1rem; /* Scaled from 3rem */
+    gap: 0.7rem; /* Scaled from 1rem */
+  }
+
+  .loading-spinner {
+    width: 35px; /* Scaled from 40px */
+    height: 35px; /* Scaled from 40px */
+    border-width: 3px; /* Scaled from 4px */
+  }
+
+  /* Modal scaling for 1366x768 */
+  .admin-users-modal {
+    max-width: 455px; /* Scaled from 520px */
+    padding: 1.2rem 1.4rem; /* Scaled from 1.75rem 2rem */
+  }
+
+  .admin-users-modal h2 {
+    font-size: 17px; /* Scaled from 24px */
+    margin-bottom: 0.35rem; /* Scaled from 0.5rem */
+  }
+
+  .admin-users-modal-subtitle {
+    font-size: 12px; /* Scaled from 14px */
+    margin-bottom: 0.7rem; /* Scaled from 1rem */
+  }
+
+  .admin-users-modal-form .form-row {
+    gap: 0.7rem; /* Scaled from 1rem */
+    margin-bottom: 0.7rem; /* Scaled from 1rem */
+  }
+
+  .admin-users-modal-form .form-group {
+    gap: 0.2rem; /* Scaled from 0.25rem */
+    margin-bottom: 0.7rem; /* Scaled from 1rem */
+  }
+
+  .admin-users-modal-form label {
+    font-size: 12px; /* Scaled from 14px */
+  }
+
+  .admin-users-modal-form input,
+  .admin-users-modal-form select {
+    padding: 0.4rem 0.55rem; /* Scaled from 0.5rem 0.75rem */
+    font-size: 12px; /* Scaled from 15px */
+  }
+
+  .admin-users-modal-actions {
+    gap: 0.55rem; /* Scaled from 0.75rem */
+    margin-top: 0.35rem; /* Scaled from 0.5rem */
   }
 }
 
