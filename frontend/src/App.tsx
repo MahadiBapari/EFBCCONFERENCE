@@ -184,7 +184,7 @@ useEffect(() => {
       // Fetch a large page of registrations so the admin Attendees view
       // can handle its own client-side pagination without being limited
       // by the backend default of 10 per page.
-      const response = await apiClient.get<Registration[]>(`/registrations?page=1&limit=1000`);
+      const response = await apiClient.get<Registration[]>(`/registrations?page=1&limit=1500`);
       const apiRegs = (response as any).data || [];
       const normalized: Registration[] = apiRegs.map((r: any) => ({
         // Required
