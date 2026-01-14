@@ -171,7 +171,7 @@
 .table-wrapper {
   position: relative;
   height: 100%; /* Fill the table container */
-  min-height: calc(100vh - 300px); /* Ensure minimum height to fill container */
+  min-height: 100vh; /* Ensure minimum height to fill container */
   overflow-y: auto; /* Allow scrolling if content exceeds */
 }
 
@@ -445,7 +445,7 @@
 
   .admin-users-table-container {
     flex: 1 1 auto; /* Take remaining space, allow shrinking and growing */
-    min-height: calc(100vh - 280px); /* Increased from 320px to give more space */
+    min-height: 100vh; /* Increased from 320px to give more space */
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -547,7 +547,7 @@
 
   .table-wrapper {
     height: 100%;
-    min-height: calc(100vh - 280px);
+    min-height: 100vh;
     overflow-y: auto;
   }
 
