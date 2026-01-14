@@ -173,7 +173,7 @@
 .table-wrapper {
   position: relative;
   height: 100%; /* Fill the table container */
-  min-height: 100vh; /* Ensure minimum height to fill container */
+  min-height: calc(100vh - 180px); /* Ensure minimum height to fill container */
   overflow-y: auto; /* Allow scrolling if content exceeds */
 }
 
@@ -456,7 +456,7 @@
 
   .table-wrapper {
     height: 100%;
-    min-height: calc(100vh - 280px); /* Ensure minimum height for smaller screens */
+    min-height: calc(100vh - 180px); /* Ensure minimum height for smaller screens */
     overflow-y: auto;
   }
 }
@@ -511,7 +511,7 @@
 
   .table-wrapper {
     height: 100%;
-    min-height: calc(100vh - 220px); /* Ensure minimum height for smaller screens */
+    min-height: calc(100vh - 180px); /* Ensure minimum height for smaller screens */
     overflow-y: auto;
   }
 }
@@ -551,7 +551,7 @@
 
   .table-wrapper {
     height: 100%;
-    min-height: calc(100vh - 220px);
+    min-height: calc(100vh - 180px);
     overflow-y: auto;
   }
 
