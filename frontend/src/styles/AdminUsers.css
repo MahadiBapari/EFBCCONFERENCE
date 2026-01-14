@@ -80,6 +80,7 @@
   font-weight: 600;
   color: var(--text-primary);
   border-bottom: 2px solid var(--border-color);
+  font-size: 14px; /* Match attendee table font size */
 }
 
 /* Sortable header styles */
@@ -104,6 +105,7 @@
   padding: 1rem;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-secondary);
+  font-size: 14px; /* Match attendee table font size */
 }
 
 .admin-users-table tbody tr:hover {
@@ -435,12 +437,13 @@
   }
 
   .admin-users-table {
-    font-size: 14px;
+    font-size: 14px; /* Match attendee table */
   }
 
   .admin-users-table th,
   .admin-users-table td {
     padding: 0.5rem;
+    font-size: 14px; /* Match attendee table */
   }
 
   .admin-users-table-container {
@@ -495,6 +498,7 @@
   .admin-users-table th,
   .admin-users-table td {
     padding: 0.625rem 0.75rem;
+    font-size: 14px; /* Match attendee table */
   }
 
   .admin-users-table-container {
@@ -507,7 +511,7 @@
 
   .table-wrapper {
     height: 100%;
-    min-height: calc(100vh - 280px); /* Ensure minimum height for smaller screens */
+    min-height: 100vh; /* Ensure minimum height for smaller screens */
     overflow-y: auto;
   }
 }
