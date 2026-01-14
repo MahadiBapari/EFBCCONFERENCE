@@ -173,7 +173,7 @@
 .table-wrapper {
   position: relative;
   height: 100%; /* Fill the table container */
-  min-height: calc(100vh - 205px); /* Ensure minimum height to fill container */
+  min-height: calc(100vh - 215px); /* Ensure minimum height to fill container */
   overflow-y: auto; /* Allow scrolling if content exceeds */
 }
 
