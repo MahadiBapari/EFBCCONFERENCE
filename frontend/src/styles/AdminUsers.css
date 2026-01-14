@@ -5,7 +5,8 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 0px); /* Use viewport height, will be constrained by parent */
+  min-height: calc(100vh - 2rem); /* Account for top/bottom padding */
+  height: calc(100vh - 2rem);
 }
 
 .admin-users-header {
@@ -53,7 +54,7 @@
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   flex: 1 1 auto; /* Take remaining space, allow shrinking and growing */
-  min-height: 0; /* Important for flex children with overflow */
+  min-height: calc(100vh - 350px); /* Force minimum height to fill space */
   display: flex;
   flex-direction: column;
   overflow: hidden; /* Let table-wrapper handle scrolling */
@@ -447,7 +448,7 @@
 
   .admin-users-table-container {
     flex: 1 1 auto; /* Take remaining space, allow shrinking and growing */
-    min-height: 0; /* Important for flex children with overflow */
+    min-height: calc(100vh - 320px); /* Force minimum height to fill space */
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -504,7 +505,7 @@
 
   .admin-users-table-container {
     flex: 1 1 auto; /* Take remaining space, allow shrinking and growing */
-    min-height: 0; /* Important for flex children with overflow */
+    min-height: calc(100vh - 320px); /* Force minimum height to fill space */
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -547,7 +548,7 @@
 
   .admin-users-table-container {
     flex: 1 1 auto; /* Take remaining space, allow shrinking and growing */
-    min-height: 0; /* Important for flex children with overflow */
+    min-height: calc(100vh - 320px); /* Force minimum height to fill space */
     display: flex;
     flex-direction: column;
     overflow: hidden;
