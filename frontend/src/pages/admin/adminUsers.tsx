@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import '../../styles/AdminUsers.css';
 import { apiClient, usersApi } from '../../services/apiClient';
+import * as XLSX from 'xlsx';
 
 export interface User {
   id: number;
@@ -263,6 +264,61 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
     }
   };
 
+  const handleExportXlsx = () => {
+    // Export all users (not just filtered/paginated ones)
+    const rows = sortedUsers.map((user) => {
+      const { firstName, lastName } = splitName(user.name);
+      return {
+        'ID': user.id,
+        'First Name': firstName,
+        'Last Name': lastName,
+        'Email': user.email,
+        'Role': user.role || 'user',
+        'Active': user.isActive !== undefined ? (user.isActive ? 'Yes' : 'No') : '',
+        'Email Verified': user.emailVerifiedAt ? 'Yes' : 'No',
+        'Date Created': user.createdAt 
+          ? new Date(user.createdAt).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            })
+          : '',
+        'Email Verified Date': user.emailVerifiedAt
+          ? new Date(user.emailVerifiedAt).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            })
+          : '',
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Users');
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    
+    // Generate filename with timestamp (format: users_YYYY-MM-DD_HH-MM-SS.xlsx)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const timestamp = `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+    link.download = `users_${timestamp}.xlsx`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleOpenCreate = () => {
     setCreateError(null);
     setCreateSuccess(null);
@@ -434,6 +490,13 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
             disabled={loading || initialLoading}
           >
             Refresh
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={handleExportXlsx}
+            disabled={initialLoading || sortedUsers.length === 0}
+          >
+            Export XLSX
           </button>
           <button
             className="btn btn-primary"
