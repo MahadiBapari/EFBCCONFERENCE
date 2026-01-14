@@ -5,7 +5,7 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Use full viewport height */
+  height: calc(100vh - 0px); /* Use viewport height, will be constrained by parent */
 }
 
 .admin-users-header {
@@ -52,15 +52,17 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  flex: 1; /* Take remaining space */
+  flex: 1 1 auto; /* Take remaining space, allow shrinking and growing */
   min-height: 0; /* Important for flex children with overflow */
-  overflow-y: auto;
-  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Let table-wrapper handle scrolling */
 }
 
 .admin-users-table {
   width: 100%;
   border-collapse: collapse;
+  height: fit-content; /* Table should size to content */
 }
 
 .admin-users-table thead {
@@ -167,6 +169,8 @@
 
 .table-wrapper {
   position: relative;
+  height: 100%; /* Fill the table container */
+  overflow-y: auto; /* Allow scrolling if content exceeds */
 }
 
 .table-wrapper.loading-overlay {
@@ -438,12 +442,20 @@
   }
 
   .admin-users-container {
-    height: 100vh; /* Use full viewport height */
+    height: calc(100vh - 0px); /* Use full viewport height */
   }
 
   .admin-users-table-container {
-    flex: 1; /* Take remaining space */
+    flex: 1 1 auto; /* Take remaining space, allow shrinking and growing */
     min-height: 0; /* Important for flex children with overflow */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .table-wrapper {
+    height: 100%;
+    overflow-y: auto;
   }
 }
 
@@ -487,12 +499,20 @@
   }
 
   .admin-users-container {
-    height: 100vh; /* Use full viewport height */
+    height: calc(100vh - 0px); /* Use full viewport height */
   }
 
   .admin-users-table-container {
-    flex: 1; /* Take remaining space */
+    flex: 1 1 auto; /* Take remaining space, allow shrinking and growing */
     min-height: 0; /* Important for flex children with overflow */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .table-wrapper {
+    height: 100%;
+    overflow-y: auto;
   }
 }
 
@@ -522,12 +542,20 @@
   }
 
   .admin-users-container {
-    height: 100vh; /* Use full viewport height */
+    height: calc(100vh - 0px); /* Use full viewport height */
   }
 
   .admin-users-table-container {
-    flex: 1; /* Take remaining space */
+    flex: 1 1 auto; /* Take remaining space, allow shrinking and growing */
     min-height: 0; /* Important for flex children with overflow */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .table-wrapper {
+    height: 100%;
+    overflow-y: auto;
   }
 
   .admin-users-table {
