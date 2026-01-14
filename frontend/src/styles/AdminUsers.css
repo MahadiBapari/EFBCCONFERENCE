@@ -511,7 +511,7 @@
 
   .table-wrapper {
     height: 100%;
-    min-height: 100vh; /* Ensure minimum height for smaller screens */
+    min-height: calc(100vh - 160px); /* Ensure minimum height for smaller screens */
     overflow-y: auto;
   }
 }
@@ -551,7 +551,7 @@
 
   .table-wrapper {
     height: 100%;
-    min-height: 100vh;
+    min-height: calc(100vh - 160px);
     overflow-y: auto;
   }
 
