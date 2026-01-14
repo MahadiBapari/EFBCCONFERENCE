@@ -12,24 +12,17 @@ export interface User {
   emailVerifiedAt?: string | null;
 }
 
-export interface PaginationInfo {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 interface UsersApiResponse {
   success: boolean;
   data?: User[];
-  pagination?: PaginationInfo;
+  pagination?: any; // Not used for frontend pagination, but kept for API response compatibility
   error?: string;
 }
 
 interface AdminUsersProps {
   initialUsers?: User[];
-  initialPagination?: PaginationInfo | null;
-  onCacheUpdate?: (users: User[], pagination: PaginationInfo | null) => void;
+  initialPagination?: any; // Not used for frontend pagination, kept for backward compatibility
+  onCacheUpdate?: (users: User[], pagination: any) => void;
 }
 
 export const AdminUsers: React.FC<AdminUsersProps> = ({
@@ -45,15 +38,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState<PaginationInfo>(
-    initialPagination || {
-      page: 1,
-      limit: 5,
-      total: 0,
-      totalPages: 0,
-    }
-  );
-  const usersPerPage = 30; // Users per page
+  const usersPerPage = 30; // Users per page for frontend pagination
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Sorting state
@@ -102,7 +87,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
   });
 
   const loadUsers = useCallback(
-    async (page: number, search?: string) => {
+    async (search?: string) => {
       try {
         setLoading(true);
         setError(null);
@@ -110,8 +95,8 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         const searchToUse = search ?? debouncedSearchQuery;
 
         const params = new URLSearchParams();
-        params.append('page', page.toString());
-        params.append('limit', usersPerPage.toString());
+        params.append('page', '1');
+        params.append('limit', '3000'); // Fetch all users for frontend pagination
         if (searchToUse.trim()) {
           params.append('search', searchToUse.trim());
         }
@@ -121,41 +106,9 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
           const newUsers = Array.isArray(response.data) ? response.data : [];
           setUsers(newUsers);
           
-          // Use pagination from response - backend should always return it
-          let newPagination: PaginationInfo;
-          if (response.pagination) {
-            newPagination = response.pagination;
-            // Ensure page matches what we requested
-            newPagination.page = page;
-          } else {
-            // Fallback: if backend doesn't return pagination, we can't calculate it correctly
-            // because we don't know the total count. Log a warning.
-            console.warn('Backend did not return pagination info, using fallback');
-            newPagination = {
-              page: page,
-              limit: usersPerPage,
-              total: newUsers.length, // This is wrong but we don't have the total
-              totalPages: Math.max(1, Math.ceil(newUsers.length / usersPerPage)),
-            };
-          }
-          
-          // Ensure pagination is set correctly
-          if (newPagination.totalPages === 0 && newPagination.total > 0) {
-            newPagination.totalPages = 1;
-          }
-          
-          // Debug log to help diagnose pagination issues
-          console.log('Pagination info:', {
-            page: newPagination.page,
-            limit: newPagination.limit,
-            total: newPagination.total,
-            totalPages: newPagination.totalPages,
-            usersReturned: newUsers.length
-          });
-          
-          setPagination(newPagination);
           if (onCacheUpdate) {
-            onCacheUpdate(newUsers, newPagination);
+            // No pagination info needed for frontend pagination
+            onCacheUpdate(newUsers, null);
           }
         } else {
           setError('Failed to load users');
@@ -167,13 +120,13 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         setInitialLoading(false);
       }
     },
-    [debouncedSearchQuery, usersPerPage, onCacheUpdate]
+    [debouncedSearchQuery, onCacheUpdate]
   );
 
-  // Load users when currentPage or debouncedSearchQuery changes
+  // Load users when debouncedSearchQuery changes (frontend pagination, no need to reload on page change)
   useEffect(() => {
-    loadUsers(currentPage, debouncedSearchQuery);
-  }, [currentPage, debouncedSearchQuery, loadUsers]);
+    loadUsers(debouncedSearchQuery);
+  }, [debouncedSearchQuery, loadUsers]);
 
   // Debounce search query to avoid too many API calls
   useEffect(() => {
@@ -204,9 +157,24 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
     return { firstName, lastName };
   };
 
+  // Filter users by search query
+  const filteredUsers = useMemo(() => {
+    let results = users;
+    
+    if (debouncedSearchQuery.trim() !== "") {
+      const lowercasedQuery = debouncedSearchQuery.toLowerCase();
+      results = results.filter(u => 
+        u.name.toLowerCase().includes(lowercasedQuery) || 
+        u.email.toLowerCase().includes(lowercasedQuery)
+      );
+    }
+    
+    return results;
+  }, [users, debouncedSearchQuery]);
+
   // Sort users
   const sortedUsers = useMemo(() => {
-    const sorted = [...users].sort((a, b) => {
+    const sorted = [...filteredUsers].sort((a, b) => {
       let aValue: any;
       let bValue: any;
       
@@ -262,7 +230,18 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
     });
     
     return sorted;
-  }, [users, sortField, sortDirection]);
+  }, [filteredUsers, sortField, sortDirection]);
+
+  // Frontend pagination
+  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / usersPerPage));
+  const startIndex = (currentPage - 1) * usersPerPage;
+  const endIndex = startIndex + usersPerPage;
+  const paginatedUsers = sortedUsers.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery, sortField, sortDirection]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -278,10 +257,8 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
   };
 
   const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= pagination.totalPages) {
+    if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
-      // Don't call loadUsers here - let the useEffect handle it
-      // This prevents double loading and race conditions
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -318,7 +295,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         setCreateError(res.error || 'Failed to create user.');
       } else {
         setCreateSuccess('User created successfully. A temporary password has been emailed.');
-        await loadUsers(currentPage, debouncedSearchQuery);
+        await loadUsers(debouncedSearchQuery);
         // Keep modal open but clear password-related info; or close after short delay
         setTimeout(() => {
           setShowCreateModal(false);
@@ -391,7 +368,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         setEditError(res.error || 'Failed to update user.');
       } else {
         setEditSuccess('User updated successfully.');
-        await loadUsers(currentPage, debouncedSearchQuery);
+        await loadUsers(debouncedSearchQuery);
         setTimeout(() => {
           setEditingUser(null);
           setEditSuccess(null);
@@ -412,7 +389,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
       if (!res.success) {
         setError(res.error || 'Failed to delete user');
       } else {
-        await loadUsers(currentPage, debouncedSearchQuery);
+        await loadUsers(debouncedSearchQuery);
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to delete user');
@@ -429,7 +406,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
       if (!res.success) {
         setError(res.error || 'Failed to verify user');
       } else {
-        await loadUsers(currentPage, debouncedSearchQuery);
+        await loadUsers(debouncedSearchQuery);
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to verify user');
@@ -453,7 +430,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
           />
           <button 
             className="btn btn-secondary" 
-            onClick={() => loadUsers(currentPage, debouncedSearchQuery)}
+            onClick={() => loadUsers(debouncedSearchQuery)}
             disabled={loading || initialLoading}
           >
             Refresh
@@ -474,7 +451,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
           {error}
           <button
             className="btn btn-primary btn-sm error-retry-btn"
-            onClick={() => loadUsers(currentPage, debouncedSearchQuery)}
+            onClick={() => loadUsers(debouncedSearchQuery)}
           >
             Retry
           </button>
@@ -487,7 +464,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         ) : (
           <>
             <div className={`table-wrapper ${loading ? 'loading-overlay' : ''}`}>
-              {sortedUsers.length > 0 ? (
+              {paginatedUsers.length > 0 ? (
                 <table className="admin-users-table">
                   <thead>
                     <tr>
@@ -555,7 +532,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedUsers.map((user) => {
+                    {paginatedUsers.map((user) => {
                       const { firstName, lastName } = splitName(user.name);
                       return (
                         <tr key={user.id}>
@@ -627,7 +604,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
         )}
       </div>
 
-      {pagination.totalPages > 1 && (
+      {totalPages > 1 && (
         <div className="admin-users-pagination">
           <button
             className="btn btn-secondary"
@@ -639,11 +616,11 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
           <div className="pagination-numbers">
             {(() => {
               const pages: (number | string)[] = [];
-              const showEllipsis = pagination.totalPages > 7; // Show ellipsis if more than 7 pages
+              const showEllipsis = totalPages > 7; // Show ellipsis if more than 7 pages
               
               if (!showEllipsis) {
                 // Show all pages if 7 or fewer
-                for (let i = 1; i <= pagination.totalPages; i++) {
+                for (let i = 1; i <= totalPages; i++) {
                   pages.push(i);
                 }
               } else {
@@ -656,11 +633,11 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
                     pages.push(i);
                   }
                   pages.push('ellipsis-end');
-                  pages.push(pagination.totalPages);
-                } else if (currentPage >= pagination.totalPages - 3) {
+                  pages.push(totalPages);
+                } else if (currentPage >= totalPages - 3) {
                   // Near the end: show 1, ..., last-4, last-3, last-2, last-1, last
                   pages.push('ellipsis-start');
-                  for (let i = pagination.totalPages - 4; i <= pagination.totalPages; i++) {
+                  for (let i = totalPages - 4; i <= totalPages; i++) {
                     pages.push(i);
                   }
                 } else {
@@ -670,7 +647,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
                     pages.push(i);
                   }
                   pages.push('ellipsis-end');
-                  pages.push(pagination.totalPages);
+                  pages.push(totalPages);
                 }
               }
               
@@ -694,7 +671,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
           <button
             className="btn btn-secondary"
             onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === pagination.totalPages || loading}
+            disabled={currentPage === totalPages || loading}
           >
             Next
           </button>
@@ -703,7 +680,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({
 
       <div className="admin-users-footer">
         <p>
-          Showing {users.length} of {pagination.total} users
+          Showing {paginatedUsers.length > 0 ? startIndex + 1 : 0} - {Math.min(endIndex, sortedUsers.length)} of {sortedUsers.length} users
           {debouncedSearchQuery && ` matching "${debouncedSearchQuery}"`}
         </p>
       </div>
