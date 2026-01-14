@@ -9,7 +9,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem; /* Reduced from 2rem to allow more table height */
   flex-wrap: wrap;
   gap: 1rem;
 }
@@ -229,8 +229,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 2rem;
-  padding: 1rem;
+  margin-top: 0.75rem; /* Reduced from 2rem to allow more table height */
+  padding: 0.75rem; /* Reduced from 1rem to allow more table height */
   background: var(--bg-secondary);
   border-radius: 8px;
   gap: 0.5rem;
@@ -301,8 +301,8 @@
 }
 
 .admin-users-footer {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
+  margin-top: 0.75rem; /* Reduced from 1.5rem to allow more table height */
+  padding-top: 0.5rem; /* Reduced from 1rem to allow more table height */
   border-top: 1px solid var(--border-color);
   color: var(--text-secondary);
   font-size: 14px;
@@ -441,7 +441,17 @@
   }
 
   .admin-users-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem; /* Reduced to allow more table height */
+  }
+
+  .admin-users-pagination {
+    margin-top: 0.75rem; /* Reduced to allow more table height */
+    padding: 0.75rem; /* Reduced to allow more table height */
+  }
+
+  .admin-users-footer {
+    margin-top: 0.75rem; /* Reduced to allow more table height */
+    padding-top: 0.5rem; /* Reduced to allow more table height */
   }
 
   .admin-users-header h1 {
@@ -475,7 +485,7 @@
   }
 
   .admin-users-header {
-    margin-bottom: 1.4rem; /* Scaled from 2rem */
+    margin-bottom: 0.9rem; /* Reduced from 1.4rem to allow more table height */
     gap: 0.7rem; /* Scaled from 1rem */
   }
 
@@ -523,8 +533,8 @@
   }
 
   .admin-users-pagination {
-    margin-top: 1.4rem; /* Scaled from 2rem */
-    padding: 0.7rem; /* Scaled from 1rem */
+    margin-top: 0.55rem; /* Reduced to allow more table height */
+    padding: 0.55rem; /* Reduced to allow more table height */
     gap: 0.4rem; /* Scaled from 0.5rem */
   }
 
@@ -544,8 +554,8 @@
   }
 
   .admin-users-footer {
-    margin-top: 1.1rem; /* Scaled from 1.5rem */
-    padding-top: 0.7rem; /* Scaled from 1rem */
+    margin-top: 0.55rem; /* Reduced to allow more table height */
+    padding-top: 0.35rem; /* Reduced to allow more table height */
     font-size: 12px; /* Scaled from 14px */
   }
 
