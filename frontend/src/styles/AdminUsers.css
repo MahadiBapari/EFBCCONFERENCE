@@ -48,7 +48,7 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  max-height: calc(100vh - 200px); /* Increased from 350px to show more users */
+  max-height: calc(100vh - 120px); /* Increased to show maximum users */
   overflow-y: auto;
   overflow-x: auto;
 }
@@ -428,6 +428,10 @@
   .admin-users-table td {
     padding: 0.5rem;
   }
+
+  .admin-users-table-container {
+    max-height: calc(100vh - 100px); /* Increased height for mobile screens */
+  }
 }
 
 /* Medium screens optimization (1366x768) */
@@ -460,7 +464,7 @@
   }
 
   .admin-users-table-container {
-    max-height: calc(100vh - 180px); /* Increased height for medium screens */
+    max-height: calc(100vh - 100px); /* Increased height for medium screens */
   }
 }
 
@@ -490,7 +494,7 @@
   }
 
   .admin-users-table-container {
-    max-height: calc(100vh - 180px); /* Increased from 300px to show more users */
+    max-height: calc(100vh - 100px); /* Increased to show maximum users */
   }
 
   .admin-users-table {
