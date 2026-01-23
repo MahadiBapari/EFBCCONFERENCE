@@ -121,15 +121,21 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
               </>
             )}
 
-            {event.description && event.description.length > 0 && (
+            {event.description && (
               <>
                 <strong>Description:</strong>
                 <div>
-                  <ul style={{ margin: '0', paddingLeft: '20px' }}>
-                    {event.description.map((item, idx) => (
-                      <li key={idx}>{item}</li>
-                    ))}
-                  </ul>
+                  {Array.isArray(event.description) ? (
+                    event.description.length > 0 ? (
+                      <ul style={{ margin: '0', paddingLeft: '20px' }}>
+                        {event.description.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    ) : null
+                  ) : (
+                    <p style={{ margin: '0', whiteSpace: 'pre-line' }}>{event.description}</p>
+                  )}
                 </div>
               </>
             )}
@@ -189,7 +195,7 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
         )}
 
         {/* Registration Pricing Tiers */}
-        {event.registrationPricing && event.registrationPricing.length > 0 && (
+        {event.registrationPricing && Array.isArray(event.registrationPricing) && event.registrationPricing.length > 0 && (
           <div className="card" style={{ marginBottom: '20px' }}>
             <h2 style={{ marginTop: '0', marginBottom: '20px', borderBottom: '2px solid #e0e0e0', paddingBottom: '10px' }}>
               Registration Pricing Tiers
@@ -207,8 +213,8 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
                 <tbody>
                   {event.registrationPricing.map((tier, idx) => (
                     <tr key={idx}>
-                      <td>{tier.label}</td>
-                      <td>${tier.price?.toFixed(2) || '0.00'}</td>
+                      <td>{tier.label || 'N/A'}</td>
+                      <td>${(typeof tier.price === 'number' ? tier.price : 0).toFixed(2)}</td>
                       <td>{tier.startDate ? formatDateShort(tier.startDate) : 'N/A'}</td>
                       <td>{tier.endDate ? formatDateShort(tier.endDate) : 'N/A'}</td>
                     </tr>
@@ -220,7 +226,7 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
         )}
 
         {/* Spouse Pricing Tiers */}
-        {event.spousePricing && event.spousePricing.length > 0 && (
+        {event.spousePricing && Array.isArray(event.spousePricing) && event.spousePricing.length > 0 && (
           <div className="card" style={{ marginBottom: '20px' }}>
             <h2 style={{ marginTop: '0', marginBottom: '20px', borderBottom: '2px solid #e0e0e0', paddingBottom: '10px' }}>
               Spouse/Guest Pricing Tiers
@@ -238,8 +244,8 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
                 <tbody>
                   {event.spousePricing.map((tier, idx) => (
                     <tr key={idx}>
-                      <td>{tier.label}</td>
-                      <td>${tier.price?.toFixed(2) || '0.00'}</td>
+                      <td>{tier.label || 'N/A'}</td>
+                      <td>${(typeof tier.price === 'number' ? tier.price : 0).toFixed(2)}</td>
                       <td>{tier.startDate ? formatDateShort(tier.startDate) : 'N/A'}</td>
                       <td>{tier.endDate ? formatDateShort(tier.endDate) : 'N/A'}</td>
                     </tr>
@@ -255,7 +261,7 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
           <h2 style={{ marginTop: '0', marginBottom: '20px', borderBottom: '2px solid #e0e0e0', paddingBottom: '10px' }}>
             Child/Children Pricing Tiers
           </h2>
-          {event.kidsPricing && event.kidsPricing.length > 0 ? (
+          {event.kidsPricing && Array.isArray(event.kidsPricing) && event.kidsPricing.length > 0 ? (
             <div className="table-wrapper">
               <table className="table">
                 <thead>
@@ -269,8 +275,8 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
                 <tbody>
                   {event.kidsPricing.map((tier, idx) => (
                     <tr key={idx}>
-                      <td>{tier.label}</td>
-                      <td>${tier.price?.toFixed(2) || '0.00'}</td>
+                      <td>{tier.label || 'N/A'}</td>
+                      <td>${(typeof tier.price === 'number' ? tier.price : 0).toFixed(2)}</td>
                       <td>{tier.startDate ? formatDateShort(tier.startDate) : 'N/A'}</td>
                       <td>{tier.endDate ? formatDateShort(tier.endDate) : 'N/A'}</td>
                     </tr>
@@ -344,7 +350,7 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
             Additional Information
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '15px', alignItems: 'start' }}>
-            {event.breakfastPrice !== undefined && (
+            {event.breakfastPrice !== undefined && event.breakfastPrice !== null && typeof event.breakfastPrice === 'number' && (
               <>
                 <strong>Breakfast Price:</strong>
                 <div>${event.breakfastPrice.toFixed(2)}</div>
@@ -358,7 +364,7 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
               </>
             )}
 
-            {event.childLunchPrice !== undefined && (
+            {event.childLunchPrice !== undefined && event.childLunchPrice !== null && typeof event.childLunchPrice === 'number' && (
               <>
                 <strong>Child Lunch Price:</strong>
                 <div>${event.childLunchPrice.toFixed(2)}</div>
