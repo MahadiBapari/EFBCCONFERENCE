@@ -17,6 +17,7 @@ const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const cancellationRoutes_1 = __importDefault(require("./routes/cancellationRoutes"));
 const paymentsRoutes_1 = __importDefault(require("./routes/paymentsRoutes"));
 const customizationRoutes_1 = __importDefault(require("./routes/customizationRoutes"));
+const discountCodeRoutes_1 = __importDefault(require("./routes/discountCodeRoutes"));
 if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
     dotenv_1.default.config();
 }
@@ -35,6 +36,7 @@ app.use('/api/groups', groupRoutes_1.default);
 app.use('/api', cancellationRoutes_1.default);
 app.use('/api/payments', paymentsRoutes_1.default);
 app.use('/api/customization', customizationRoutes_1.default);
+app.use('/api/discount-codes', discountCodeRoutes_1.default);
 let databaseService;
 const initializeDatabase = async () => {
     try {
@@ -120,17 +122,28 @@ const createTables = async () => {
         await migrateEventDescriptionToArray();
         await migrateEventStartDate();
         await migrateEmailCustomizations();
+        await migrateContactCustomizations();
+        await migrateFaqs();
+        await migrateAddressFields();
+        await migrateGroupAssignedColumn();
+        await migrateChildLunchFeature();
+        await migrateKidsRegistration();
+        await migrateAdditionalRegistrationQuestions();
+        await migratePickleballEquipment();
+        await migrateDiscountCodes();
         await databaseService.query(`
-      CREATE TABLE IF NOT EXISTS \`groups\` (
+      CREATE TABLE IF NOT EXISTS \`activity_groups\` (
         id INT PRIMARY KEY AUTO_INCREMENT,
         eventId INT NOT NULL,
         category VARCHAR(100) NOT NULL,
         name VARCHAR(255) NOT NULL,
+        members TEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (eventId) REFERENCES events(id) ON DELETE CASCADE
       )
     `);
+        await migrateGroupsMembersColumn();
         console.log('Database tables created/verified');
     }
     catch (error) {
@@ -164,6 +177,23 @@ const migrateUsersEmailVerification = async () => {
     }
     catch (e) {
         console.warn('Skipping users email verification migration:', e);
+    }
+};
+const migrateGroupsMembersColumn = async () => {
+    try {
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (!dbName)
+            return;
+        const cols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, 'activity_groups']);
+        const hasMembers = cols.some((c) => c.COLUMN_NAME === 'members');
+        if (!hasMembers) {
+            await databaseService.query('ALTER TABLE `activity_groups` ADD COLUMN `members` TEXT NULL AFTER `name`');
+            console.log('Added members column to activity_groups table');
+        }
+    }
+    catch (error) {
+        console.error('Error migrating activity_groups.members column:', error);
     }
 };
 const migrateRegistrationsTable = async () => {
@@ -297,8 +327,27 @@ const migrateEventsAndRegistrationsEnhancements = async () => {
             alter.push("ADD COLUMN `tuesday_early_reception` VARCHAR(50)");
         if (!regCols.some((c) => c.COLUMN_NAME === 'paid'))
             alter.push('ADD COLUMN `paid` BOOLEAN DEFAULT FALSE');
+        if (!regCols.some((c) => c.COLUMN_NAME === 'paid_at'))
+            alter.push('ADD COLUMN `paid_at` TIMESTAMP NULL');
         if (!regCols.some((c) => c.COLUMN_NAME === 'square_payment_id'))
             alter.push('ADD COLUMN `square_payment_id` VARCHAR(64)');
+        if (!regCols.some((c) => c.COLUMN_NAME === 'spouse_payment_id'))
+            alter.push('ADD COLUMN `spouse_payment_id` VARCHAR(64) NULL');
+        if (!regCols.some((c) => c.COLUMN_NAME === 'spouse_paid_at'))
+            alter.push('ADD COLUMN `spouse_paid_at` TIMESTAMP NULL');
+        if (!regCols.some((c) => c.COLUMN_NAME === 'kids_payment_id')) {
+            alter.push('ADD COLUMN `kids_payment_id` JSON NULL');
+        }
+        else {
+            const kidsPaymentIdCol = regCols.find((c) => c.COLUMN_NAME === 'kids_payment_id');
+            const dataType = (kidsPaymentIdCol?.DATA_TYPE || '').toLowerCase();
+            if (kidsPaymentIdCol && dataType !== 'json') {
+                alter.push('MODIFY COLUMN `kids_payment_id` JSON NULL');
+                console.log(`🛠️ Migrating kids_payment_id from ${dataType} to JSON`);
+            }
+        }
+        if (!regCols.some((c) => c.COLUMN_NAME === 'kids_paid_at'))
+            alter.push('ADD COLUMN `kids_paid_at` TIMESTAMP NULL');
         if (!regCols.some((c) => c.COLUMN_NAME === 'special_requests'))
             alter.push('ADD COLUMN `special_requests` TEXT NULL');
         if (alter.length > 0) {
@@ -358,6 +407,212 @@ const migrateEventStartDate = async () => {
         console.error('Error migrating event start_date:', error?.message || error);
     }
 };
+const migratePickleballEquipment = async () => {
+    try {
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (!dbName)
+            return;
+        const regCols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, 'registrations']);
+        if (!regCols.some((c) => c.COLUMN_NAME === 'pickleball_equipment')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `pickleball_equipment` BOOLEAN NULL AFTER `massage_time_slot`');
+            console.log('🛠️ Added registrations.pickleball_equipment column');
+        }
+    }
+    catch (error) {
+        console.error('Error migrating pickleball equipment feature:', error?.message || error);
+    }
+};
+const migrateChildLunchFeature = async () => {
+    try {
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (!dbName)
+            return;
+        const eventCols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, 'events']);
+        if (!eventCols.some((c) => c.COLUMN_NAME === 'child_lunch_price')) {
+            await databaseService.query('ALTER TABLE `events` ADD COLUMN `child_lunch_price` DECIMAL(10,2) NULL AFTER `breakfast_price`');
+            console.log('🛠️ Added events.child_lunch_price column');
+        }
+        const regCols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, 'registrations']);
+        if (!regCols.some((c) => c.COLUMN_NAME === 'child_first_name')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `child_first_name` VARCHAR(255) NULL AFTER `spouse_last_name`');
+            console.log('🛠️ Added registrations.child_first_name column');
+        }
+        if (!regCols.some((c) => c.COLUMN_NAME === 'child_last_name')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `child_last_name` VARCHAR(255) NULL AFTER `child_first_name`');
+            console.log('🛠️ Added registrations.child_last_name column');
+        }
+        if (!regCols.some((c) => c.COLUMN_NAME === 'child_lunch_ticket')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `child_lunch_ticket` BOOLEAN DEFAULT FALSE AFTER `child_last_name`');
+            console.log('🛠️ Added registrations.child_lunch_ticket column');
+        }
+    }
+    catch (error) {
+        console.error('Error migrating child lunch feature:', error?.message || error);
+    }
+};
+const migrateKidsRegistration = async () => {
+    try {
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (!dbName)
+            return;
+        const eventCols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, 'events']);
+        if (!eventCols.some((c) => c.COLUMN_NAME === 'kids_pricing')) {
+            await databaseService.query('ALTER TABLE `events` ADD COLUMN `kids_pricing` JSON NULL AFTER `spouse_pricing`');
+            console.log('🛠️ Added events.kids_pricing column');
+        }
+        const regCols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, 'registrations']);
+        if (!regCols.some((c) => c.COLUMN_NAME === 'kids_data')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `kids_data` JSON NULL AFTER `child_lunch_ticket`');
+            console.log('🛠️ Added registrations.kids_data column');
+        }
+        if (!regCols.some((c) => c.COLUMN_NAME === 'kids_total_price')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `kids_total_price` DECIMAL(10,2) NULL AFTER `total_price`');
+            console.log('🛠️ Added registrations.kids_total_price column');
+        }
+    }
+    catch (error) {
+        console.error('Error migrating kids registration:', error?.message || error);
+    }
+};
+const migrateAdditionalRegistrationQuestions = async () => {
+    try {
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (!dbName)
+            return;
+        const regCols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, 'registrations']);
+        const columnNames = regCols.map((c) => c.COLUMN_NAME);
+        if (!columnNames.includes('transportation_method')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `transportation_method` VARCHAR(50) NULL AFTER `special_requests`');
+            console.log('🛠️ Added registrations.transportation_method column');
+        }
+        if (!columnNames.includes('transportation_details')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `transportation_details` TEXT NULL AFTER `transportation_method`');
+            console.log('🛠️ Added registrations.transportation_details column');
+        }
+        if (!columnNames.includes('staying_at_beach_club')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `staying_at_beach_club` BOOLEAN NULL AFTER `transportation_details`');
+            console.log('🛠️ Added registrations.staying_at_beach_club column');
+        }
+        if (!columnNames.includes('accommodation_details')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `accommodation_details` TEXT NULL AFTER `staying_at_beach_club`');
+            console.log('🛠️ Added registrations.accommodation_details column');
+        }
+        if (!columnNames.includes('dietary_requirements')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `dietary_requirements` JSON NULL AFTER `accommodation_details`');
+            console.log('🛠️ Added registrations.dietary_requirements column');
+        }
+        if (!columnNames.includes('dietary_requirements_other')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `dietary_requirements_other` TEXT NULL AFTER `dietary_requirements`');
+            console.log('🛠️ Added registrations.dietary_requirements_other column');
+        }
+        if (!columnNames.includes('special_physical_needs')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `special_physical_needs` BOOLEAN NULL AFTER `dietary_requirements_other`');
+            console.log('🛠️ Added registrations.special_physical_needs column');
+        }
+        if (!columnNames.includes('special_physical_needs_details')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `special_physical_needs_details` TEXT NULL AFTER `special_physical_needs`');
+            console.log('🛠️ Added registrations.special_physical_needs_details column');
+        }
+    }
+    catch (error) {
+        console.error('Error migrating additional registration questions:', error?.message || error);
+    }
+};
+const migrateAddressFields = async () => {
+    try {
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (!dbName)
+            return;
+        const cols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, 'registrations']);
+        const columnNames = cols.map((c) => c.COLUMN_NAME);
+        if (!columnNames.includes('address_street')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `address_street` VARCHAR(500) NULL AFTER `address`');
+            console.log('🛠️ Added registrations.address_street column');
+        }
+        if (!columnNames.includes('city')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `city` VARCHAR(255) NULL AFTER `address_street`');
+            console.log('🛠️ Added registrations.city column');
+        }
+        if (!columnNames.includes('state')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `state` VARCHAR(100) NULL AFTER `city`');
+            console.log('🛠️ Added registrations.state column');
+        }
+        if (!columnNames.includes('zip_code')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `zip_code` VARCHAR(20) NULL AFTER `state`');
+            console.log('🛠️ Added registrations.zip_code column');
+        }
+        if (!columnNames.includes('country')) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `country` VARCHAR(100) NULL AFTER `zip_code`');
+            console.log('🛠️ Added registrations.country column');
+        }
+    }
+    catch (error) {
+        console.error('Error migrating address fields:', error?.message || error);
+    }
+};
+const migrateGroupAssignedColumn = async () => {
+    try {
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (!dbName)
+            return;
+        const regCols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, 'registrations']);
+        const hasColumn = regCols.some((c) => c.COLUMN_NAME === 'group_assigned');
+        if (!hasColumn) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `group_assigned` INT NULL AFTER `country`');
+            console.log('🛠️ Added group_assigned column to registrations table');
+        }
+        try {
+            const groups = await databaseService.query('SELECT id, members FROM `activity_groups`');
+            for (const group of groups) {
+                if (group.members) {
+                    let memberIds = [];
+                    try {
+                        memberIds = typeof group.members === 'string' ? JSON.parse(group.members) : group.members;
+                        if (!Array.isArray(memberIds))
+                            memberIds = [];
+                    }
+                    catch {
+                        const matches = String(group.members).match(/\d+/g);
+                        memberIds = matches ? matches.map(Number) : [];
+                    }
+                    if (memberIds.length > 0) {
+                        const placeholders = memberIds.map(() => '?').join(',');
+                        await databaseService.query(`UPDATE \`registrations\` SET \`group_assigned\` = ? WHERE \`id\` IN (${placeholders})`, [group.id, ...memberIds]);
+                    }
+                }
+            }
+            console.log('🛠️ Synced existing group assignments to registrations.group_assigned');
+        }
+        catch (syncError) {
+            console.warn('⚠️ Could not sync existing group assignments:', syncError?.message || syncError);
+        }
+        if (!hasColumn) {
+            try {
+                await databaseService.query(`
+          ALTER TABLE \`registrations\` 
+          ADD CONSTRAINT \`fk_registrations_group_assigned\` 
+          FOREIGN KEY (\`group_assigned\`) 
+          REFERENCES \`activity_groups\`(\`id\`) 
+          ON DELETE SET NULL 
+          ON UPDATE CASCADE
+        `);
+                console.log('🛠️ Added foreign key constraint for group_assigned');
+            }
+            catch (fkError) {
+                console.log('ℹ️ Foreign key constraint skipped (may already exist or table not ready)');
+            }
+        }
+    }
+    catch (error) {
+        console.error('Error migrating group_assigned column:', error?.message || error);
+    }
+};
 const migrateEmailCustomizations = async () => {
     try {
         await databaseService.query(`
@@ -373,6 +628,81 @@ const migrateEmailCustomizations = async () => {
     }
     catch (error) {
         console.error('Error migrating email customizations:', error?.message || error);
+    }
+};
+const migrateContactCustomizations = async () => {
+    try {
+        await databaseService.query(`
+      CREATE TABLE IF NOT EXISTS contact_customizations (
+        id INT PRIMARY KEY,
+        contact_email VARCHAR(255) NULL,
+        contact_phone VARCHAR(50) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+        console.log('🛠️ Contact customizations table created/verified');
+    }
+    catch (error) {
+        console.error('Error migrating contact customizations:', error?.message || error);
+    }
+};
+const migrateFaqs = async () => {
+    try {
+        await databaseService.query(`
+      CREATE TABLE IF NOT EXISTS faqs (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        display_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_display_order (display_order)
+      )
+    `);
+        console.log('🛠️ FAQs table created/verified');
+    }
+    catch (error) {
+        console.error('Error migrating FAQs:', error?.message || error);
+    }
+};
+const migrateDiscountCodes = async () => {
+    try {
+        await databaseService.query(`
+      CREATE TABLE IF NOT EXISTS discount_codes (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        code VARCHAR(50) UNIQUE NOT NULL,
+        event_id INT NOT NULL,
+        discount_type ENUM('percentage', 'fixed') NOT NULL,
+        discount_value DECIMAL(10,2) NOT NULL,
+        expiry_date DATETIME,
+        usage_limit INT,
+        used_count INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+        INDEX idx_code (code),
+        INDEX idx_event_id (event_id)
+      )
+    `);
+        console.log('🛠️ Discount codes table created/verified');
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (dbName) {
+            const cols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, 'registrations']);
+            const columnNames = cols.map((c) => c.COLUMN_NAME);
+            if (!columnNames.includes('discount_code')) {
+                await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `discount_code` VARCHAR(50) NULL');
+                console.log('🛠️ Added registrations.discount_code column');
+            }
+            if (!columnNames.includes('discount_amount')) {
+                await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `discount_amount` DECIMAL(10,2) DEFAULT 0');
+                console.log('🛠️ Added registrations.discount_amount column');
+            }
+        }
+    }
+    catch (error) {
+        console.error('Error migrating discount codes:', error?.message || error);
     }
 };
 const migrateCancellationFeature = async () => {
@@ -466,7 +796,7 @@ app.get('/api/demo/setup', async (req, res) => {
             { eventId: demoEventId, category: 'Fishing', name: 'Fishing Group 1' }
         ];
         for (const group of demoGroups) {
-            await databaseService.query('INSERT IGNORE INTO `groups` (eventId, category, name) VALUES (?, ?, ?)', [group.eventId, group.category, group.name]);
+            await databaseService.query('INSERT IGNORE INTO `activity_groups` (eventId, category, name) VALUES (?, ?, ?)', [group.eventId, group.category, group.name]);
         }
         res.status(200).json({
             success: true,

@@ -24,12 +24,12 @@ class GroupController {
                     const conditionClause = Object.keys(conditions).map(key => `${key} = ?`).join(' AND ');
                     whereClause = `${conditionClause} AND ${searchCondition}`;
                 }
-                groups = await this.db.query(`SELECT * FROM \`groups\` WHERE ${whereClause} LIMIT ? OFFSET ?`, [...Object.values(conditions), Number(limit), offset]);
-                total = await this.db.query(`SELECT COUNT(*) as count FROM \`groups\` WHERE ${whereClause}`, Object.values(conditions));
+                groups = await this.db.query(`SELECT * FROM \`activity_groups\` WHERE ${whereClause} LIMIT ? OFFSET ?`, [...Object.values(conditions), Number(limit), offset]);
+                total = await this.db.query(`SELECT COUNT(*) as count FROM \`activity_groups\` WHERE ${whereClause}`, Object.values(conditions));
             }
             else {
-                groups = await this.db.findAll('groups', conditions, Number(limit), offset);
-                total = await this.db.count('groups', conditions);
+                groups = await this.db.findAll('activity_groups', conditions, Number(limit), offset);
+                total = await this.db.count('activity_groups', conditions);
             }
             const response = {
                 success: true,
@@ -55,7 +55,7 @@ class GroupController {
     async getGroupById(req, res) {
         try {
             const { id } = req.params;
-            const group = await this.db.findById('groups', Number(id));
+            const group = await this.db.findById('activity_groups', Number(id));
             if (!group) {
                 const response = {
                     success: false,
@@ -83,7 +83,7 @@ class GroupController {
         try {
             const groupData = req.body;
             const group = new Group_1.Group(groupData);
-            const result = await this.db.insert('groups', group.toDatabase());
+            const result = await this.db.insert('activity_groups', group.toDatabase());
             group.id = result.insertId;
             const response = {
                 success: true,
@@ -105,7 +105,7 @@ class GroupController {
         try {
             const { id } = req.params;
             const updateData = req.body;
-            const existingGroup = await this.db.findById('groups', Number(id));
+            const existingGroup = await this.db.findById('activity_groups', Number(id));
             if (!existingGroup) {
                 const response = {
                     success: false,
@@ -114,9 +114,22 @@ class GroupController {
                 res.status(404).json(response);
                 return;
             }
+            const oldGroup = Group_1.Group.fromDatabase(existingGroup);
+            const oldMemberIds = oldGroup.members || [];
             const group = new Group_1.Group({ ...existingGroup, ...updateData });
             group.updatedAt = new Date().toISOString();
-            await this.db.update('groups', Number(id), group.toDatabase());
+            const newMemberIds = group.members || [];
+            await this.db.update('activity_groups', Number(id), group.toDatabase());
+            const removedMembers = oldMemberIds.filter((mid) => !newMemberIds.includes(mid));
+            if (removedMembers.length > 0) {
+                const placeholders = removedMembers.map(() => '?').join(',');
+                await this.db.query(`UPDATE \`registrations\` SET \`group_assigned\` = NULL WHERE \`id\` IN (${placeholders})`, removedMembers);
+            }
+            const addedMembers = newMemberIds.filter((mid) => !oldMemberIds.includes(mid));
+            if (addedMembers.length > 0) {
+                const placeholders = addedMembers.map(() => '?').join(',');
+                await this.db.query(`UPDATE \`registrations\` SET \`group_assigned\` = ? WHERE \`id\` IN (${placeholders})`, [Number(id), ...addedMembers]);
+            }
             const response = {
                 success: true,
                 data: group.toJSON(),
@@ -136,7 +149,7 @@ class GroupController {
     async deleteGroup(req, res) {
         try {
             const { id } = req.params;
-            const existingGroup = await this.db.findById('groups', Number(id));
+            const existingGroup = await this.db.findById('activity_groups', Number(id));
             if (!existingGroup) {
                 const response = {
                     success: false,
@@ -145,7 +158,13 @@ class GroupController {
                 res.status(404).json(response);
                 return;
             }
-            await this.db.delete('groups', Number(id));
+            const groupModel = Group_1.Group.fromDatabase(existingGroup);
+            const memberIds = groupModel.members || [];
+            await this.db.delete('activity_groups', Number(id));
+            if (memberIds.length > 0) {
+                const placeholders = memberIds.map(() => '?').join(',');
+                await this.db.query(`UPDATE \`registrations\` SET \`group_assigned\` = NULL WHERE \`id\` IN (${placeholders})`, memberIds);
+            }
             const response = {
                 success: true,
                 message: 'Group deleted successfully'
@@ -165,7 +184,7 @@ class GroupController {
         try {
             const { id } = req.params;
             const { memberId } = req.body;
-            const group = await this.db.findById('groups', Number(id));
+            const group = await this.db.findById('activity_groups', Number(id));
             if (!group) {
                 const response = {
                     success: false,
@@ -176,7 +195,8 @@ class GroupController {
             }
             const groupModel = Group_1.Group.fromDatabase(group);
             groupModel.addMember(memberId);
-            await this.db.update('groups', Number(id), groupModel.toDatabase());
+            await this.db.update('activity_groups', Number(id), groupModel.toDatabase());
+            await this.db.update('registrations', Number(memberId), { group_assigned: Number(id) });
             const response = {
                 success: true,
                 data: groupModel.toJSON(),
@@ -197,7 +217,7 @@ class GroupController {
         try {
             const { id } = req.params;
             const { memberId } = req.body;
-            const group = await this.db.findById('groups', Number(id));
+            const group = await this.db.findById('activity_groups', Number(id));
             if (!group) {
                 const response = {
                     success: false,
@@ -208,7 +228,8 @@ class GroupController {
             }
             const groupModel = Group_1.Group.fromDatabase(group);
             groupModel.removeMember(memberId);
-            await this.db.update('groups', Number(id), groupModel.toDatabase());
+            await this.db.update('activity_groups', Number(id), groupModel.toDatabase());
+            await this.db.update('registrations', Number(memberId), { group_assigned: null });
             const response = {
                 success: true,
                 data: groupModel.toJSON(),

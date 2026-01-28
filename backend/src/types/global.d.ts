@@ -30,6 +30,7 @@ declare module 'mysql2/promise' {
     password: string;
     database: string;
     port: number;
+    decimalNumbers?: boolean;  // Returns DECIMAL values as numbers instead of strings
   }): Promise<Connection>;
 }
 

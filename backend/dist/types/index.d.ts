@@ -1,3 +1,11 @@
+export interface Kid {
+    firstName: string;
+    lastName: string;
+    badgeName: string;
+    age: number;
+    price?: number;
+    lunchTicket?: boolean;
+}
 export interface User {
     id: number;
     name: string;
@@ -14,7 +22,10 @@ export interface Event {
     name: string;
     date: string;
     startDate?: string;
-    activities?: string[];
+    activities?: Array<{
+        name: string;
+        seatLimit?: number;
+    }> | string[];
     location?: string;
     description?: string | string[];
     createdAt?: string;
@@ -50,6 +61,11 @@ export interface Registration {
     organization: string;
     jobTitle: string;
     address: string;
+    addressStreet?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
     mobile: string;
     officePhone?: string;
     isFirstTimeAttending: boolean;
@@ -61,6 +77,7 @@ export interface Registration {
     golfHandicap?: string;
     clubRentals?: string;
     massageTimeSlot?: string;
+    pickleballEquipment?: boolean;
     spouseBreakfast?: boolean;
     wednesdayReception: 'I will attend' | 'I will NOT attend';
     thursdayBreakfast: 'I will attend' | 'I will NOT attend';
@@ -70,13 +87,34 @@ export interface Registration {
     fridayDinner: 'I will attend' | 'I will NOT attend';
     dietaryRestrictions?: string;
     specialRequests?: string;
+    transportationMethod?: string;
+    transportationDetails?: string;
+    stayingAtBeachClub?: boolean;
+    accommodationDetails?: string;
+    dietaryRequirements?: string[];
+    dietaryRequirementsOther?: string;
+    specialPhysicalNeeds?: boolean;
+    specialPhysicalNeedsDetails?: string;
     spouseFirstName?: string;
     spouseLastName?: string;
     spouseDinnerTicket: boolean;
+    kids?: Kid[];
+    kidsTotalPrice?: number;
+    childFirstName?: string;
+    childLastName?: string;
+    childLunchTicket?: boolean;
     totalPrice: number;
     paymentMethod: 'Card' | 'Check';
     paid?: boolean;
+    paidAt?: string;
     squarePaymentId?: string;
+    spousePaymentId?: string;
+    spousePaidAt?: string;
+    kidsPaymentId?: string | string[];
+    kidsPaidAt?: string;
+    discountCode?: string;
+    discountAmount?: number;
+    groupAssigned?: number;
     name: string;
     category: string;
     createdAt?: string;
@@ -139,6 +177,11 @@ export interface CreateRegistrationRequest {
     organization: string;
     jobTitle: string;
     address: string;
+    addressStreet?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
     mobile: string;
     officePhone?: string;
     isFirstTimeAttending: boolean;
@@ -167,6 +210,28 @@ export interface CreateRegistrationRequest {
     category: string;
 }
 export interface UpdateRegistrationRequest extends Partial<CreateRegistrationRequest> {
+}
+export interface DiscountCode {
+    id?: number;
+    code: string;
+    eventId: number;
+    discountType: 'percentage' | 'fixed';
+    discountValue: number;
+    expiryDate?: string;
+    usageLimit?: number;
+    usedCount?: number;
+    createdAt?: string;
+    updatedAt?: string;
+}
+export interface CreateDiscountCodeRequest {
+    code: string;
+    eventId: number;
+    discountType: 'percentage' | 'fixed';
+    discountValue: number;
+    expiryDate?: string;
+    usageLimit?: number;
+}
+export interface UpdateDiscountCodeRequest extends Partial<CreateDiscountCodeRequest> {
 }
 export interface CreateGroupRequest {
     eventId: number;

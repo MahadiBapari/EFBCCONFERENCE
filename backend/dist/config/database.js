@@ -10,8 +10,9 @@ const connectDB = async () => {
             host: process.env.DB_HOST || '127.0.0.1',
             user: process.env.DB_USER || 'efbcuser',
             password: process.env.DB_PASSWORD || 'efbcpassword',
-            database: process.env.DB_NAME || 'efbctestdb',
-            port: parseInt(process.env.DB_PORT || '3306')
+            database: process.env.DB_NAME || 'railway',
+            port: parseInt(process.env.DB_PORT || '3306'),
+            decimalNumbers: true
         });
         console.log('✅ Connected to MySQL database');
         return connection;

@@ -42,11 +42,20 @@ class DatabaseService {
         }
     }
     async insert(table, data) {
-        const columns = Object.keys(data);
-        const values = Object.values(data);
+        const filteredData = {};
+        for (const [key, value] of Object.entries(data)) {
+            if (value !== undefined) {
+                filteredData[key] = value;
+            }
+            else {
+                filteredData[key] = null;
+            }
+        }
+        const columns = Object.keys(filteredData);
+        const values = Object.values(filteredData);
         const placeholders = columns.map(() => '?').join(', ');
         const sql = `INSERT INTO \`${table}\` (${columns.join(', ')}) VALUES (${placeholders})`;
-        const result = await this.query(sql, values);
+        const [result] = await this.connection.execute(sql, values);
         return result;
     }
     async update(table, id, data) {

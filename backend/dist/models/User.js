@@ -55,7 +55,8 @@ class User {
             role: this.role,
             isActive: this.isActive,
             createdAt: this.created_at,
-            updatedAt: this.updated_at
+            updatedAt: this.updated_at,
+            emailVerifiedAt: this.email_verified_at || null
         };
     }
     toDatabase() {
@@ -70,7 +71,7 @@ class User {
         };
     }
     static fromDatabase(row) {
-        return new User({
+        const user = new User({
             id: row.id,
             name: row.name,
             email: row.email,
@@ -80,6 +81,8 @@ class User {
             created_at: row.created_at || row.created_At,
             updated_at: row.updated_at || row.updated_At
         });
+        user.email_verified_at = row.email_verified_at || null;
+        return user;
     }
     static isValidEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

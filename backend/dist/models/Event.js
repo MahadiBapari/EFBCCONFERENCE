@@ -18,6 +18,8 @@ class Event {
         this.registrationPricing = data.registrationPricing || [];
         this.breakfastPrice = data.breakfastPrice ?? undefined;
         this.breakfastEndDate = data.breakfastEndDate || undefined;
+        this.childLunchPrice = data.childLunchPrice ?? undefined;
+        this.kidsPricing = data.kidsPricing || [];
     }
     toJSON() {
         return {
@@ -35,7 +37,9 @@ class Event {
             spousePricing: this.spousePricing,
             registrationPricing: this.registrationPricing,
             breakfastPrice: this.breakfastPrice,
-            breakfastEndDate: this.breakfastEndDate
+            breakfastEndDate: this.breakfastEndDate,
+            childLunchPrice: this.childLunchPrice,
+            kidsPricing: this.kidsPricing
         };
     }
     toDatabase() {
@@ -51,21 +55,34 @@ class Event {
             spouse_pricing: this.spousePricing ? JSON.stringify(this.spousePricing) : null,
             registration_pricing: this.registrationPricing ? JSON.stringify(this.registrationPricing) : null,
             breakfast_price: this.breakfastPrice ?? null,
-            breakfast_end_date: this.breakfastEndDate || null
+            breakfast_end_date: this.breakfastEndDate || null,
+            child_lunch_price: this.childLunchPrice ?? null,
+            kids_pricing: this.kidsPricing ? JSON.stringify(this.kidsPricing) : null
         };
     }
     static fromDatabase(row) {
         let activities = [];
         if (row.activities) {
             try {
-                activities = JSON.parse(row.activities);
+                const parsed = typeof row.activities === 'string' ? JSON.parse(row.activities) : row.activities;
+                if (Array.isArray(parsed)) {
+                    if (parsed.length > 0 && typeof parsed[0] === 'string') {
+                        activities = parsed;
+                    }
+                    else {
+                        activities = parsed;
+                    }
+                }
             }
             catch (e) {
-                activities = Array.isArray(row.activities) ? row.activities : String(row.activities).split(',');
+                activities = Array.isArray(row.activities)
+                    ? (typeof row.activities[0] === 'string' ? row.activities : [])
+                    : String(row.activities).split(',').map((s) => s.trim()).filter(Boolean);
             }
         }
         let spousePricing = [];
         let registrationPricing = [];
+        let kidsPricing = [];
         if (row.spouse_pricing !== undefined && row.spouse_pricing !== null) {
             if (typeof row.spouse_pricing === 'string') {
                 try {
@@ -98,6 +115,22 @@ class Event {
                 registrationPricing = Array.isArray(row.registration_pricing) ? row.registration_pricing : [];
             }
         }
+        if (row.kids_pricing !== undefined && row.kids_pricing !== null) {
+            if (typeof row.kids_pricing === 'string') {
+                try {
+                    kidsPricing = JSON.parse(row.kids_pricing);
+                }
+                catch {
+                    kidsPricing = [];
+                }
+            }
+            else if (Array.isArray(row.kids_pricing)) {
+                kidsPricing = row.kids_pricing;
+            }
+            else if (typeof row.kids_pricing === 'object') {
+                kidsPricing = Array.isArray(row.kids_pricing) ? row.kids_pricing : [];
+            }
+        }
         return new Event({
             id: row.id,
             name: row.name,
@@ -124,7 +157,9 @@ class Event {
             spousePricing,
             registrationPricing,
             breakfastPrice: row.breakfast_price,
-            breakfastEndDate: row.breakfast_end_date
+            breakfastEndDate: row.breakfast_end_date,
+            childLunchPrice: row.child_lunch_price,
+            kidsPricing
         });
     }
 }

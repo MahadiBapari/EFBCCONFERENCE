@@ -48,5 +48,8 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     await req.userController.deleteUser(req, res);
 });
+router.put('/:id/verify', async (req, res) => {
+    await req.userController.verifyUser(req, res);
+});
 exports.default = router;
 //# sourceMappingURL=userRoutes.js.map

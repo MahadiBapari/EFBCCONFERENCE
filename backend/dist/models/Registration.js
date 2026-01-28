@@ -24,6 +24,11 @@ class Registration {
         this.organization = data.organization || '';
         this.jobTitle = data.jobTitle || '';
         this.address = data.address || '';
+        this.addressStreet = data.addressStreet;
+        this.city = data.city;
+        this.state = data.state;
+        this.zipCode = data.zipCode;
+        this.country = data.country;
         this.mobile = data.mobile || '';
         this.officePhone = data.officePhone;
         this.isFirstTimeAttending = data.isFirstTimeAttending || false;
@@ -40,6 +45,14 @@ class Registration {
         this.fridayDinner = data.fridayDinner || 'I will attend';
         this.dietaryRestrictions = data.dietaryRestrictions;
         this.specialRequests = data.specialRequests;
+        this.transportationMethod = data.transportationMethod;
+        this.transportationDetails = data.transportationDetails;
+        this.stayingAtBeachClub = data.stayingAtBeachClub !== undefined ? data.stayingAtBeachClub : undefined;
+        this.accommodationDetails = data.accommodationDetails;
+        this.dietaryRequirements = data.dietaryRequirements || undefined;
+        this.dietaryRequirementsOther = data.dietaryRequirementsOther;
+        this.specialPhysicalNeeds = data.specialPhysicalNeeds !== undefined ? data.specialPhysicalNeeds : undefined;
+        this.specialPhysicalNeedsDetails = data.specialPhysicalNeedsDetails;
         const cr = data.clubRentals;
         if (typeof cr === 'boolean') {
             this.clubRentals = cr ? undefined : 'I will bring my own';
@@ -54,10 +67,25 @@ class Registration {
         this.tuesdayEarlyReception = data.tuesdayEarlyReception ?? 'I will attend';
         this.golfHandicap = data.golfHandicap;
         this.massageTimeSlot = data.massageTimeSlot;
+        const pbe = data.pickleballEquipment;
+        if (pbe !== undefined && pbe !== null) {
+            this.pickleballEquipment = pbe === true || pbe === 'Yes' || pbe === 'yes' || pbe === 1;
+        }
+        else {
+            this.pickleballEquipment = undefined;
+        }
         this.spouseFirstName = data.spouseFirstName;
         this.spouseLastName = data.spouseLastName;
         const sdt = data.spouseDinnerTicket;
         this.spouseDinnerTicket = sdt === true || sdt === 'Yes' || sdt === 'yes' || sdt === 1;
+        this.kids = data.kids || undefined;
+        this.kidsTotalPrice = data.kidsTotalPrice ?? undefined;
+        this.discountCode = data.discountCode;
+        this.discountAmount = data.discountAmount ?? undefined;
+        this.childFirstName = data.childFirstName;
+        this.childLastName = data.childLastName;
+        const clt = data.childLunchTicket;
+        this.childLunchTicket = clt === true || clt === 'Yes' || clt === 'yes' || clt === 1 || false;
         this.totalPrice = data.totalPrice || 0;
         this.paymentMethod = data.paymentMethod || 'Card';
         this.name = data.name || `${this.firstName} ${this.lastName}`;
@@ -69,6 +97,28 @@ class Registration {
         this.cancellationAt = data.cancellationAt;
         this.paid = data.paid;
         this.squarePaymentId = data.squarePaymentId;
+        this.spousePaymentId = data.spousePaymentId ?? data.spouse_payment_id ?? undefined;
+        this.spousePaidAt = data.spousePaidAt ?? data.spouse_paid_at ?? undefined;
+        const kidsPaymentIdRaw = data.kidsPaymentId ?? data.kids_payment_id;
+        if (kidsPaymentIdRaw !== undefined && kidsPaymentIdRaw !== null) {
+            if (typeof kidsPaymentIdRaw === 'string') {
+                try {
+                    const parsed = JSON.parse(kidsPaymentIdRaw);
+                    this.kidsPaymentId = Array.isArray(parsed) ? parsed : [parsed];
+                }
+                catch {
+                    this.kidsPaymentId = [kidsPaymentIdRaw];
+                }
+            }
+            else if (Array.isArray(kidsPaymentIdRaw)) {
+                this.kidsPaymentId = kidsPaymentIdRaw;
+            }
+            else {
+                this.kidsPaymentId = [String(kidsPaymentIdRaw)];
+            }
+        }
+        this.kidsPaidAt = data.kidsPaidAt ?? data.kids_paid_at ?? undefined;
+        this.groupAssigned = data.groupAssigned ?? data.group_assigned ?? undefined;
     }
     toJSON() {
         const base = {
@@ -83,6 +133,11 @@ class Registration {
             organization: this.organization,
             jobTitle: this.jobTitle,
             address: this.address,
+            addressStreet: this.addressStreet,
+            city: this.city,
+            state: this.state,
+            zipCode: this.zipCode,
+            country: this.country,
             mobile: this.mobile,
             officePhone: this.officePhone,
             isFirstTimeAttending: this.isFirstTimeAttending,
@@ -101,12 +156,26 @@ class Registration {
             fridayDinner: this.fridayDinner,
             dietaryRestrictions: this.dietaryRestrictions,
             specialRequests: this.specialRequests,
+            transportationMethod: this.transportationMethod,
+            transportationDetails: this.transportationDetails,
+            stayingAtBeachClub: this.stayingAtBeachClub,
+            accommodationDetails: this.accommodationDetails,
+            dietaryRequirements: this.dietaryRequirements,
+            dietaryRequirementsOther: this.dietaryRequirementsOther,
+            specialPhysicalNeeds: this.specialPhysicalNeeds,
+            specialPhysicalNeedsDetails: this.specialPhysicalNeedsDetails,
             clubRentals: this.clubRentals,
             golfHandicap: this.golfHandicap,
             massageTimeSlot: this.massageTimeSlot,
+            pickleballEquipment: this.pickleballEquipment,
             spouseFirstName: this.spouseFirstName,
             spouseLastName: this.spouseLastName,
             spouseDinnerTicket: this.spouseDinnerTicket,
+            kids: this.kids,
+            kidsTotalPrice: this.kidsTotalPrice,
+            childFirstName: this.childFirstName,
+            childLastName: this.childLastName,
+            childLunchTicket: this.childLunchTicket,
             totalPrice: this.totalPrice,
             paymentMethod: this.paymentMethod,
             name: this.name,
@@ -126,6 +195,16 @@ class Registration {
             base.paid = this.paid;
         if (this.squarePaymentId)
             base.squarePaymentId = this.squarePaymentId;
+        if (this.spousePaymentId)
+            base.spousePaymentId = this.spousePaymentId;
+        if (this.spousePaidAt)
+            base.spousePaidAt = this.spousePaidAt;
+        if (this.kidsPaymentId)
+            base.kidsPaymentId = this.kidsPaymentId;
+        if (this.kidsPaidAt)
+            base.kidsPaidAt = this.kidsPaidAt;
+        if (this.groupAssigned)
+            base.groupAssigned = this.groupAssigned;
         return base;
     }
     nullIfUndefined(value) {
@@ -143,6 +222,11 @@ class Registration {
             organization: this.organization || null,
             job_title: this.jobTitle || null,
             address: this.address || null,
+            address_street: this.nullIfUndefined(this.addressStreet),
+            city: this.nullIfUndefined(this.city),
+            state: this.nullIfUndefined(this.state),
+            zip_code: this.nullIfUndefined(this.zipCode),
+            country: this.nullIfUndefined(this.country),
             mobile: this.mobile || null,
             office_phone: this.nullIfUndefined(this.officePhone),
             is_first_time_attending: this.isFirstTimeAttending ?? false,
@@ -158,18 +242,44 @@ class Registration {
             friday_breakfast: this.fridayBreakfast || null,
             dietary_restrictions: this.dietaryRestrictions || null,
             special_requests: this.nullIfUndefined(this.specialRequests),
+            transportation_method: this.nullIfUndefined(this.transportationMethod),
+            transportation_details: this.nullIfUndefined(this.transportationDetails),
+            staying_at_beach_club: this.stayingAtBeachClub ?? null,
+            accommodation_details: this.nullIfUndefined(this.accommodationDetails),
+            dietary_requirements: this.dietaryRequirements && this.dietaryRequirements.length > 0 ? JSON.stringify(this.dietaryRequirements) : null,
+            dietary_requirements_other: this.nullIfUndefined(this.dietaryRequirementsOther),
+            special_physical_needs: this.specialPhysicalNeeds ?? null,
+            special_physical_needs_details: this.nullIfUndefined(this.specialPhysicalNeedsDetails),
             club_rentals: this.nullIfUndefined(this.clubRentals),
             golf_handicap: this.nullIfUndefined(this.golfHandicap),
             massage_time_slot: this.nullIfUndefined(this.massageTimeSlot),
+            pickleball_equipment: this.pickleballEquipment ?? null,
             spouse_dinner_ticket: !!this.spouseDinnerTicket,
             spouse_breakfast: !!this.spouseBreakfast,
             tuesday_early_reception: this.nullIfUndefined(this.tuesdayEarlyReception),
             spouse_first_name: this.nullIfUndefined(this.spouseFirstName),
             spouse_last_name: this.nullIfUndefined(this.spouseLastName),
+            kids_data: this.kids && this.kids.length > 0 ? JSON.stringify(this.kids) : null,
+            kids_total_price: this.kidsTotalPrice ?? null,
+            discount_code: this.nullIfUndefined(this.discountCode),
+            discount_amount: this.discountAmount ?? 0,
+            child_first_name: this.nullIfUndefined(this.childFirstName),
+            child_last_name: this.nullIfUndefined(this.childLastName),
+            child_lunch_ticket: this.childLunchTicket ?? false,
             total_price: this.totalPrice || 0,
             payment_method: this.paymentMethod || null,
             paid: this.paid ?? false,
+            paid_at: this.paidAt ? this.formatDateForDB(this.paidAt) : null,
             square_payment_id: this.nullIfUndefined(this.squarePaymentId),
+            spouse_payment_id: this.nullIfUndefined(this.spousePaymentId),
+            spouse_paid_at: this.spousePaidAt ? this.formatDateForDB(this.spousePaidAt) : null,
+            kids_payment_id: this.kidsPaymentId
+                ? (Array.isArray(this.kidsPaymentId)
+                    ? JSON.stringify(this.kidsPaymentId)
+                    : JSON.stringify([this.kidsPaymentId]))
+                : null,
+            kids_paid_at: this.kidsPaidAt ? this.formatDateForDB(this.kidsPaidAt) : null,
+            group_assigned: this.nullIfUndefined(this.groupAssigned),
             updated_at: this.formatDateForDB(this.updatedAt || new Date().toISOString()),
         };
         if (!this.id) {
@@ -190,6 +300,11 @@ class Registration {
             organization: row.organization,
             jobTitle: row.job_title,
             address: row.address,
+            addressStreet: row.address_street,
+            city: row.city,
+            state: row.state,
+            zipCode: row.zip_code,
+            country: row.country,
             mobile: row.mobile,
             officePhone: row.office_phone,
             isFirstTimeAttending: !!row.is_first_time_attending,
@@ -206,13 +321,65 @@ class Registration {
             fridayDinner: row.friday_dinner,
             dietaryRestrictions: row.dietary_restrictions,
             specialRequests: row.special_requests,
+            transportationMethod: row.transportation_method,
+            transportationDetails: row.transportation_details,
+            stayingAtBeachClub: row.staying_at_beach_club !== undefined ? !!row.staying_at_beach_club : undefined,
+            accommodationDetails: row.accommodation_details,
+            dietaryRequirements: (() => {
+                if (row.dietary_requirements) {
+                    try {
+                        return typeof row.dietary_requirements === 'string' ? JSON.parse(row.dietary_requirements) : row.dietary_requirements;
+                    }
+                    catch (e) {
+                        return undefined;
+                    }
+                }
+                return undefined;
+            })(),
+            dietaryRequirementsOther: row.dietary_requirements_other,
+            specialPhysicalNeeds: row.special_physical_needs !== undefined ? !!row.special_physical_needs : undefined,
+            specialPhysicalNeedsDetails: row.special_physical_needs_details,
             clubRentals: row.club_rentals || undefined,
             golfHandicap: row.golf_handicap,
             massageTimeSlot: row.massage_time_slot,
+            pickleballEquipment: !!row.pickleball_equipment,
             spouseDinnerTicket: !!row.spouse_dinner_ticket,
             spouseBreakfast: !!row.spouse_breakfast,
             spouseFirstName: row.spouse_first_name,
             spouseLastName: row.spouse_last_name,
+            kids: (() => {
+                if (row.kids_data) {
+                    try {
+                        if (typeof row.kids_data === 'string') {
+                            return JSON.parse(row.kids_data);
+                        }
+                        else if (typeof row.kids_data === 'object') {
+                            return row.kids_data;
+                        }
+                        return undefined;
+                    }
+                    catch (e) {
+                        console.error('Error parsing kids_data:', e);
+                        return undefined;
+                    }
+                }
+                else if (row.child_first_name || row.child_last_name) {
+                    return [{
+                            firstName: row.child_first_name || '',
+                            lastName: row.child_last_name || '',
+                            badgeName: `${row.child_first_name || ''} ${row.child_last_name || ''}`.trim(),
+                            age: 0,
+                            lunchTicket: !!row.child_lunch_ticket,
+                        }];
+                }
+                return undefined;
+            })(),
+            kidsTotalPrice: row.kids_total_price ?? undefined,
+            discountCode: row.discount_code,
+            discountAmount: row.discount_amount ?? undefined,
+            childFirstName: row.child_first_name,
+            childLastName: row.child_last_name,
+            childLunchTicket: !!row.child_lunch_ticket,
             totalPrice: row.total_price,
             paymentMethod: row.payment_method,
             createdAt: row.created_at,
@@ -222,7 +389,11 @@ class Registration {
             cancellationAt: row.cancellation_at,
             tuesdayEarlyReception: row.tuesday_early_reception,
             paid: !!row.paid,
+            paidAt: row.paid_at,
             squarePaymentId: row.square_payment_id,
+            spousePaymentId: row.spouse_payment_id,
+            spousePaidAt: row.spouse_paid_at,
+            groupAssigned: row.group_assigned || undefined,
             name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
             category: row.wednesday_activity || 'Networking',
         });

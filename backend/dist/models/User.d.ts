@@ -20,7 +20,9 @@ export declare class User {
     set createdAt(value: string | undefined);
     get updatedAt(): string | undefined;
     set updatedAt(value: string | undefined);
-    toJSON(): Omit<IUser, 'password'>;
+    toJSON(): Omit<IUser, 'password'> & {
+        emailVerifiedAt?: string | null;
+    };
     toDatabase(): any;
     static fromDatabase(row: any): User;
     static isValidEmail(email: string): boolean;

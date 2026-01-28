@@ -2,6 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Group = void 0;
 class Group {
+    formatDateForDB(dateValue) {
+        if (!dateValue) {
+            return new Date().toISOString().slice(0, 19).replace('T', ' ');
+        }
+        const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+        if (isNaN(date.getTime())) {
+            return new Date().toISOString().slice(0, 19).replace('T', ' ');
+        }
+        return date.toISOString().slice(0, 19).replace('T', ' ');
+    }
     constructor(data) {
         this.id = data.id;
         this.eventId = data.eventId || 1;
@@ -28,8 +38,8 @@ class Group {
             category: this.category,
             name: this.name,
             members: JSON.stringify(this.members),
-            created_at: this.createdAt,
-            updated_at: this.updatedAt
+            created_at: this.formatDateForDB(this.createdAt || new Date().toISOString()),
+            updated_at: this.formatDateForDB(this.updatedAt || new Date().toISOString())
         };
     }
     static fromDatabase(row) {

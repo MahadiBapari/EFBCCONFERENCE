@@ -7,6 +7,7 @@ export declare class Group {
     members: number[];
     createdAt?: string;
     updatedAt?: string;
+    private formatDateForDB;
     constructor(data: Partial<IGroup>);
     toJSON(): IGroup;
     toDatabase(): any;

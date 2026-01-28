@@ -27,6 +27,13 @@ router.use(ensureController);
 router.get('/', async (req, res) => {
     await req.registrationController.getRegistrations(req, res);
 });
+router.get('/event/:eventId', async (req, res) => {
+    req.query = { ...req.query, eventId: req.params.eventId };
+    await req.registrationController.getRegistrations(req, res);
+});
+router.post('/:id/resend-confirmation', async (req, res) => {
+    await req.registrationController.resendConfirmationEmail(req, res);
+});
 router.get('/:id', async (req, res) => {
     await req.registrationController.getRegistrationById(req, res);
 });
@@ -36,11 +43,11 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     await req.registrationController.updateRegistration(req, res);
 });
+router.post('/bulk-delete', async (req, res) => {
+    await req.registrationController.bulkDeleteRegistrations(req, res);
+});
 router.delete('/:id', async (req, res) => {
     await req.registrationController.deleteRegistration(req, res);
-});
-router.delete('/bulk', async (req, res) => {
-    await req.registrationController.bulkDeleteRegistrations(req, res);
 });
 exports.default = router;
 //# sourceMappingURL=registrationRoutes.js.map

@@ -1,9 +1,31 @@
+type MailPayload = {
+    to: string;
+    subject: string;
+    text: string;
+    html: string;
+};
+export declare const queueEmail: (payload: MailPayload, maxRetries?: number) => void;
+export declare const getEmailQueueStatus: () => {
+    queueLength: number;
+    processing: boolean;
+};
 export declare function sendVerificationEmail(to: string, token: string): Promise<void>;
+export declare function sendVerificationCompleteEmail(to: string, userName?: string): Promise<void>;
 export declare function sendRegistrationConfirmationEmail(params: {
     to: string;
     name: string;
     eventName?: string;
     eventDate?: string;
+    eventStartDate?: string;
+    totalPrice?: number;
+    registration?: any;
+}): Promise<void>;
+export declare function sendRegistrationUpdateEmail(params: {
+    to: string;
+    name: string;
+    eventName?: string;
+    eventDate?: string;
+    eventStartDate?: string;
     totalPrice?: number;
     registration?: any;
 }): Promise<void>;
@@ -21,6 +43,13 @@ export declare function sendCancellationRequestAdminEmail(params: {
     eventName?: string;
     reason?: string | null;
 }): Promise<void>;
+export declare function sendCancellationRequestConfirmationEmail(params: {
+    to: string;
+    userName?: string;
+    eventName?: string;
+    registrationId: number;
+    reason?: string | null;
+}): Promise<void>;
 export declare function sendCancellationDecisionEmail(params: {
     to: string;
     userName?: string;
@@ -34,4 +63,5 @@ export declare function sendRegistrationRestoredEmail(params: {
     userName?: string;
     eventName?: string;
 }): Promise<void>;
+export {};
 //# sourceMappingURL=emailService.d.ts.map

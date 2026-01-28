@@ -11,5 +11,6 @@ export declare class UserController {
     deleteUser(req: Request, res: Response): Promise<void>;
     login(req: Request, res: Response): Promise<void>;
     register(req: Request, res: Response): Promise<void>;
+    verifyUser(req: Request, res: Response): Promise<void>;
 }
 //# sourceMappingURL=userController.d.ts.map

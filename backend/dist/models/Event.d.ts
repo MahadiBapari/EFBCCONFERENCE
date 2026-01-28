@@ -5,7 +5,10 @@ export declare class Event {
     name: string;
     date: string;
     startDate?: string;
-    activities?: string[];
+    activities?: Array<{
+        name: string;
+        seatLimit?: number;
+    }> | string[];
     location?: string;
     description?: string[];
     createdAt?: string;
@@ -24,6 +27,13 @@ export declare class Event {
     }>;
     breakfastPrice?: number;
     breakfastEndDate?: string;
+    childLunchPrice?: number;
+    kidsPricing?: Array<{
+        label: string;
+        price: number;
+        startDate?: string;
+        endDate?: string;
+    }>;
     constructor(data: Partial<IEvent> & {
         spousePricing?: any;
     });

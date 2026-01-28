@@ -25,9 +25,6 @@ router.post('/login', async (req, res) => {
         const ok = await bcryptjs_1.default.compare(password, u.password);
         if (!ok)
             return res.status(401).json({ success: false, error: 'Invalid password' });
-        if (!u.email_verified_at) {
-            return res.status(403).json({ success: false, error: 'Email not verified' });
-        }
         const user = { id: u.id, name: u.name, email: u.email, role: u.role };
         return res.json({ success: true, data: { user, token: sign(user) } });
     }
@@ -141,25 +138,86 @@ router.post('/reset-password', async (req, res) => {
 });
 router.get('/verify-email', async (req, res) => {
     try {
-        const token = req.query.token || '';
+        let token = req.query.token || '';
+        try {
+            token = decodeURIComponent(token).trim();
+        }
+        catch (e) {
+            token = token.trim();
+        }
         if (!token)
             return res.status(400).json({ success: false, error: 'Token is required' });
+        console.log(`[VERIFY] Attempting verification with token: length=${token.length}, prefix=${token.substring(0, 10)}`);
         const db = getDb();
-        const rows = await db.query('SELECT id, email_verification_expires_at FROM users WHERE email_verification_token=? LIMIT 1', [token]);
-        const u = rows[0];
-        if (!u)
-            return res.status(400).json({ success: false, error: 'Invalid token' });
-        if (u.email_verification_expires_at && new Date(u.email_verification_expires_at).getTime() < Date.now()) {
-            return res.status(400).json({ success: false, error: 'Token expired' });
+        const rows = await db.query('SELECT id, email, email_verification_expires_at, email_verified_at, email_verification_token FROM users WHERE email_verification_token=? LIMIT 1', [token]);
+        if (!rows[0] || rows.length === 0) {
+            console.log(`[VERIFY] Token not found - may have been used already. Token length: ${token.length}, prefix: ${token.substring(0, 10)}`);
+            console.log(`[VERIFY] Token not found in database. Token length: ${token.length}, prefix: ${token.substring(0, 10)}`);
+            const allTokens = await db.query('SELECT id, email, email_verification_token, LENGTH(email_verification_token) as token_len FROM users WHERE email_verification_token IS NOT NULL LIMIT 5');
+            console.warn('Email verification failed: Invalid token', {
+                tokenLength: token.length,
+                tokenPrefix: token.substring(0, 10),
+                tokenSuffix: token.substring(token.length - 10),
+                tokensInDb: allTokens.length,
+                sampleTokens: allTokens.map((t) => ({
+                    id: t.id,
+                    email: t.email,
+                    tokenLen: t.token_len,
+                    tokenPrefix: t.email_verification_token?.substring(0, 10)
+                }))
+            });
+            const allUsersWithTokens = await db.query('SELECT id, email, email_verification_token, email_verification_expires_at FROM users WHERE email_verification_token IS NOT NULL');
+            for (const user of allUsersWithTokens) {
+                const dbToken = user.email_verification_token;
+                if (dbToken && (dbToken.includes(token.substring(0, 20)) || token.includes(dbToken.substring(0, 20)))) {
+                    console.warn(`[VERIFY] Possible token mismatch for user ${user.id} (${user.email}). DB token prefix: ${dbToken.substring(0, 10)}, provided token prefix: ${token.substring(0, 10)}`);
+                }
+            }
+            const frontendUrl = process.env.FRONTEND_URL || process.env.EMAIL_VERIFY_REDIRECT || 'http://localhost:3000';
+            return res.redirect(302, `${frontendUrl}/login?token_used=true`);
         }
-        await db.query('UPDATE users SET email_verified_at=NOW(), email_verification_token=NULL, email_verification_expires_at=NULL WHERE id=?', [u.id]);
-        const redirect = process.env.EMAIL_VERIFY_REDIRECT;
-        if (redirect)
-            return res.redirect(302, redirect);
+        const u = rows[0];
+        if (u.email_verified_at) {
+            console.log(`[VERIFY] User ${u.id} (${u.email}) is already verified. Token may be stale.`);
+            const redirect = process.env.EMAIL_VERIFY_REDIRECT || process.env.FRONTEND_URL || 'http://localhost:3000';
+            if (redirect)
+                return res.redirect(302, `${redirect}/login?verified=true`);
+            return res.json({ success: true, message: 'Email already verified' });
+        }
+        const expiresAt = u.email_verification_expires_at ? new Date(u.email_verification_expires_at).getTime() : null;
+        const now = Date.now();
+        if (expiresAt && expiresAt < now) {
+            console.log(`[VERIFY] Token expired for user ${u.id} (${u.email}). Expires: ${u.email_verification_expires_at}, Now: ${new Date(now).toISOString()}`);
+            const frontendUrl = process.env.FRONTEND_URL || process.env.EMAIL_VERIFY_REDIRECT || 'http://localhost:3000';
+            return res.redirect(302, `${frontendUrl}/resend-verification?email=${encodeURIComponent(u.email)}&expired=true`);
+        }
+        console.log(`[VERIFY] Token is valid for user ${u.id} (${u.email}). Proceeding with verification...`);
+        const updateResult = await db.query('UPDATE users SET email_verified_at=NOW(), email_verification_token=NULL, email_verification_expires_at=NULL WHERE id=? AND email_verified_at IS NULL', [u.id]);
+        if (updateResult.affectedRows === 0) {
+            console.log(`[VERIFY] User ${u.id} (${u.email}) was already verified by another request. This is normal for concurrent requests.`);
+            const redirect = process.env.EMAIL_VERIFY_REDIRECT || process.env.FRONTEND_URL || 'http://localhost:3000';
+            if (redirect)
+                return res.redirect(302, `${redirect}/login?verified=true`);
+            return res.json({ success: true, message: 'Email already verified' });
+        }
+        const verifyUpdate = await db.query('SELECT id, email, email_verified_at FROM users WHERE id=? LIMIT 1', [u.id]);
+        if (!verifyUpdate[0] || !verifyUpdate[0].email_verified_at) {
+            console.error(`[VERIFY] Failed to verify email for user ${u.id}. Update query may have failed.`, {
+                updateResult,
+                verifyUpdate: verifyUpdate[0]
+            });
+            return res.status(500).json({ success: false, error: 'Failed to verify email. Please try again.' });
+        }
+        console.log(`[VERIFY] Successfully verified email for user ${u.id} (${u.email}). Verified at: ${verifyUpdate[0].email_verified_at}`);
+        const redirect = process.env.EMAIL_VERIFY_REDIRECT || process.env.FRONTEND_URL || 'http://localhost:3000';
+        if (redirect) {
+            return res.redirect(302, `${redirect}/login?verified=true&email=${encodeURIComponent(u.email)}`);
+        }
         return res.json({ success: true, message: 'Email verified successfully' });
     }
     catch (e) {
-        return res.status(500).json({ success: false, error: 'Verification failed' });
+        console.error('Email verification error:', e);
+        return res.status(500).json({ success: false, error: 'Verification failed. Please try again or contact support.' });
     }
 });
 router.post('/resend-verification', async (req, res) => {
@@ -168,27 +226,80 @@ router.post('/resend-verification', async (req, res) => {
         if (!email)
             return res.status(400).json({ success: false, error: 'Email is required' });
         const db = getDb();
-        const rows = await db.query('SELECT id, email_verified_at FROM users WHERE email=? LIMIT 1', [email]);
+        const rows = await db.query('SELECT id, email, email_verified_at, email_verification_token FROM users WHERE email=? LIMIT 1', [email]);
         const u = rows[0];
         if (!u)
             return res.status(404).json({ success: false, error: 'User not found' });
-        if (u.email_verified_at)
-            return res.json({ success: true, message: 'Email already verified' });
+        if (u.email_verified_at) {
+            console.log(`[RESEND] User ${u.id} (${email}) is already verified. Skipping token generation.`);
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+            return res.json({
+                success: true,
+                message: 'Email already verified',
+                redirect: `${frontendUrl}/login?verified=true`
+            });
+        }
         const token = crypto_1.default.randomBytes(32).toString('hex');
-        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+        console.log(`[RESEND] Generated token for user ${u.id} (${email}): length=${token.length}, prefix=${token.substring(0, 10)}`);
+        if (u.email_verification_token) {
+            console.log(`[RESEND] Replacing old token for user ${u.id}. Old token prefix: ${u.email_verification_token.substring(0, 10)}`);
+        }
+        const expires = new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
         await db.query('UPDATE users SET email_verification_token=?, email_verification_expires_at=? WHERE id=?', [token, expires, u.id]);
-        setImmediate(async () => {
-            try {
-                await (0, emailService_1.sendVerificationEmail)(email, token);
-            }
-            catch (e) {
-                console.error('SMTP sendVerificationEmail failed:', e?.message || e);
-            }
-        });
-        return res.json({ success: true, message: 'Verification email sent' });
+        const verifyToken = await db.query('SELECT email_verification_token, LENGTH(email_verification_token) as token_len FROM users WHERE id=? LIMIT 1', [u.id]);
+        if (!verifyToken[0] || !verifyToken[0].email_verification_token) {
+            console.error(`[RESEND] Failed to save verification token for user ${u.id}. Token in DB:`, verifyToken[0]);
+            return res.status(500).json({ success: false, error: 'Failed to generate verification token. Please try again.' });
+        }
+        if (verifyToken[0].email_verification_token !== token) {
+            console.error(`[RESEND] Token mismatch for user ${u.id}. Expected: ${token.substring(0, 10)}..., Got: ${verifyToken[0].email_verification_token?.substring(0, 10)}...`);
+            return res.status(500).json({ success: false, error: 'Token verification failed. Please try again.' });
+        }
+        console.log(`[RESEND] Token saved successfully for user ${u.id}. Token length in DB: ${verifyToken[0].token_len}`);
+        try {
+            await (0, emailService_1.sendVerificationEmail)(email, token);
+            console.log(`[RESEND] Verification email sent to ${email}`);
+        }
+        catch (e) {
+            console.error('SMTP sendVerificationEmail failed:', e?.message || e);
+        }
+        return res.json({ success: true, message: 'Verification email sent. Please check your inbox.' });
     }
     catch (e) {
-        return res.status(500).json({ success: false, error: 'Resend failed' });
+        console.error('Resend verification error:', e);
+        return res.status(500).json({ success: false, error: 'Failed to resend verification email. Please try again later.' });
+    }
+});
+router.get('/resend-verification', async (req, res) => {
+    try {
+        const email = req.query.email || '';
+        if (!email) {
+            return res.json({ success: true, email: null });
+        }
+        const db = getDb();
+        const rows = await db.query('SELECT id, email, email_verified_at FROM users WHERE email=? LIMIT 1', [email]);
+        const u = rows[0];
+        if (!u) {
+            return res.json({ success: false, error: 'User not found', email: null });
+        }
+        if (u.email_verified_at) {
+            return res.json({
+                success: true,
+                email: u.email,
+                verified: true,
+                message: 'Email already verified'
+            });
+        }
+        return res.json({
+            success: true,
+            email: u.email,
+            verified: false,
+            canResend: true
+        });
+    }
+    catch (e) {
+        console.error('Get resend verification error:', e);
+        return res.status(500).json({ success: false, error: 'Failed to check verification status' });
     }
 });
 //# sourceMappingURL=authRoutes.js.map
