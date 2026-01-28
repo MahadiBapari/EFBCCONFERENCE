@@ -3213,19 +3213,33 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 {!isEditing && (
                   <div className="form-group">
                     <label className="form-label">Discount Code (Optional)</label>
-                    <input
-                      type="text"
-                      className={`form-control ${discountCodeError ? 'error' : ''}`}
-                      value={discountCodeInput}
-                      onChange={(e) => {
-                        const code = e.target.value.toUpperCase();
-                        setDiscountCodeInput(code);
-                        validateDiscountCode(code);
-                      }}
-                      placeholder="Enter discount code"
-                      disabled={validatingDiscountCode || isSubmitting}
-                      style={{ textTransform: 'uppercase' }}
-                    />
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                      <input
+                        type="text"
+                        className={`form-control ${discountCodeError ? 'error' : ''}`}
+                        value={discountCodeInput}
+                        onChange={(e) => {
+                          const code = e.target.value.toUpperCase();
+                          setDiscountCodeInput(code);
+                          // Reset validation state when the user edits the code
+                          setDiscountCodeError('');
+                          setDiscountCodeData(null);
+                          handleInputChange('discountCode', '');
+                          handleInputChange('discountAmount', undefined);
+                        }}
+                        placeholder="Enter discount code"
+                        disabled={validatingDiscountCode || isSubmitting}
+                        style={{ textTransform: 'uppercase' }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        disabled={!discountCodeInput.trim() || validatingDiscountCode || isSubmitting}
+                        onClick={() => validateDiscountCode(discountCodeInput)}
+                      >
+                        {validatingDiscountCode ? 'Checking...' : 'Apply'}
+                      </button>
+                    </div>
                     {validatingDiscountCode && (
                       <small className="form-text text-muted" style={{ display: 'block', marginTop: '0.25rem' }}>
                         Validating...
