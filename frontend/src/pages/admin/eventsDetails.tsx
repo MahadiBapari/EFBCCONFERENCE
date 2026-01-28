@@ -86,7 +86,7 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
   const dateDisplay = startDateStr ? `${startDateStr} - ${endDateStr}` : endDateStr;
 
   return (
-    <div className="container">
+    <div className="container event-details-page">
       <div className="page-header">
         <div>
           <button onClick={onBack} className="btn btn-secondary back-button">← Back to Events</button>

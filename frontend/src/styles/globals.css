@@ -749,6 +749,17 @@ input[type="checkbox"] {
   text-align: center;
 }
 
+/* Event details page: make all tables wrap and cards shrink to content */
+.event-details-page .table-wrapper {
+  max-height: none;
+  overflow-y: visible;
+}
+
+.event-details-page .table th,
+.event-details-page .table td {
+  white-space: normal;
+}
+
 /* Print Styles */
 @media print {
   .sidebar,
