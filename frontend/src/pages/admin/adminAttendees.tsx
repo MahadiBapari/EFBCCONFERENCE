@@ -777,26 +777,22 @@ const confirmSingleDelete = async () => {
       'Payment Method': reg.paymentMethod,
       'Paid?': (reg as any).paid ? 'Yes' : 'No',
       'Payment ID': (reg as any).squarePaymentId || '',
-      // Fix: Check multiple possible field names and use helper function
-      'Payment Date/Time (EST)': formatPaymentDateTime(
-        (reg as any).paidAt || 
-        (reg as any).paid_at || 
-        ((reg as any).paid && (reg as any).createdAt ? (reg as any).createdAt : null)
-      ),
+      // Fix: Use paidAt if available, otherwise fall back to createdAt when paid is true
+      'Payment Date/Time (EST)': (reg as any).paid 
+        ? formatPaymentDateTime((reg as any).paidAt || (reg as any).paid_at || reg.createdAt)
+        : '',
       'Spouse Payment ID': (reg as any).spousePaymentId || '',
-      'Spouse Payment Date/Time (EST)': formatPaymentDateTime(
-        (reg as any).spousePaidAt || 
-        (reg as any).spouse_paid_at
-      ),
+      'Spouse Payment Date/Time (EST)': (reg as any).spousePaymentId
+        ? formatPaymentDateTime((reg as any).spousePaidAt || (reg as any).spouse_paid_at || reg.createdAt)
+        : '',
       'Children Payment ID(s)': (reg as any).kidsPaymentId
         ? (Array.isArray((reg as any).kidsPaymentId)
             ? (reg as any).kidsPaymentId.join(', ')
             : String((reg as any).kidsPaymentId))
         : '',
-      'Children Payment Date/Time (EST)': formatPaymentDateTime(
-        (reg as any).kidsPaidAt || 
-        (reg as any).kids_paid_at
-      ),
+      'Children Payment Date/Time (EST)': (reg as any).kidsPaymentId
+        ? formatPaymentDateTime((reg as any).kidsPaidAt || (reg as any).kids_paid_at || reg.createdAt)
+        : '',
       'Total Price': reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : '',
     }));
 
@@ -1649,8 +1645,12 @@ const confirmSingleDelete = async () => {
                     <td style={{ width: `${columnWidths.paid}px`, minWidth: `${columnWidths.paid}px` }}>{(reg as any).paid ? 'Yes' : 'No'}</td>
                     <td style={{ width: `${columnWidths.paymentId}px`, minWidth: `${columnWidths.paymentId}px` }}>{displayValue((reg as any).squarePaymentId)}</td>
                     <td style={{ width: `${columnWidths.paymentDate}px`, minWidth: `${columnWidths.paymentDate}px` }}>
-                      {(reg as any).paid && (reg as any).paidAt 
-                        ? new Date((reg as any).paidAt).toLocaleString('en-US', {
+                      {(() => {
+                        if (!(reg as any).paid) return '';
+                        const dateValue = (reg as any).paidAt || reg.createdAt;
+                        if (!dateValue) return '';
+                        try {
+                          return new Date(dateValue).toLocaleString('en-US', {
                             timeZone: 'America/New_York',
                             year: 'numeric',
                             month: 'short',
@@ -1660,15 +1660,22 @@ const confirmSingleDelete = async () => {
                             second: '2-digit',
                             hour12: true,
                             timeZoneName: 'short'
-                          })
-                        : ''}
+                          });
+                        } catch (e) {
+                          return '';
+                        }
+                      })()}
                     </td>
                     {hasSpousePaymentIds && (
                       <>
                         <td style={{ width: `${columnWidths.spousePaymentId}px`, minWidth: `${columnWidths.spousePaymentId}px` }}>{displayValue((reg as any).spousePaymentId)}</td>
                         <td style={{ width: `${columnWidths.spousePaymentDate}px`, minWidth: `${columnWidths.spousePaymentDate}px` }}>
-                          {(reg as any).spousePaymentId && (reg as any).spousePaidAt
-                            ? new Date((reg as any).spousePaidAt).toLocaleString('en-US', {
+                          {(() => {
+                            if (!(reg as any).spousePaymentId) return '';
+                            const dateValue = (reg as any).spousePaidAt || reg.createdAt;
+                            if (!dateValue) return '';
+                            try {
+                              return new Date(dateValue).toLocaleString('en-US', {
                                 timeZone: 'America/New_York',
                                 year: 'numeric',
                                 month: 'short',
@@ -1678,8 +1685,11 @@ const confirmSingleDelete = async () => {
                                 second: '2-digit',
                                 hour12: true,
                                 timeZoneName: 'short'
-                              })
-                            : ''}
+                              });
+                            } catch (e) {
+                              return '';
+                            }
+                          })()}
                         </td>
                       </>
                     )}
@@ -1693,8 +1703,12 @@ const confirmSingleDelete = async () => {
                             : ''}
                         </td>
                         <td style={{ width: `${columnWidths.kidsPaymentDate}px`, minWidth: `${columnWidths.kidsPaymentDate}px` }}>
-                          {(reg as any).kidsPaymentId && (reg as any).kidsPaidAt
-                            ? new Date((reg as any).kidsPaidAt).toLocaleString('en-US', {
+                          {(() => {
+                            if (!(reg as any).kidsPaymentId) return '';
+                            const dateValue = (reg as any).kidsPaidAt || reg.createdAt;
+                            if (!dateValue) return '';
+                            try {
+                              return new Date(dateValue).toLocaleString('en-US', {
                                 timeZone: 'America/New_York',
                                 year: 'numeric',
                                 month: 'short',
@@ -1704,8 +1718,11 @@ const confirmSingleDelete = async () => {
                                 second: '2-digit',
                                 hour12: true,
                                 timeZoneName: 'short'
-                              })
-                            : ''}
+                              });
+                            } catch (e) {
+                              return '';
+                            }
+                          })()}
                         </td>
                       </>
                     )}
