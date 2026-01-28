@@ -770,7 +770,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         } : {}),
         // Include discount code if provided
         discountCode: discountCodeInput.trim() || undefined,
-        discountAmount: discountCodeData ? (() => {
+        discountAmount: discountCodeData && typeof discountCodeData.discountValue === 'number' ? (() => {
           let discountAmount = 0;
           if (discountCodeData.discountType === 'percentage') {
             discountAmount = ((formData.totalPrice || 0) * discountCodeData.discountValue) / 100;
@@ -852,7 +852,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       let spousePrice = active?.price ?? 0;
       
       // Apply discount if discount code is valid
-      if (discountCodeData) {
+      if (discountCodeData && typeof discountCodeData.discountValue === 'number') {
         let discountAmount = 0;
         if (discountCodeData.discountType === 'percentage') {
           discountAmount = (spousePrice * discountCodeData.discountValue) / 100;
@@ -959,7 +959,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         spousePaidAt: new Date().toISOString(), // Set spouse payment timestamp
         // Include discount code if provided
         discountCode: discountCodeInput.trim() || undefined,
-        discountAmount: discountCodeData ? (() => {
+        discountAmount: discountCodeData && typeof discountCodeData.discountValue === 'number' ? (() => {
           const now = getCurrentEasternTime();
           const tiers = (event.spousePricing || []).map((t: any) => ({
             ...t,
@@ -1064,7 +1064,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       let kidsPrice = pricePerKid * newKidsCount;
       
       // Apply discount if discount code is valid
-      if (discountCodeData) {
+      if (discountCodeData && typeof discountCodeData.discountValue === 'number') {
         let discountAmount = 0;
         if (discountCodeData.discountType === 'percentage') {
           discountAmount = (kidsPrice * discountCodeData.discountValue) / 100;
@@ -1180,7 +1180,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         kidsPaidAt: new Date().toISOString(), // Set kids payment timestamp
         // Include discount code if provided
         discountCode: discountCodeInput.trim() || undefined,
-        discountAmount: discountCodeData ? (() => {
+        discountAmount: discountCodeData && typeof discountCodeData.discountValue === 'number' ? (() => {
           const now = getCurrentEasternTime();
           const tiers = (event.kidsPricing || []).map((t: any) => ({
             ...t,
@@ -1313,7 +1313,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       let combinedPrice = spousePrice + kidsPrice;
       
       // Apply discount if discount code is valid
-      if (discountCodeData) {
+      if (discountCodeData && typeof discountCodeData.discountValue === 'number') {
         let discountAmount = 0;
         if (discountCodeData.discountType === 'percentage') {
           discountAmount = (combinedPrice * discountCodeData.discountValue) / 100;
@@ -1437,7 +1437,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         kidsPaidAt: paymentTimestamp, // Same timestamp for combined transaction
         // Include discount code if provided
         discountCode: discountCodeInput.trim() || undefined,
-        discountAmount: discountCodeData ? (() => {
+        discountAmount: discountCodeData && typeof discountCodeData.discountValue === 'number' ? (() => {
           const now = getCurrentEasternTime();
           const spouseTiers = (event.spousePricing || []).map((t: any) => ({
             ...t,
@@ -1637,7 +1637,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       let baseTotal = Number(formData.totalPrice || 0);
       
       // Apply discount ONLY for new registrations (not when editing)
-      if (discountCodeData && !isEditing) {
+      if (discountCodeData && typeof discountCodeData.discountValue === 'number' && !isEditing) {
         let discountAmount = 0;
         if (discountCodeData.discountType === 'percentage') {
           discountAmount = (baseTotal * discountCodeData.discountValue) / 100;
@@ -1747,7 +1747,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         paidAt: new Date().toISOString(), // Set payment timestamp
         // Include discount code if provided
         discountCode: discountCodeInput.trim() || undefined,
-        discountAmount: discountCodeData ? (() => {
+        discountAmount: discountCodeData && typeof discountCodeData.discountValue === 'number' ? (() => {
           let discountAmount = 0;
           if (discountCodeData.discountType === 'percentage') {
             discountAmount = (Number(formData.totalPrice || 0) * discountCodeData.discountValue) / 100;
@@ -3120,7 +3120,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   
                   // Apply discount ONLY for new registrations (not when editing existing ones)
                   let finalTotal = baseTotal;
-                  if (discountCodeData && !isEditing) {
+                  if (discountCodeData && typeof discountCodeData.discountValue === 'number' && !isEditing) {
                     let discountAmount = 0;
                     if (discountCodeData.discountType === 'percentage') {
                       discountAmount = (baseTotal * discountCodeData.discountValue) / 100;
@@ -3176,7 +3176,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       })()}</span>
                     </div>
                   ) : null}
-                  {discountCodeData && (() => {
+                  {discountCodeData && typeof discountCodeData.discountValue === 'number' && (() => {
                     let discountAmount = 0;
                     if (discountCodeData.discountType === 'percentage') {
                       discountAmount = (baseTotal * discountCodeData.discountValue) / 100;
@@ -3185,7 +3185,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     }
                     return discountAmount > 0 ? (
                       <div className="payment-item" style={{ color: '#10b981' }}>
-                        <span>Discount ({discountCodeData.code}):</span>
+                        <span>Discount ({discountCodeData.code || 'N/A'}):</span>
                         <span>-${discountAmount.toFixed(2)}</span>
                       </div>
                     ) : null;
@@ -3233,11 +3233,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     {discountCodeError && (
                       <div className="error-message" style={{ marginTop: '0.25rem' }}>{discountCodeError}</div>
                     )}
-                    {discountCodeData && !discountCodeError && (
+                    {discountCodeData && !discountCodeError && discountCodeData.discountValue !== undefined && typeof discountCodeData.discountValue === 'number' && (
                       <div style={{ marginTop: '0.25rem', color: '#10b981', fontSize: '0.875rem' }}>
                         ✓ Discount code applied: {discountCodeData.discountType === 'percentage' 
                           ? `${discountCodeData.discountValue}% off`
-                          : `$${discountCodeData.discountValue} off`}
+                          : `$${discountCodeData.discountValue.toFixed(2)} off`}
                       </div>
                     )}
                   </div>

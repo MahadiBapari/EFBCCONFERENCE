@@ -319,8 +319,8 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
                         <td>{code.discountType === 'percentage' ? 'Percentage' : 'Fixed Amount'}</td>
                         <td>
                           {code.discountType === 'percentage' 
-                            ? `${code.discountValue}%` 
-                            : `$${code.discountValue.toFixed(2)}`}
+                            ? `${code.discountValue || 0}%` 
+                            : `$${(typeof code.discountValue === 'number' ? code.discountValue : 0).toFixed(2)}`}
                         </td>
                         <td>{code.expiryDate ? formatDateShort(code.expiryDate) : 'No expiry'}</td>
                         <td>{code.usageLimit || 'Unlimited'}</td>
