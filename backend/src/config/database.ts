@@ -7,7 +7,8 @@ const connectDB = async (): Promise<mysql.Connection> => {
       user: process.env.DB_USER || 'efbcuser',
       password: process.env.DB_PASSWORD || 'efbcpassword',
       database: process.env.DB_NAME || 'railway',
-      port: parseInt(process.env.DB_PORT || '3306')
+      port: parseInt(process.env.DB_PORT || '3306'),
+      decimalNumbers: true  // Returns DECIMAL values as numbers instead of strings
     });
 
     console.log('✅ Connected to MySQL database');
