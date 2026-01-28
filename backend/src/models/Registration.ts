@@ -268,6 +268,7 @@ export class Registration {
     if (this.cancellationAt) (base as any).cancellationAt = this.cancellationAt;
     if (this.tuesdayEarlyReception) (base as any).tuesdayEarlyReception = this.tuesdayEarlyReception;
     if (typeof this.paid === 'boolean') (base as any).paid = this.paid;
+    if (this.paidAt) (base as any).paidAt = this.paidAt;
     if (this.squarePaymentId) (base as any).squarePaymentId = this.squarePaymentId;
     if (this.spousePaymentId) (base as any).spousePaymentId = this.spousePaymentId;
     if (this.spousePaidAt) (base as any).spousePaidAt = this.spousePaidAt;
