@@ -250,6 +250,7 @@ useEffect(() => {
         totalPrice: Number(r.totalPrice ?? 675),
         paymentMethod: r.paymentMethod ?? 'Card',
         paid: r.paid ?? false,
+        paidAt: r.paidAt ?? r.paid_at,
         squarePaymentId: r.squarePaymentId ?? r.square_payment_id,
         spousePaymentId: r.spousePaymentId ?? r.spouse_payment_id,
         spousePaidAt: r.spousePaidAt ?? r.spouse_paid_at,
