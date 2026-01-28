@@ -1633,10 +1633,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         throw new Error(userFriendlyMessage);
       }
       const nonce = res.token;
-      // Use formData.totalPrice (already discounted if editing with discount)
+      // Use formData.totalPrice (original price before discount)
       let baseTotal = Number(formData.totalPrice || 0);
       
       // Apply discount ONLY for new registrations (not when editing)
+      let finalTotal = baseTotal;
       if (discountCodeData && typeof discountCodeData.discountValue === 'number' && !isEditing) {
         let discountAmount = 0;
         if (discountCodeData.discountType === 'percentage') {
@@ -1644,10 +1645,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         } else {
           discountAmount = discountCodeData.discountValue;
         }
-        baseTotal = Math.max(0, baseTotal - discountAmount);
+        finalTotal = Math.max(0, baseTotal - discountAmount);
       }
       
-      const baseAmountCents = Math.round(baseTotal * 100);
+      const baseAmountCents = Math.round(finalTotal * 100);
       // Backend will calculate the final amount with fee when applyCardFee is true
       const payRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/payments/charge`, {
         method: 'POST',
@@ -1723,7 +1724,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         userId: user.id,
         eventId: event.id,
         ...formData,
-        totalPrice: baseTotal.toString(), // Save the base total (no processing fee)
+        totalPrice: finalTotal.toString(), // Save the amount AFTER discount (no processing fee)
         badgeName: (formData.badgeName || '').toUpperCase(), // Ensure badge name is saved in uppercase
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
@@ -3202,7 +3203,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   </div>
                   {isCard && (
                     <div className="payment-fee-note" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                      Base amount: ${baseTotal.toFixed(2)} + ${convenienceFee.toFixed(2)} fee = ${totalWithFee.toFixed(2)} total
+                      Base amount: ${finalTotal.toFixed(2)} + ${convenienceFee.toFixed(2)} fee = ${totalWithFee.toFixed(2)} total
                     </div>
                   )}
                 </div>
