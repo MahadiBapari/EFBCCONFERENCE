@@ -205,6 +205,7 @@ export const CATEGORIES = ["Golf", "Fishing", "Networking"];
 export const COMPANY_TYPES = [
   "Utility Company",
   "Media",
+  "Trade Association",
   "Supplier: Ash (Fly, Bottom, Coal) ",
   "Supplier: Broker",
   "Supplier: Coal Mine/Coal Producer",
