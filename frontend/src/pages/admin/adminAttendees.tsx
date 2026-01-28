@@ -683,6 +683,39 @@ const confirmSingleDelete = async () => {
   };
 
   const handleExportXlsx = () => {
+    // Get current date/time for downloaded date header
+    const downloadDateTime = new Date().toLocaleString('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+      timeZoneName: 'short'
+    });
+
+    // Helper function to format payment date/time
+    const formatPaymentDateTime = (dateString: string | undefined | null): string => {
+      if (!dateString) return '';
+      try {
+        return new Date(dateString).toLocaleString('en-US', {
+          timeZone: 'America/New_York',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+          timeZoneName: 'short'
+        });
+      } catch (e) {
+        return '';
+      }
+    };
+
     // Build row objects matching the detailed table
     const rows = filteredRegistrations.map((reg) => ({
       'ID': reg.id,
@@ -744,61 +777,75 @@ const confirmSingleDelete = async () => {
       'Payment Method': reg.paymentMethod,
       'Paid?': (reg as any).paid ? 'Yes' : 'No',
       'Payment ID': (reg as any).squarePaymentId || '',
-      'Payment Date/Time (EST)': (reg as any).paid && (reg as any).paidAt
-        ? new Date((reg as any).paidAt).toLocaleString('en-US', {
-            timeZone: 'America/New_York',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true,
-            timeZoneName: 'short'
-          })
-        : '',
+      // Fix: Check multiple possible field names and use helper function
+      'Payment Date/Time (EST)': formatPaymentDateTime(
+        (reg as any).paidAt || 
+        (reg as any).paid_at || 
+        ((reg as any).paid && (reg as any).createdAt ? (reg as any).createdAt : null)
+      ),
       'Spouse Payment ID': (reg as any).spousePaymentId || '',
-      'Spouse Payment Date/Time (EST)': (reg as any).spousePaymentId && (reg as any).spousePaidAt
-        ? new Date((reg as any).spousePaidAt).toLocaleString('en-US', {
-            timeZone: 'America/New_York',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true,
-            timeZoneName: 'short'
-          })
-        : '',
+      'Spouse Payment Date/Time (EST)': formatPaymentDateTime(
+        (reg as any).spousePaidAt || 
+        (reg as any).spouse_paid_at
+      ),
       'Children Payment ID(s)': (reg as any).kidsPaymentId
         ? (Array.isArray((reg as any).kidsPaymentId)
             ? (reg as any).kidsPaymentId.join(', ')
             : String((reg as any).kidsPaymentId))
         : '',
-      'Children Payment Date/Time (EST)': (reg as any).kidsPaymentId && (reg as any).kidsPaidAt
-        ? new Date((reg as any).kidsPaidAt).toLocaleString('en-US', {
-            timeZone: 'America/New_York',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true,
-            timeZoneName: 'short'
-          })
-        : '',
+      'Children Payment Date/Time (EST)': formatPaymentDateTime(
+        (reg as any).kidsPaidAt || 
+        (reg as any).kids_paid_at
+      ),
       'Total Price': reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : '',
     }));
 
+    // Create worksheet from data rows
     const ws = XLSX.utils.json_to_sheet(rows);
+    
+    // Get the range of the worksheet
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    
+    // Create new worksheet with shifted data
+    const newWs: any = {};
+    const downloadRow: any = {};
+    
+    // Add download date/time header row at the top
+    downloadRow['A1'] = { t: 's', v: 'Downloaded Date/Time (EST):' };
+    downloadRow['B1'] = { t: 's', v: downloadDateTime };
+    
+    // Copy all existing cells, shifting them down by 2 rows (1 for label, 1 for spacing)
+    Object.keys(ws).forEach(key => {
+      if (key.startsWith('!')) {
+        // Copy special properties (we'll update !ref later)
+        if (key !== '!ref') {
+          newWs[key] = ws[key];
+        }
+      } else {
+        const cell = XLSX.utils.decode_cell(key);
+        const newCell = XLSX.utils.encode_cell({ r: cell.r + 2, c: cell.c });
+        newWs[newCell] = ws[key];
+      }
+    });
+    
+    // Add the download date/time row
+    Object.keys(downloadRow).forEach(key => {
+      newWs[key] = downloadRow[key];
+    });
+    
+    // Update the range to include the new rows
+    const finalRange = XLSX.utils.encode_range({
+      s: { r: 0, c: 0 },
+      e: { r: range.e.r + 2, c: range.e.c }
+    });
+    newWs['!ref'] = finalRange;
+    
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Attendees');
+    XLSX.utils.book_append_sheet(wb, newWs, 'Attendees');
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
     link.href = url;
     
     // Generate filename with timestamp (format: attendees_YYYY-MM-DD_HH-MM-SS.xlsx)
@@ -812,9 +859,9 @@ const confirmSingleDelete = async () => {
     const timestamp = `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
     link.download = `attendees_${timestamp}.xlsx`;
     
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
