@@ -750,14 +750,16 @@ input[type="checkbox"] {
 }
 
 /* Event details page: make all tables wrap and cards shrink to content */
-.event-details-page .table-wrapper {
-  max-height: none;
-  overflow-y: visible;
+.event-details-page .card .table-wrapper {
+  max-height: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow-y: visible !important;
 }
 
-.event-details-page .table th,
-.event-details-page .table td {
-  white-space: normal;
+.event-details-page .card .table th,
+.event-details-page .card .table td {
+  white-space: normal !important;
 }
 
 /* Print Styles */
