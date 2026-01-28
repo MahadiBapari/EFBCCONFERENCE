@@ -174,6 +174,7 @@ export class Registration {
     this.cancellationReason = (data as any).cancellationReason as any;
     this.cancellationAt = (data as any).cancellationAt as any;
     this.paid = (data as any).paid as any;
+    this.paidAt = (data as any).paidAt ?? (data as any).paid_at ?? undefined;
     this.squarePaymentId = (data as any).squarePaymentId as any;
     this.spousePaymentId = (data as any).spousePaymentId ?? (data as any).spouse_payment_id ?? undefined;
     this.spousePaidAt = (data as any).spousePaidAt ?? (data as any).spouse_paid_at ?? undefined;
@@ -268,7 +269,7 @@ export class Registration {
     if (this.cancellationAt) (base as any).cancellationAt = this.cancellationAt;
     if (this.tuesdayEarlyReception) (base as any).tuesdayEarlyReception = this.tuesdayEarlyReception;
     if (typeof this.paid === 'boolean') (base as any).paid = this.paid;
-    if (this.paidAt) (base as any).paidAt = this.paidAt;
+    if (this.paid) (base as any).paidAt = this.paidAt || null;
     if (this.squarePaymentId) (base as any).squarePaymentId = this.squarePaymentId;
     if (this.spousePaymentId) (base as any).spousePaymentId = this.spousePaymentId;
     if (this.spousePaidAt) (base as any).spousePaidAt = this.spousePaidAt;
