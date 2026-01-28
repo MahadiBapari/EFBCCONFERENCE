@@ -777,13 +777,13 @@ const confirmSingleDelete = async () => {
       'Payment Method': reg.paymentMethod,
       'Paid?': (reg as any).paid ? 'Yes' : 'No',
       'Payment ID': (reg as any).squarePaymentId || '',
-      // Fix: Use paidAt if available, otherwise fall back to createdAt when paid is true
+      // Fix: Use paidAt if available, otherwise fall back to createdAt/created_at when paid is true
       'Payment Date/Time (EST)': (reg as any).paid 
-        ? formatPaymentDateTime((reg as any).paidAt || (reg as any).paid_at || reg.createdAt)
+        ? formatPaymentDateTime((reg as any).paidAt || (reg as any).paid_at || (reg as any).createdAt || (reg as any).created_at)
         : '',
       'Spouse Payment ID': (reg as any).spousePaymentId || '',
       'Spouse Payment Date/Time (EST)': (reg as any).spousePaymentId
-        ? formatPaymentDateTime((reg as any).spousePaidAt || (reg as any).spouse_paid_at || reg.createdAt)
+        ? formatPaymentDateTime((reg as any).spousePaidAt || (reg as any).spouse_paid_at || (reg as any).createdAt || (reg as any).created_at)
         : '',
       'Children Payment ID(s)': (reg as any).kidsPaymentId
         ? (Array.isArray((reg as any).kidsPaymentId)
@@ -791,7 +791,7 @@ const confirmSingleDelete = async () => {
             : String((reg as any).kidsPaymentId))
         : '',
       'Children Payment Date/Time (EST)': (reg as any).kidsPaymentId
-        ? formatPaymentDateTime((reg as any).kidsPaidAt || (reg as any).kids_paid_at || reg.createdAt)
+        ? formatPaymentDateTime((reg as any).kidsPaidAt || (reg as any).kids_paid_at || (reg as any).createdAt || (reg as any).created_at)
         : '',
       'Total Price': reg.totalPrice != null ? Number(reg.totalPrice).toFixed(2) : '',
     }));
@@ -1647,7 +1647,7 @@ const confirmSingleDelete = async () => {
                     <td style={{ width: `${columnWidths.paymentDate}px`, minWidth: `${columnWidths.paymentDate}px` }}>
                       {(() => {
                         if (!(reg as any).paid) return '';
-                        const dateValue = (reg as any).paidAt || reg.createdAt;
+                        const dateValue = (reg as any).paidAt || (reg as any).createdAt || (reg as any).created_at;
                         if (!dateValue) return '';
                         try {
                           return new Date(dateValue).toLocaleString('en-US', {
@@ -1672,7 +1672,7 @@ const confirmSingleDelete = async () => {
                         <td style={{ width: `${columnWidths.spousePaymentDate}px`, minWidth: `${columnWidths.spousePaymentDate}px` }}>
                           {(() => {
                             if (!(reg as any).spousePaymentId) return '';
-                            const dateValue = (reg as any).spousePaidAt || reg.createdAt;
+                            const dateValue = (reg as any).spousePaidAt || (reg as any).createdAt || (reg as any).created_at;
                             if (!dateValue) return '';
                             try {
                               return new Date(dateValue).toLocaleString('en-US', {
@@ -1705,7 +1705,7 @@ const confirmSingleDelete = async () => {
                         <td style={{ width: `${columnWidths.kidsPaymentDate}px`, minWidth: `${columnWidths.kidsPaymentDate}px` }}>
                           {(() => {
                             if (!(reg as any).kidsPaymentId) return '';
-                            const dateValue = (reg as any).kidsPaidAt || reg.createdAt;
+                            const dateValue = (reg as any).kidsPaidAt || (reg as any).createdAt || (reg as any).created_at;
                             if (!dateValue) return '';
                             try {
                               return new Date(dateValue).toLocaleString('en-US', {
