@@ -259,6 +259,9 @@ useEffect(() => {
         discountCode: r.discountCode ?? r.discount_code,
         discountAmount: r.discountAmount ?? r.discount_amount ?? undefined,
         groupAssigned: r.groupAssigned ?? r.group_assigned ?? undefined,
+        // Timestamps
+        createdAt: r.createdAt ?? r.created_at,
+        updatedAt: r.updatedAt ?? r.updated_at,
         // Legacy
         name: r.name ?? `${r.firstName || ''} ${r.lastName || ''}`.trim(),
         category: r.category ?? (r.wednesdayActivity ?? 'Networking'),
