@@ -318,6 +318,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const [discountCodeData, setDiscountCodeData] = useState<any | null>(null);
   const [discountCodeError, setDiscountCodeError] = useState('');
   const [validatingDiscountCode, setValidatingDiscountCode] = useState(false);
+  const [priceOverrideEnabled, setPriceOverrideEnabled] = useState(false);
+  const [priceOverride, setPriceOverride] = useState<number>(registration?.totalPrice || 675);
+  const [priceOverrideReason, setPriceOverrideReason] = useState<string>(registration?.pendingPaymentReason || '');
   
   // Load discount code data if registration already has a discount code
   useEffect(() => {
@@ -785,6 +788,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           }
           return discountAmount;
         })() : undefined,
+        // Include admin price override if enabled
+        ...(isAdminEdit && priceOverrideEnabled ? { totalPrice: priceOverride } : {}),
+        ...(isAdminEdit && priceOverrideEnabled && priceOverrideReason ? { pendingPaymentReason: priceOverrideReason } : {}),
       } as Registration;
       
       // For card payments, ensure payment was completed (has payment ID) - only check for new registrations
@@ -2957,6 +2963,106 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           {isAdminEdit && (
             <div className="form-section">
               <h3 className="section-title">Payment Information</h3>
+              
+              {/* Admin Price Override Section */}
+              <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <h4 style={{ marginTop: 0, marginBottom: '15px', color: '#374151', fontSize: '16px' }}>Admin Price Override</h4>
+                <div className="form-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={priceOverrideEnabled}
+                      onChange={(e) => {
+                        setPriceOverrideEnabled(e.target.checked);
+                        if (!e.target.checked) {
+                          // Reset to calculated price when disabled
+                          const now = getCurrentEasternTime();
+                          const regTiers = (event?.registrationPricing || []).map((t: any) => ({
+                            ...t,
+                            s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+                            e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+                          })).sort((a: any, b: any) => a.s - b.s);
+                          const regActive = regTiers.find((t: any) => now >= t.s && now < t.e) ||
+                            (now < regTiers[0]?.s ? regTiers[0] : (now >= regTiers[regTiers.length - 1]?.e ? regTiers[regTiers.length - 1] : (regTiers.find((t: any) => now < t.s) || regTiers[regTiers.length - 1])));
+                          let total = regActive?.price ?? 675;
+                          
+                          if (formData.spouseDinnerTicket) {
+                            const spouseTiers = (event?.spousePricing || []).map((t: any) => ({
+                              ...t,
+                              s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+                              e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+                            })).sort((a: any, b: any) => a.s - b.s);
+                            const spouseActive = spouseTiers.find((t: any) => now >= t.s && now < t.e) ||
+                              (now < spouseTiers[0]?.s ? spouseTiers[0] : (now >= spouseTiers[spouseTiers.length - 1]?.e ? spouseTiers[spouseTiers.length - 1] : (spouseTiers.find((t: any) => now < t.s) || spouseTiers[spouseTiers.length - 1])));
+                            total += (spouseActive?.price ?? 200);
+                          }
+                          
+                          if (kids.length > 0) {
+                            const kidsTiers = (event?.kidsPricing || []).map((t: any) => ({
+                              ...t,
+                              s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+                              e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+                            })).sort((a: any, b: any) => a.s - b.s);
+                            const kidsActive = kidsTiers.find((t: any) => now >= t.s && now < t.e) ||
+                              (now < kidsTiers[0]?.s ? kidsTiers[0] : (now >= kidsTiers[kidsTiers.length - 1]?.e ? kidsTiers[kidsTiers.length - 1] : (kidsTiers.find((t: any) => now < t.s) || kidsTiers[kidsTiers.length - 1])));
+                            const pricePerKid = kidsActive?.price ?? 50;
+                            total += pricePerKid * kids.length;
+                          }
+                          
+                          setPriceOverride(total);
+                          setFormData(prev => ({ ...prev, totalPrice: total }));
+                        }
+                      }}
+                    />
+                    <span>Override calculated price</span>
+                  </label>
+                </div>
+
+                {priceOverrideEnabled && (
+                  <>
+                    <div className="form-group">
+                      <label htmlFor="priceOverride" className="form-label">Override Price ($)</label>
+                      <input
+                        type="number"
+                        id="priceOverride"
+                        step="0.01"
+                        className="form-control"
+                        value={priceOverride}
+                        onChange={(e) => {
+                          const newPrice = Number(e.target.value);
+                          setPriceOverride(newPrice);
+                          setFormData(prev => ({ ...prev, totalPrice: newPrice }));
+                        }}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="priceOverrideReason" className="form-label">Reason (Optional)</label>
+                      <textarea
+                        id="priceOverrideReason"
+                        className="form-control"
+                        placeholder="e.g., Special discount applied, Price adjustment due to..."
+                        value={priceOverrideReason}
+                        onChange={(e) => setPriceOverrideReason(e.target.value)}
+                        rows={3}
+                      />
+                    </div>
+
+                    <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff', borderRadius: '4px', fontSize: '14px' }}>
+                      <p style={{ margin: '4px 0', color: '#6b7280' }}>
+                        Calculated Price: <strong>${(formData.totalPrice || 675).toFixed(2)}</strong>
+                      </p>
+                      <p style={{ margin: '4px 0', color: '#6b7280' }}>
+                        Override Price: <strong>${priceOverride.toFixed(2)}</strong>
+                      </p>
+                      <p style={{ margin: '4px 0', color: priceOverride > (formData.totalPrice || 675) ? '#dc2626' : '#059669' }}>
+                        Difference: <strong>${(priceOverride - (formData.totalPrice || 675)).toFixed(2)}</strong>
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+              
               <div className="form-group">
                 <label className="form-label">Payment Method</label>
                 <div className="segmented-group">
