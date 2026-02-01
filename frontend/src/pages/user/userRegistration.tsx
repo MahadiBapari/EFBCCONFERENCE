@@ -2966,9 +2966,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               
               {/* Admin Price Override Section */}
               <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                <h4 style={{ marginTop: 0, marginBottom: '15px', color: '#374151', fontSize: '16px' }}>Admin Price Override</h4>
+                <h4 style={{ marginTop: 0, marginBottom: '15px', color: '#374151', fontSize: '16px', fontWeight: '600' }}>Admin Price Override</h4>
                 <div className="form-group">
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <label className="checkbox-label">
                     <input
                       type="checkbox"
                       checked={priceOverrideEnabled}
@@ -3014,7 +3014,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                         }
                       }}
                     />
-                    <span>Override calculated price</span>
+                    <span style={{ marginLeft: '8px' }}>Override calculated price</span>
                   </label>
                 </div>
 
