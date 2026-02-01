@@ -10,6 +10,7 @@ interface RegistrationModalProps {
   user: { id: number; name: string; email: string };
   onClose: () => void;
   onSave: (regData: Registration) => void;
+  isAdmin?: boolean;
 }
 
 export const RegistrationModal: React.FC<RegistrationModalProps> = ({ 
@@ -17,7 +18,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   registration, 
   user, 
   onClose, 
-  onSave 
+  onSave,
+  isAdmin = false
 }) => {
   const [formData, setFormData] = useState<Partial<Registration>>({
     // Personal Information
@@ -66,6 +68,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [priceOverrideEnabled, setPriceOverrideEnabled] = useState(false);
+  const [priceOverride, setPriceOverride] = useState<number>(registration?.totalPrice || 675);
+  const [priceOverrideReason, setPriceOverrideReason] = useState<string>('');
 
   // Derived selections to keep effects dependencies simple
   const spouseDinnerSelected = !!formData.spouseDinnerTicket;
@@ -136,6 +141,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         ...formData,
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
+        // Include pending payment reason if admin is overriding price
+        ...(isAdmin && priceOverrideEnabled && priceOverrideReason ? { pendingPaymentReason: priceOverrideReason } : {}),
       } as Registration;
       
       onSave(registrationData);
@@ -780,6 +787,95 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 </p>
               )}
             </div>
+
+            {/* Admin Price Override Section */}
+            {isAdmin && (
+              <div className="form-section" style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <h4 style={{ marginTop: 0, marginBottom: '15px', color: '#374151' }}>Admin Price Override</h4>
+                <div className="form-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={priceOverrideEnabled}
+                      onChange={(e) => {
+                        setPriceOverrideEnabled(e.target.checked);
+                        if (!e.target.checked) {
+                          // Reset to calculated price when disabled
+                          const now = Date.now();
+                          const withBounds = (arr: any[] = []) => (arr)
+                            .map((t: any) => ({ ...t, s: t.startDate ? new Date(t.startDate).getTime() : -Infinity, e: t.endDate ? new Date(t.endDate).getTime() : Infinity }))
+                            .sort((a: any, b: any) => (a.s - b.s));
+                          const pickTier = (tiers: any[]) => {
+                            if (!tiers || tiers.length === 0) return null;
+                            const active = tiers.find(t => now >= t.s && now <= t.e);
+                            if (active) return active;
+                            if (now < tiers[0].s) return tiers[0];
+                            if (now > tiers[tiers.length - 1].e) return tiers[tiers.length - 1];
+                            const upcoming = tiers.find(t => now < t.s);
+                            return upcoming || tiers[tiers.length - 1];
+                          };
+                          const regActive = pickTier(withBounds(regTiers));
+                          const spouseActive = pickTier(withBounds(spouseTiers));
+                          let total = regActive?.price ?? 675;
+                          if (spouseDinnerSelected) total += (spouseActive?.price ?? 200);
+                          if (spouseBreakfastSelected && typeof event.breakfastPrice === 'number') {
+                            const endOk = breakfastEnd ? (now <= new Date(breakfastEnd).getTime()) : true;
+                            if (endOk) total += event.breakfastPrice;
+                          }
+                          setPriceOverride(total);
+                          setFormData(prev => ({ ...prev, totalPrice: total }));
+                        }
+                      }}
+                    />
+                    Override calculated price
+                  </label>
+                </div>
+
+                {priceOverrideEnabled && (
+                  <>
+                    <div className="form-group">
+                      <label htmlFor="priceOverride" className="form-label">Override Price ($)</label>
+                      <input
+                        type="number"
+                        id="priceOverride"
+                        step="0.01"
+                        className="form-control"
+                        value={priceOverride}
+                        onChange={(e) => {
+                          const newPrice = Number(e.target.value);
+                          setPriceOverride(newPrice);
+                          setFormData(prev => ({ ...prev, totalPrice: newPrice }));
+                        }}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="priceOverrideReason" className="form-label">Reason (Optional)</label>
+                      <textarea
+                        id="priceOverrideReason"
+                        className="form-control"
+                        placeholder="e.g., Special discount applied, Price adjustment due to..."
+                        value={priceOverrideReason}
+                        onChange={(e) => setPriceOverrideReason(e.target.value)}
+                        rows={3}
+                      />
+                    </div>
+
+                    <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff', borderRadius: '4px', fontSize: '14px' }}>
+                      <p style={{ margin: '4px 0', color: '#6b7280' }}>
+                        Calculated Price: <strong>${(formData.totalPrice || 675).toFixed(2)}</strong>
+                      </p>
+                      <p style={{ margin: '4px 0', color: '#6b7280' }}>
+                        Override Price: <strong>${priceOverride.toFixed(2)}</strong>
+                      </p>
+                      <p style={{ margin: '4px 0', color: priceOverride > (formData.totalPrice || 675) ? '#dc2626' : '#059669' }}>
+                        Difference: <strong>${(priceOverride - (formData.totalPrice || 675)).toFixed(2)}</strong>
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </form>
     </Modal>

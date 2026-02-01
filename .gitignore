@@ -22,3 +22,6 @@ backend/dist/
 .idea/
 *.swp
 *.swo
+
+#local files
+API_ENDPOINTS.txt

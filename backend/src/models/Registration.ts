@@ -74,6 +74,11 @@ export class Registration {
   public groupAssigned?: number;
   public discountCode?: string;
   public discountAmount?: number;
+  public originalTotalPrice?: number;
+  public paidAmount?: number;
+  public pendingPaymentAmount?: number;
+  public pendingPaymentReason?: string;
+  public pendingPaymentCreatedAt?: string;
 
   // Helper method to format dates for MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
   private formatDateForDB(dateValue: string | Date | undefined): string {
@@ -198,6 +203,11 @@ export class Registration {
     }
     this.kidsPaidAt = (data as any).kidsPaidAt ?? (data as any).kids_paid_at ?? undefined;
     this.groupAssigned = (data as any).groupAssigned ?? (data as any).group_assigned ?? undefined;
+    this.originalTotalPrice = (data as any).originalTotalPrice ?? (data as any).original_total_price ?? undefined;
+    this.paidAmount = (data as any).paidAmount ?? (data as any).paid_amount ?? undefined;
+    this.pendingPaymentAmount = (data as any).pendingPaymentAmount ?? (data as any).pending_payment_amount ?? undefined;
+    this.pendingPaymentReason = (data as any).pendingPaymentReason ?? (data as any).pending_payment_reason ?? undefined;
+    this.pendingPaymentCreatedAt = (data as any).pendingPaymentCreatedAt ?? (data as any).pending_payment_created_at ?? undefined;
   }
 
   // Convert to JSON
@@ -276,6 +286,11 @@ export class Registration {
     if (this.kidsPaymentId) (base as any).kidsPaymentId = this.kidsPaymentId;
     if (this.kidsPaidAt) (base as any).kidsPaidAt = this.kidsPaidAt;
     if (this.groupAssigned) (base as any).groupAssigned = this.groupAssigned;
+    if (this.originalTotalPrice !== undefined) (base as any).originalTotalPrice = this.originalTotalPrice;
+    if (this.paidAmount !== undefined) (base as any).paidAmount = this.paidAmount;
+    if (this.pendingPaymentAmount !== undefined) (base as any).pendingPaymentAmount = this.pendingPaymentAmount;
+    if (this.pendingPaymentReason) (base as any).pendingPaymentReason = this.pendingPaymentReason;
+    if (this.pendingPaymentCreatedAt) (base as any).pendingPaymentCreatedAt = this.pendingPaymentCreatedAt;
     return base as any;
   }
 
@@ -357,6 +372,11 @@ export class Registration {
         : null,
       kids_paid_at: this.kidsPaidAt ? this.formatDateForDB(this.kidsPaidAt) : null,
       group_assigned: this.nullIfUndefined(this.groupAssigned),
+      original_total_price: this.originalTotalPrice ?? null,
+      paid_amount: this.paidAmount ?? (this.paid ? this.totalPrice : 0),
+      pending_payment_amount: this.pendingPaymentAmount ?? null,
+      pending_payment_reason: this.nullIfUndefined(this.pendingPaymentReason),
+      pending_payment_created_at: this.pendingPaymentCreatedAt ? this.formatDateForDB(this.pendingPaymentCreatedAt) : null,
       updated_at: this.formatDateForDB(this.updatedAt || new Date().toISOString()),
     };
     
@@ -475,6 +495,11 @@ export class Registration {
       spousePaymentId: row.spouse_payment_id,
       spousePaidAt: row.spouse_paid_at,
       groupAssigned: row.group_assigned || undefined,
+      originalTotalPrice: row.original_total_price ?? undefined,
+      paidAmount: row.paid_amount ?? undefined,
+      pendingPaymentAmount: row.pending_payment_amount ?? undefined,
+      pendingPaymentReason: row.pending_payment_reason ?? undefined,
+      pendingPaymentCreatedAt: row.pending_payment_created_at ?? undefined,
       // Legacy fields are not mapped from DB in this version
       name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
       category: row.wednesday_activity || 'Networking',

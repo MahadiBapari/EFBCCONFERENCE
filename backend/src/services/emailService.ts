@@ -1226,3 +1226,61 @@ export async function sendRegistrationRestoredEmail(params: {
   await sendMailWithAdminCopy({ to: params.to, subject, text, html }, true);
 }
 
+export async function sendPendingPaymentEmail(params: {
+  to: string;
+  name: string;
+  eventName?: string;
+  eventDate?: string;
+  eventStartDate?: string;
+  pendingAmount: number;
+  reason: string;
+  registration?: any;
+}): Promise<void> {
+  const { to, name, eventName, eventDate, eventStartDate, pendingAmount, reason, registration } = params;
+  const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
+  const subject = sanitizeSubjectLine('Action Required: Additional Payment Due - EFBC Conference');
+  
+  // Calculate convenience fee (3.5% for card payments) and total with fee
+  const convenienceFee = pendingAmount * 0.035;
+  const totalWithFee = pendingAmount + convenienceFee;
+  
+  // Format event date range as "12 to 15 May"
+  const formattedEventDate = formatEventDateRange(eventStartDate || null, eventDate || null);
+  
+  // Get registration URL (assuming frontend URL)
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const registrationUrl = `${frontendUrl}/registration${registration?.id ? `?id=${registration.id}` : ''}`;
+  
+  const html = await renderEmailTemplate({
+    heading: 'Additional Payment Required',
+    preheader: `An additional payment of $${pendingAmount.toFixed(2)} is required for your registration.`,
+    contentHtml: `
+      <p>Hi ${name || 'there'},</p>
+      <p>An additional payment is required for your EFBC Conference registration.</p>
+      ${eventName ? `<p><strong>Event:</strong> ${eventName}${formattedEventDate ? ` (${formattedEventDate})` : ''}</p>` : ''}
+      <div style="background-color:#fef3c7;border-left:4px solid #f59e0b;padding:12px;margin:16px 0;border-radius:4px;">
+        <p style="margin:0;font-weight:600;color:#92400e;">Amount Due: $${pendingAmount.toFixed(2)}</p>
+        ${convenienceFee > 0 ? `<p style="margin:4px 0 0 0;color:#92400e;">Convenience Fee (3.5%): $${convenienceFee.toFixed(2)}</p>` : ''}
+        ${convenienceFee > 0 ? `<p style="margin:4px 0 0 0;font-weight:600;color:#92400e;">Total to Pay: $${totalWithFee.toFixed(2)}</p>` : ''}
+      </div>
+      ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+      <p>Please complete your payment by visiting your registration page:</p>
+    `,
+    cta: { label: 'Complete Payment', url: registrationUrl },
+  });
+  
+  const text = [
+    `Hi ${name || 'there'},`,
+    'An additional payment is required for your EFBC Conference registration.',
+    eventName ? `Event: ${eventName}${formattedEventDate ? ` (${formattedEventDate})` : ''}` : '',
+    `Amount Due: $${pendingAmount.toFixed(2)}`,
+    convenienceFee > 0 ? `Convenience Fee (3.5%): $${convenienceFee.toFixed(2)}` : '',
+    convenienceFee > 0 ? `Total to Pay: $${totalWithFee.toFixed(2)}` : '',
+    reason ? `Reason: ${reason}` : '',
+    `Please complete your payment by visiting: ${registrationUrl}`
+  ].filter(Boolean).join('\n');
+
+  queueEmail({ to, subject, text, html });
+  // Note: Pending payment emails don't need admin copy (admin already knows)
+}
+

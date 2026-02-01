@@ -128,6 +128,13 @@ export interface Registration {
   // Group Assignment
   groupAssigned?: number;
   
+  // Pending Payment Information
+  originalTotalPrice?: number;
+  paidAmount?: number;
+  pendingPaymentAmount?: number;
+  pendingPaymentReason?: string;
+  pendingPaymentCreatedAt?: string;
+  
   // Legacy fields for backward compatibility
   name: string;
   category: string;

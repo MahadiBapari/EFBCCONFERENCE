@@ -161,6 +161,7 @@ const createTables = async () => {
     await migratePickleballEquipment();
     await migrateDiscountCodes();
     await migrateBackfillPaidAt();
+    await migratePendingPaymentFields();
 
     // Activity Groups table (basic definition; columns may be extended by migrations)
     await databaseService.query(`
@@ -848,6 +849,63 @@ const migrateBackfillPaidAt = async (): Promise<void> => {
     }
   } catch (error: any) {
     console.error('Error backfilling paid_at:', error?.message || error);
+  }
+};
+
+// Migration helper to add pending payment fields
+const migratePendingPaymentFields = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    const regCols = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+      [dbName, 'registrations']
+    );
+    const columnNames = regCols.map((c: any) => c.COLUMN_NAME);
+
+    const alter: string[] = [];
+    
+    if (!columnNames.includes('original_total_price')) {
+      alter.push('ADD COLUMN `original_total_price` DECIMAL(10, 2) NULL');
+    }
+    if (!columnNames.includes('paid_amount')) {
+      alter.push('ADD COLUMN `paid_amount` DECIMAL(10, 2) DEFAULT 0');
+    }
+    if (!columnNames.includes('pending_payment_amount')) {
+      alter.push('ADD COLUMN `pending_payment_amount` DECIMAL(10, 2) DEFAULT 0');
+    }
+    if (!columnNames.includes('pending_payment_reason')) {
+      alter.push('ADD COLUMN `pending_payment_reason` TEXT NULL');
+    }
+    if (!columnNames.includes('pending_payment_created_at')) {
+      alter.push('ADD COLUMN `pending_payment_created_at` TIMESTAMP NULL');
+    }
+    
+    if (alter.length > 0) {
+      await databaseService.query(`ALTER TABLE \`registrations\` ${alter.join(', ')}`);
+      console.log('🛠️ Added pending payment fields to registrations table');
+    }
+
+    // Initialize paid_amount for existing registrations
+    // If paid = true, set paid_amount = total_price
+    // If paid = false, set paid_amount = 0
+    const initResult = await databaseService.query(
+      `UPDATE registrations 
+       SET paid_amount = CASE 
+         WHEN paid = 1 THEN total_price 
+         ELSE 0 
+       END
+       WHERE paid_amount IS NULL OR paid_amount = 0`
+    );
+    
+    const affectedRows = (initResult as any)?.affectedRows || 0;
+    if (affectedRows > 0) {
+      console.log(`🛠️ Initialized paid_amount for ${affectedRows} existing registrations`);
+    }
+  } catch (error: any) {
+    console.error('Error migrating pending payment fields:', error?.message || error);
   }
 };
 

@@ -261,6 +261,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     paid: registration?.paid ?? false,
     discountCode: registration?.discountCode,
     discountAmount: registration?.discountAmount,
+    // Pending Payment Information
+    originalTotalPrice: registration?.originalTotalPrice,
+    paidAmount: registration?.paidAmount,
+    pendingPaymentAmount: registration?.pendingPaymentAmount,
+    pendingPaymentReason: registration?.pendingPaymentReason,
+    pendingPaymentCreatedAt: registration?.pendingPaymentCreatedAt,
 
     // Legacy fields
     name: registration?.name || user.name,
@@ -1633,19 +1639,29 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         throw new Error(userFriendlyMessage);
       }
       const nonce = res.token;
-      // Use formData.totalPrice (original price before discount)
-      let baseTotal = Number(formData.totalPrice || 0);
       
-      // Apply discount ONLY for new registrations (not when editing)
-      let finalTotal = baseTotal;
-      if (discountCodeData && typeof discountCodeData.discountValue === 'number' && !isEditing) {
-        let discountAmount = 0;
-        if (discountCodeData.discountType === 'percentage') {
-          discountAmount = (baseTotal * discountCodeData.discountValue) / 100;
-        } else {
-          discountAmount = discountCodeData.discountValue;
+      // Check if there's a pending payment - if so, use that amount
+      const pendingPaymentAmount = Number(formData.pendingPaymentAmount || 0);
+      let finalTotal: number;
+      
+      if (pendingPaymentAmount > 0) {
+        // Use pending payment amount
+        finalTotal = pendingPaymentAmount;
+      } else {
+        // Use formData.totalPrice (original price before discount)
+        let baseTotal = Number(formData.totalPrice || 0);
+        
+        // Apply discount ONLY for new registrations (not when editing)
+        finalTotal = baseTotal;
+        if (discountCodeData && typeof discountCodeData.discountValue === 'number' && !isEditing) {
+          let discountAmount = 0;
+          if (discountCodeData.discountType === 'percentage') {
+            discountAmount = (baseTotal * discountCodeData.discountValue) / 100;
+          } else {
+            discountAmount = discountCodeData.discountValue;
+          }
+          finalTotal = Math.max(0, baseTotal - discountAmount);
         }
-        finalTotal = Math.max(0, baseTotal - discountAmount);
       }
       
       const baseAmountCents = Math.round(finalTotal * 100);
@@ -3131,12 +3147,41 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     finalTotal = Math.max(0, baseTotal - discountAmount);
                   }
                   
+                  // Check if there's a pending payment
+                  const pendingPaymentAmount = Number(formData.pendingPaymentAmount || 0);
+                  const pendingPaymentReason = formData.pendingPaymentReason || '';
+                  const hasPendingPayment = pendingPaymentAmount > 0;
+                  
+                  // If there's a pending payment, use it as the base total instead
+                  const amountToPay = hasPendingPayment ? pendingPaymentAmount : finalTotal;
+                  
                   const isCard = (formData.paymentMethod || 'Card') === 'Card';
-                  // Calculate 3.5% convenience fee for card payments (on final total after discount)
-                  const convenienceFee = isCard ? finalTotal * 0.035 : 0;
-                  const totalWithFee = finalTotal + convenienceFee;
+                  // Calculate 3.5% convenience fee for card payments (on amount to pay)
+                  const convenienceFee = isCard ? amountToPay * 0.035 : 0;
+                  const totalWithFee = amountToPay + convenienceFee;
                   return (
                 <div className="payment-summary">
+                  {hasPendingPayment && (
+                    <div style={{ 
+                      backgroundColor: '#fef3c7', 
+                      border: '1px solid #f59e0b', 
+                      borderRadius: '8px', 
+                      padding: '12px', 
+                      marginBottom: '16px' 
+                    }}>
+                      <div style={{ fontWeight: 600, color: '#92400e', marginBottom: '8px' }}>
+                        ⚠️ Additional Payment Required
+                      </div>
+                      {pendingPaymentReason && (
+                        <div style={{ color: '#92400e', marginBottom: '8px', fontSize: '0.9rem' }}>
+                          <strong>Reason:</strong> {pendingPaymentReason}
+                        </div>
+                      )}
+                      <div style={{ color: '#92400e', fontSize: '0.9rem' }}>
+                        <strong>Amount Due:</strong> ${pendingPaymentAmount.toFixed(2)}
+                      </div>
+                    </div>
+                  )}
                   {!isAddingSpouse && !isAddingKids && (
                   <div className="payment-item">
                     <span>Conference Registration:</span>
@@ -3191,20 +3236,43 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       </div>
                     ) : null;
                   })()}
-                  {isCard && convenienceFee > 0 && (
-                    <div className="payment-item" style={{ color: '#6b7280', fontSize: '0.9rem' }}>
-                      <span>Convenience Fee (3.5%):</span>
-                      <span>${convenienceFee.toFixed(2)}</span>
-                    </div>
+                  {!hasPendingPayment && (
+                    <>
+                      {isCard && convenienceFee > 0 && (
+                        <div className="payment-item" style={{ color: '#6b7280', fontSize: '0.9rem' }}>
+                          <span>Convenience Fee (3.5%):</span>
+                          <span>${convenienceFee.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="payment-total">
+                        <span>Total {isCard ? 'Charged' : 'Due'}:</span>
+                        <span>${totalWithFee.toFixed(2)} USD</span>
+                      </div>
+                      {isCard && (
+                        <div className="payment-fee-note" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                          Base amount: ${finalTotal.toFixed(2)} + ${convenienceFee.toFixed(2)} fee = ${totalWithFee.toFixed(2)} total
+                        </div>
+                      )}
+                    </>
                   )}
-                  <div className="payment-total">
-                    <span>Total {isCard ? 'Charged' : 'Due'}:</span>
-                    <span>${totalWithFee.toFixed(2)} USD</span>
-                  </div>
-                  {isCard && (
-                    <div className="payment-fee-note" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                      Base amount: ${finalTotal.toFixed(2)} + ${convenienceFee.toFixed(2)} fee = ${totalWithFee.toFixed(2)} total
-                    </div>
+                  {hasPendingPayment && (
+                    <>
+                      {isCard && convenienceFee > 0 && (
+                        <div className="payment-item" style={{ color: '#6b7280', fontSize: '0.9rem' }}>
+                          <span>Convenience Fee (3.5%):</span>
+                          <span>${convenienceFee.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="payment-total">
+                        <span>Total {isCard ? 'Charged' : 'Due'}:</span>
+                        <span>${totalWithFee.toFixed(2)} USD</span>
+                      </div>
+                      {isCard && (
+                        <div className="payment-fee-note" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                          Pending payment: ${pendingPaymentAmount.toFixed(2)} + ${convenienceFee.toFixed(2)} fee = ${totalWithFee.toFixed(2)} total
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
                   );
