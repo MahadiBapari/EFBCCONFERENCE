@@ -396,6 +396,116 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       return;
     }
 
+    // For admin edits of paid registrations, preserve price unless something is being added
+    if (isAdminEdit && isAlreadyPaid) {
+      // Check if spouse is being added
+      const isAddingSpouse = formData.spouseDinnerTicket && !hadSpouseTicket;
+      // Check if kids are being added
+      const isAddingKids = kids.length > originalKidsCount;
+      
+      // If nothing is being added, preserve the original price
+      if (!isAddingSpouse && !isAddingKids) {
+        const storedPrice = registration?.totalPrice || 675;
+        setFormData(prev => {
+          if (prev.totalPrice !== storedPrice) {
+            return { ...prev, totalPrice: storedPrice };
+          }
+          return prev;
+        });
+        return;
+      }
+      
+      // If spouse is being added (without kids), calculate only spouse price
+      if (isAddingSpouse && !isAddingKids) {
+        const originalRegPrice = registration?.totalPrice || 675;
+        const now = getCurrentEasternTime();
+        const withBounds = (arr: any[] = []) =>
+          arr
+            .map((t: any) => ({
+              ...t,
+              s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+              e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity,
+            }))
+            .sort((a: any, b: any) => a.s - b.s);
+        const pickTier = (tiers: any[]) => {
+          if (!tiers || tiers.length === 0) return null;
+          const active = tiers.find(t => now >= t.s && now < t.e);
+          if (active) return active;
+          if (now < tiers[0].s) return tiers[0];
+          if (now >= tiers[tiers.length - 1].e) return tiers[tiers.length - 1];
+          const upcoming = tiers.find(t => now < t.s);
+          return upcoming || tiers[tiers.length - 1];
+        };
+        const spouseActive = pickTier(withBounds(spouseTiers));
+        const spousePrice = spouseActive?.price ?? 200;
+        const total = originalRegPrice + spousePrice;
+        setFormData(prev => ({ ...prev, totalPrice: total }));
+        return;
+      }
+      
+      // If kids are being added (without spouse), calculate only kids price
+      if (isAddingKids && !isAddingSpouse) {
+        const originalRegPrice = registration?.totalPrice || 675;
+        const now = getCurrentEasternTime();
+        const withBounds = (arr: any[] = []) =>
+          arr
+            .map((t: any) => ({
+              ...t,
+              s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+              e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity,
+            }))
+            .sort((a: any, b: any) => a.s - b.s);
+        const pickTier = (tiers: any[]) => {
+          if (!tiers || tiers.length === 0) return null;
+          const active = tiers.find(t => now >= t.s && now < t.e);
+          if (active) return active;
+          if (now < tiers[0].s) return tiers[0];
+          if (now >= tiers[tiers.length - 1].e) return tiers[tiers.length - 1];
+          const upcoming = tiers.find(t => now < t.s);
+          return upcoming || tiers[tiers.length - 1];
+        };
+        const kidsActive = pickTier(withBounds(kidsTiers));
+        const pricePerKid = kidsActive?.price ?? 50;
+        const newKidsCount = kids.length - originalKidsCount;
+        const kidsPrice = pricePerKid * newKidsCount;
+        const total = originalRegPrice + kidsPrice;
+        setFormData(prev => ({ ...prev, totalPrice: total }));
+        return;
+      }
+      
+      // If both spouse and kids are being added, calculate both
+      if (isAddingSpouse && isAddingKids) {
+        const originalRegPrice = registration?.totalPrice || 675;
+        const now = getCurrentEasternTime();
+        const withBounds = (arr: any[] = []) =>
+          arr
+            .map((t: any) => ({
+              ...t,
+              s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+              e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity,
+            }))
+            .sort((a: any, b: any) => a.s - b.s);
+        const pickTier = (tiers: any[]) => {
+          if (!tiers || tiers.length === 0) return null;
+          const active = tiers.find(t => now >= t.s && now < t.e);
+          if (active) return active;
+          if (now < tiers[0].s) return tiers[0];
+          if (now >= tiers[tiers.length - 1].e) return tiers[tiers.length - 1];
+          const upcoming = tiers.find(t => now < t.s);
+          return upcoming || tiers[tiers.length - 1];
+        };
+        const spouseActive = pickTier(withBounds(spouseTiers));
+        const spousePrice = spouseActive?.price ?? 200;
+        const kidsActive = pickTier(withBounds(kidsTiers));
+        const pricePerKid = kidsActive?.price ?? 50;
+        const newKidsCount = kids.length - originalKidsCount;
+        const kidsPrice = pricePerKid * newKidsCount;
+        const total = originalRegPrice + spousePrice + kidsPrice;
+        setFormData(prev => ({ ...prev, totalPrice: total }));
+        return;
+      }
+    }
+
     // If registration is already paid and nothing has changed, preserve the original totalPrice
     if (isAlreadyPaid && 
         formData.spouseDinnerTicket === hadSpouseTicket && 
@@ -482,7 +592,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     }
     // if (childLunchSelected) total += childLunchPrice;
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration?.totalPrice, kids, kids.length, originalKidsCount, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers, priceOverrideEnabled]);
+  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration?.totalPrice, kids, kids.length, originalKidsCount, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers, priceOverrideEnabled, isAdminEdit]);
 
   // Sync priceOverride with calculated price when override is disabled
   useEffect(() => {
