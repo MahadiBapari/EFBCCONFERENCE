@@ -391,10 +391,16 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   }, [hadSpousePayment, formData.spouseDinnerTicket]);
 
   useEffect(() => {
-    // If registration is already paid and spouse status hasn't changed, preserve the original totalPrice
-    // Only recalculate for new registrations, unpaid registrations, or when adding spouse to paid registration
-    if (isAlreadyPaid && formData.spouseDinnerTicket === hadSpouseTicket) {
-      // Registration is paid and spouse status unchanged - preserve the stored price (already discounted)
+    // Skip price calculation if override is enabled (admin is manually setting price)
+    if (priceOverrideEnabled) {
+      return;
+    }
+
+    // If registration is already paid and nothing has changed, preserve the original totalPrice
+    if (isAlreadyPaid && 
+        formData.spouseDinnerTicket === hadSpouseTicket && 
+        kids.length === originalKidsCount) {
+      // Registration is paid and nothing changed - preserve the stored price
       const storedPrice = registration?.totalPrice || 675;
       setFormData(prev => {
         if (prev.totalPrice !== storedPrice) {
@@ -476,7 +482,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     }
     // if (childLunchSelected) total += childLunchPrice;
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration?.totalPrice, kids, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers]);
+  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration?.totalPrice, kids, kids.length, originalKidsCount, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers, priceOverrideEnabled]);
 
   // Sync priceOverride with calculated price when override is disabled
   useEffect(() => {
@@ -3070,7 +3076,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       <p style={{ margin: '4px 0', color: '#6b7280' }}>
                         Current Calculated Price: <strong>${(formData.totalPrice || 675).toFixed(2)}</strong>
                       </p>
-                      {isEditing && registration && (formData.totalPrice || 675) > originalPrice && (
+                      {/* Only show additional amount due if something actually changed (spouse, kids, or override) */}
+                      {isEditing && registration && 
+                       (formData.totalPrice || 675) > originalPrice && 
+                       (formData.spouseDinnerTicket !== hadSpouseTicket || kids.length !== originalKidsCount) && (
                         <p style={{ margin: '4px 0', color: '#dc2626', fontWeight: '600' }}>
                           Additional Amount Due: <strong>${((formData.totalPrice || 675) - originalPrice).toFixed(2)}</strong>
                         </p>
