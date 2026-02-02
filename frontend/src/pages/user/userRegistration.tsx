@@ -842,6 +842,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (!validateForm()) return;
     
     // For card payments, ensure payment is completed before allowing submission
+    // Allow admin to save without payment completion
     const paymentMethod = formData.paymentMethod || 'Card';
     if (!isAdminEdit && paymentMethod === 'Card' && !isAlreadyPaid) {
       alert('Please complete the payment using the "Pay & Complete Registration" button.');
@@ -925,6 +926,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       } as Registration;
       
       // For card payments, ensure payment was completed (has payment ID) - only check for new registrations
+      // Allow admin to save without payment completion
       if (!isAdminEdit && (formData.paymentMethod || 'Card') === 'Card' && !isAlreadyPaid && !(registrationData as any).squarePaymentId) {
         alert('Payment must be completed before registration can be submitted. Please use the "Pay & Complete Registration" button.');
         setIsSubmitting(false);
