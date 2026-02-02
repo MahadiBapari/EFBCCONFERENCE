@@ -396,8 +396,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       return;
     }
 
-    // For admin edits of paid registrations, preserve price unless something is being added
-    if (isAdminEdit && isAlreadyPaid) {
+    // For paid registrations, preserve price unless something is being added
+    if (isAlreadyPaid) {
       // Check if spouse is being added
       const isAddingSpouse = formData.spouseDinnerTicket && !hadSpouseTicket;
       // Check if kids are being added
@@ -506,21 +506,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       }
     }
 
-    // If registration is already paid and nothing has changed, preserve the original totalPrice
-    if (isAlreadyPaid && 
-        formData.spouseDinnerTicket === hadSpouseTicket && 
-        kids.length === originalKidsCount) {
-      // Registration is paid and nothing changed - preserve the stored price
-      const storedPrice = registration?.totalPrice || 675;
-      setFormData(prev => {
-        if (prev.totalPrice !== storedPrice) {
-          return { ...prev, totalPrice: storedPrice };
-        }
-        return prev;
-      });
-      return;
-    }
-
     // For paid registrations where spouse is being added, preserve original registration price
     // and only calculate spouse tier price
     if (isAlreadyPaid && formData.spouseDinnerTicket && !hadSpouseTicket) {
@@ -592,7 +577,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     }
     // if (childLunchSelected) total += childLunchPrice;
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration?.totalPrice, kids, kids.length, originalKidsCount, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers, priceOverrideEnabled, isAdminEdit]);
+  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration?.totalPrice, kids, kids.length, originalKidsCount, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers, priceOverrideEnabled]);
 
   // Sync priceOverride with calculated price when override is disabled
   useEffect(() => {
