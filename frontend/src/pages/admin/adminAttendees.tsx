@@ -1642,7 +1642,8 @@ const confirmSingleDelete = async () => {
                       );
                     })}
                     <td style={{ width: `${columnWidths.paymentMethod}px`, minWidth: `${columnWidths.paymentMethod}px` }}>
-                      {(() => {
+                      {displayValue(reg.paymentMethod)}
+                      {/* {(() => {
                         const method = displayValue(reg.paymentMethod);
                         const hasMainPaymentDue = (reg.paymentMethod === 'Card' || reg.paymentMethod === 'Check') && !(reg as any).paid;
                         const hasSpouseDue = (reg as any).spouseDinnerTicket && !(reg as any).spousePaymentId;
@@ -1657,7 +1658,7 @@ const confirmSingleDelete = async () => {
                             {showDue && <span style={{ marginLeft: '6px', color: '#dc2626', fontWeight: '600', fontSize: '12px' }}>DUE</span>}
                           </span>
                         );
-                      })()}
+                      })()} */}
                     </td>
                     <td style={{ width: `${columnWidths.paid}px`, minWidth: `${columnWidths.paid}px` }}>{(reg as any).paid ? 'Yes' : 'No'}</td>
                     <td style={{ width: `${columnWidths.paymentId}px`, minWidth: `${columnWidths.paymentId}px` }}>{displayValue((reg as any).squarePaymentId)}</td>
@@ -1832,7 +1833,8 @@ const confirmSingleDelete = async () => {
                   <td>{reg.email}</td>
                   <td>{reg.category}</td>
                   <td>
-                    {(() => {
+                    {reg.paymentMethod === 'Card' ? 'Card' : reg.paymentMethod === 'Check' ? 'Check' : ''}
+                    {/* {(() => {
                       const method = reg.paymentMethod === 'Card' ? 'Card' : reg.paymentMethod === 'Check' ? 'Check' : '';
                       const hasMainPaymentDue = (reg.paymentMethod === 'Card' || reg.paymentMethod === 'Check') && !(reg as any).paid;
                       const hasSpouseDue = (reg as any).spouseDinnerTicket && !(reg as any).spousePaymentId;
@@ -1847,7 +1849,7 @@ const confirmSingleDelete = async () => {
                           {showDue && <span style={{ marginLeft: '6px', color: '#dc2626', fontWeight: '600', fontSize: '12px' }}>DUE</span>}
                         </span>
                       );
-                    })()}
+                    })()} */}
                   </td>
                   <td className="no-print">
                       <div className="action-buttons">
