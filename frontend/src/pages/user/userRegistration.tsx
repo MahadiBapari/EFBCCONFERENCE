@@ -360,6 +360,27 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const regTiers = useMemo(() => event?.registrationPricing || [], [event?.registrationPricing]);
   const spouseTiers = useMemo(() => event?.spousePricing || [], [event?.spousePricing]);
   const kidsTiers = useMemo(() => event?.kidsPricing || [], [event?.kidsPricing]);
+
+  // Calculate original price (what was already paid/stored for existing registrations)
+  const originalPrice = useMemo(() => {
+    if (registration) {
+      // For existing registrations, use the stored price as original (what was already paid)
+      return registration.totalPrice || 675;
+    }
+    // For new registrations, calculate base price only (no spouse, no kids)
+    if (event) {
+      const now = getCurrentEasternTime();
+      const regTiers = (event.registrationPricing || []).map((t: any) => ({
+        ...t,
+        s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+        e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+      })).sort((a: any, b: any) => a.s - b.s);
+      const regActive = regTiers.find((t: any) => now >= t.s && now < t.e) ||
+        (now < regTiers[0]?.s ? regTiers[0] : (now >= regTiers[regTiers.length - 1]?.e ? regTiers[regTiers.length - 1] : (regTiers.find((t: any) => now < t.s) || regTiers[regTiers.length - 1])));
+      return regActive?.price ?? 675;
+    }
+    return 675;
+  }, [registration, event]);
   // const childLunchPrice = useMemo(() => event?.childLunchPrice || 0, [event?.childLunchPrice]);
 
   // Ensure spouse ticket stays checked if payment was made
@@ -456,6 +477,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     // if (childLunchSelected) total += childLunchPrice;
     setFormData(prev => ({ ...prev, totalPrice: total }));
   }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration?.totalPrice, kids, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers]);
+
+  // Sync priceOverride with calculated price when override is disabled
+  useEffect(() => {
+    // When override is disabled, sync priceOverride with the calculated price
+    // This ensures the comparison always shows the correct values when spouse/children are added
+    if (!priceOverrideEnabled && formData.totalPrice !== undefined) {
+      setPriceOverride(formData.totalPrice);
+    }
+  }, [formData.totalPrice, priceOverrideEnabled]);
 
   const validateForm = () => {
     // Skip all required field validation for admin edits - all fields are optional
@@ -3018,6 +3048,37 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   </label>
                 </div>
 
+                {/* Always show price comparison for admin */}
+                <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff', borderRadius: '4px', fontSize: '14px' }}>
+                  {priceOverrideEnabled ? (
+                    <>
+                      <p style={{ margin: '4px 0', color: '#6b7280' }}>
+                        Calculated Price: <strong>${(formData.totalPrice || 675).toFixed(2)}</strong>
+                      </p>
+                      <p style={{ margin: '4px 0', color: '#6b7280' }}>
+                        Override Price: <strong>${priceOverride.toFixed(2)}</strong>
+                      </p>
+                      <p style={{ margin: '4px 0', color: priceOverride > (formData.totalPrice || 675) ? '#dc2626' : '#059669' }}>
+                        Difference: <strong>${(priceOverride - (formData.totalPrice || 675)).toFixed(2)}</strong>
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p style={{ margin: '4px 0', color: '#6b7280' }}>
+                        {isEditing && registration ? 'Original Price (Paid):' : 'Base Price:'} <strong>${originalPrice.toFixed(2)}</strong>
+                      </p>
+                      <p style={{ margin: '4px 0', color: '#6b7280' }}>
+                        Current Calculated Price: <strong>${(formData.totalPrice || 675).toFixed(2)}</strong>
+                      </p>
+                      {isEditing && registration && (formData.totalPrice || 675) > originalPrice && (
+                        <p style={{ margin: '4px 0', color: '#dc2626', fontWeight: '600' }}>
+                          Additional Amount Due: <strong>${((formData.totalPrice || 675) - originalPrice).toFixed(2)}</strong>
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+
                 {priceOverrideEnabled && (
                   <>
                     <div className="form-group">
@@ -3046,18 +3107,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                         onChange={(e) => setPriceOverrideReason(e.target.value)}
                         rows={3}
                       />
-                    </div>
-
-                    <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff', borderRadius: '4px', fontSize: '14px' }}>
-                      <p style={{ margin: '4px 0', color: '#6b7280' }}>
-                        Calculated Price: <strong>${(formData.totalPrice || 675).toFixed(2)}</strong>
-                      </p>
-                      <p style={{ margin: '4px 0', color: '#6b7280' }}>
-                        Override Price: <strong>${priceOverride.toFixed(2)}</strong>
-                      </p>
-                      <p style={{ margin: '4px 0', color: priceOverride > (formData.totalPrice || 675) ? '#dc2626' : '#059669' }}>
-                        Difference: <strong>${(priceOverride - (formData.totalPrice || 675)).toFixed(2)}</strong>
-                      </p>
                     </div>
                   </>
                 )}
