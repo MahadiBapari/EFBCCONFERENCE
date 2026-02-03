@@ -3449,40 +3449,45 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       <span>${finalTotal.toFixed(2)}</span>
                   </div>
                   )}
-                  {(formData.spouseDinnerTicket && !isAddingSpouse && !isAddingKids) || isAddingSpouse || (isAddingSpouse && isAddingKids) ? (
-                    <div className="payment-item">
-                      <span>Spouse Dinner Ticket:</span>
-                      <span>${(function () { const now = getCurrentEasternTime(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
-                    </div>
-                  ) : null}
-                  {(kids.length > 0 && !isAddingKids && !isAddingSpouse) || isAddingKids || (isAddingSpouse && isAddingKids) ? (
-                    <div className="payment-item">
-                      <span>Child/Children Registration ({isAddingKids || (isAddingSpouse && isAddingKids) 
-                        ? `${kids.length - originalKidsCount} ${(kids.length - originalKidsCount) === 1 ? 'child' : 'children'}`
-                        : `${kids.length} ${kids.length === 1 ? 'child' : 'children'}`}):</span>
-                      <span>${(function () {
-                        // if (formData.kidsTotalPrice !== undefined) {
-                        //   return formData.kidsTotalPrice.toFixed(2);
-                        // }
-                        const now = getCurrentEasternTime();
-                        const tiers = (event.kidsPricing || []).map((t: any) => ({ 
-                          ...t, 
-                          s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, 
-                          e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity 
-                        })).sort((a: any, b: any) => a.s - b.s);
-                        const active = tiers.find((t: any) => now >= t.s && now < t.e) || 
-                          (now < tiers[0]?.s ? tiers[0] : 
-                          (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : 
-                          (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
-                        const pricePerKid = active?.price ?? 0;
-                        // When adding kids, only calculate for new children
-                        const kidsCount = (isAddingKids || (isAddingSpouse && isAddingKids)) 
-                          ? (kids.length - originalKidsCount) 
-                          : kids.length;
-                        return (pricePerKid * kidsCount).toFixed(2);
-                      })()}</span>
-                    </div>
-                  ) : null}
+                  {/* Only show breakdown if price is NOT overridden */}
+                  {!priceOverrideEnabled && (
+                    <>
+                      {(formData.spouseDinnerTicket && !isAddingSpouse && !isAddingKids) || isAddingSpouse || (isAddingSpouse && isAddingKids) ? (
+                        <div className="payment-item">
+                          <span>Spouse Dinner Ticket:</span>
+                          <span>${(function () { const now = getCurrentEasternTime(); const tiers = (event.spousePricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0]?.s ? tiers[0] : (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 0).toFixed(2); })()}</span>
+                        </div>
+                      ) : null}
+                      {(kids.length > 0 && !isAddingKids && !isAddingSpouse) || isAddingKids || (isAddingSpouse && isAddingKids) ? (
+                        <div className="payment-item">
+                          <span>Child/Children Registration ({isAddingKids || (isAddingSpouse && isAddingKids) 
+                            ? `${kids.length - originalKidsCount} ${(kids.length - originalKidsCount) === 1 ? 'child' : 'children'}`
+                            : `${kids.length} ${kids.length === 1 ? 'child' : 'children'}`}):</span>
+                          <span>${(function () {
+                            // if (formData.kidsTotalPrice !== undefined) {
+                            //   return formData.kidsTotalPrice.toFixed(2);
+                            // }
+                            const now = getCurrentEasternTime();
+                            const tiers = (event.kidsPricing || []).map((t: any) => ({ 
+                              ...t, 
+                              s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, 
+                              e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity 
+                            })).sort((a: any, b: any) => a.s - b.s);
+                            const active = tiers.find((t: any) => now >= t.s && now < t.e) || 
+                              (now < tiers[0]?.s ? tiers[0] : 
+                              (now >= tiers[tiers.length - 1]?.e ? tiers[tiers.length - 1] : 
+                              (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1])));
+                            const pricePerKid = active?.price ?? 0;
+                            // When adding kids, only calculate for new children
+                            const kidsCount = (isAddingKids || (isAddingSpouse && isAddingKids)) 
+                              ? (kids.length - originalKidsCount) 
+                              : kids.length;
+                            return (pricePerKid * kidsCount).toFixed(2);
+                          })()}</span>
+                        </div>
+                      ) : null}
+                    </>
+                  )}
                   {discountCodeData && typeof discountCodeData.discountValue === 'number' && (() => {
                     let discountAmount = 0;
                     if (discountCodeData.discountType === 'percentage') {
