@@ -1654,20 +1654,24 @@ const confirmSingleDelete = async () => {
                         // - Spouse ticket exists
                         // - No spouse payment ID
                         // - Main registration is paid (spouse was added after initial payment)
+                        // - AND there's a pending payment amount (indicating spouse was added later)
                         const hasSpouseDue = (reg as any).spouseDinnerTicket && 
                           !(reg as any).spousePaymentId && 
-                          (reg as any).paid;
+                          (reg as any).paid &&
+                          ((reg as any).pendingPaymentAmount || 0) > 0;
                         
                         // Kids payment is due only if:
                         // - Kids exist
                         // - No kids payment ID (or empty array)
                         // - Main registration is paid (kids were added after initial payment)
+                        // - AND there's a pending payment amount (indicating kids were added later)
                         const hasKidsDue = reg.kids && 
                           Array.isArray(reg.kids) && 
                           reg.kids.length > 0 && 
                           (!(reg as any).kidsPaymentId || 
                            (Array.isArray((reg as any).kidsPaymentId) && (reg as any).kidsPaymentId.length === 0)) &&
-                          (reg as any).paid;
+                          (reg as any).paid &&
+                          ((reg as any).pendingPaymentAmount || 0) > 0;
                         
                         const showDue = hasMainPaymentDue || hasSpouseDue || hasKidsDue;
                         
@@ -1864,20 +1868,24 @@ const confirmSingleDelete = async () => {
                       // - Spouse ticket exists
                       // - No spouse payment ID
                       // - Main registration is paid (spouse was added after initial payment)
+                      // - AND there's a pending payment amount (indicating spouse was added later)
                       const hasSpouseDue = (reg as any).spouseDinnerTicket && 
                         !(reg as any).spousePaymentId && 
-                        (reg as any).paid;
+                        (reg as any).paid &&
+                        ((reg as any).pendingPaymentAmount || 0) > 0;
                       
                       // Kids payment is due only if:
                       // - Kids exist
                       // - No kids payment ID (or empty array)
                       // - Main registration is paid (kids were added after initial payment)
+                      // - AND there's a pending payment amount (indicating kids were added later)
                       const hasKidsDue = reg.kids && 
                         Array.isArray(reg.kids) && 
                         reg.kids.length > 0 && 
                         (!(reg as any).kidsPaymentId || 
                          (Array.isArray((reg as any).kidsPaymentId) && (reg as any).kidsPaymentId.length === 0)) &&
-                        (reg as any).paid;
+                        (reg as any).paid &&
+                        ((reg as any).pendingPaymentAmount || 0) > 0;
                       
                       const showDue = hasMainPaymentDue || hasSpouseDue || hasKidsDue;
                       
