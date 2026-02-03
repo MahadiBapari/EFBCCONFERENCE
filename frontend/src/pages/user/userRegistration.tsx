@@ -3107,7 +3107,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       checked={priceOverrideEnabled}
                       onChange={(e) => {
                         setPriceOverrideEnabled(e.target.checked);
-                        if (!e.target.checked) {
+                        if (e.target.checked) {
+                          // When enabling override, set formData.totalPrice to the override value
+                          setFormData(prev => ({ ...prev, totalPrice: priceOverride }));
+                        } else {
                           // Reset to calculated price when disabled
                           const now = getCurrentEasternTime();
                           const regTiers = (event?.registrationPricing || []).map((t: any) => ({
