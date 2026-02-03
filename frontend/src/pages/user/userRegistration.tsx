@@ -3446,7 +3446,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   {!isAddingSpouse && !isAddingKids && (
                   <div className="payment-item">
                     <span>Conference Registration:</span>
-                      <span>${(event.registrationPricing && event.registrationPricing.length ? (function () { const now = getCurrentEasternTime(); const tiers = (event.registrationPricing || []).map((t: any) => ({ ...t, s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity, e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity })).sort((a: any, b: any) => a.s - b.s); const active = tiers.find((t: any) => now >= t.s && now < t.e) || (now < tiers[0].s ? tiers[0] : (now >= tiers[tiers.length - 1].e ? tiers[tiers.length - 1] : (tiers.find((t: any) => now < t.s) || tiers[tiers.length - 1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
+                      <span>${finalTotal.toFixed(2)}</span>
                   </div>
                   )}
                   {(formData.spouseDinnerTicket && !isAddingSpouse && !isAddingKids) || isAddingSpouse || (isAddingSpouse && isAddingKids) ? (
