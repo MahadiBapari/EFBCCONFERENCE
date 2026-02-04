@@ -259,6 +259,12 @@ useEffect(() => {
         discountCode: r.discountCode ?? r.discount_code,
         discountAmount: r.discountAmount ?? r.discount_amount ?? undefined,
         groupAssigned: r.groupAssigned ?? r.group_assigned ?? undefined,
+        // Pending Payment
+        originalTotalPrice: r.originalTotalPrice ?? r.original_total_price ?? undefined,
+        paidAmount: r.paidAmount ?? r.paid_amount ?? undefined,
+        pendingPaymentAmount: r.pendingPaymentAmount ?? r.pending_payment_amount ?? undefined,
+        pendingPaymentReason: r.pendingPaymentReason ?? r.pending_payment_reason ?? undefined,
+        pendingPaymentCreatedAt: r.pendingPaymentCreatedAt ?? r.pending_payment_created_at ?? undefined,
         // Timestamps
         createdAt: r.createdAt ?? r.created_at,
         updatedAt: r.updatedAt ?? r.updated_at,
