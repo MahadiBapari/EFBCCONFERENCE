@@ -3163,15 +3163,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff', borderRadius: '4px', fontSize: '14px' }}>
                   {priceOverrideEnabled ? (
                     <>
-                      <p style={{ margin: '4px 0', color: '#6b7280' }}>
-                        Calculated Price: <strong>${(formData.totalPrice || 675).toFixed(2)}</strong>
-                      </p>
+                      {isEditing && registration && (
+                        <p style={{ margin: '4px 0', color: '#6b7280' }}>
+                          Original Price (Paid): <strong>${originalPrice.toFixed(2)}</strong>
+                        </p>
+                      )}
                       <p style={{ margin: '4px 0', color: '#6b7280' }}>
                         Override Price: <strong>${priceOverride.toFixed(2)}</strong>
                       </p>
-                      <p style={{ margin: '4px 0', color: priceOverride > (formData.totalPrice || 675) ? '#dc2626' : '#059669' }}>
-                        Difference: <strong>${(priceOverride - (formData.totalPrice || 675)).toFixed(2)}</strong>
-                      </p>
+                      {isEditing && registration && (
+                        <p style={{ margin: '4px 0', color: priceOverride > originalPrice ? '#dc2626' : '#059669' }}>
+                          Difference: <strong>${(priceOverride - originalPrice).toFixed(2)}</strong>
+                        </p>
+                      )}
                     </>
                   ) : (
                     <>
