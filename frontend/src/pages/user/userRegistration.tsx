@@ -3451,14 +3451,20 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       </div>
                     </div>
                   )}
-                  {!isAddingSpouse && !isAddingKids && (
+                  {!isAddingSpouse && !isAddingKids && !hasPendingPayment && (
                   <div className="payment-item">
                     <span>Conference Registration:</span>
                       <span>${finalTotal.toFixed(2)}</span>
                   </div>
                   )}
-                  {/* Only show breakdown if price is NOT overridden */}
-                  {!priceOverrideEnabled && (
+                  {hasPendingPayment && (
+                    <div className="payment-item">
+                      <span>Outstanding Balance:</span>
+                      <span>${pendingPaymentAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {/* Only show breakdown if price is NOT overridden and NO pending payment */}
+                  {!priceOverrideEnabled && !hasPendingPayment && (
                     <>
                       {(formData.spouseDinnerTicket && !isAddingSpouse && !isAddingKids) || isAddingSpouse || (isAddingSpouse && isAddingKids) ? (
                         <div className="payment-item">
@@ -3543,7 +3549,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       </div>
                       {isCard && (
                         <div className="payment-fee-note" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                          Pending payment: ${pendingPaymentAmount.toFixed(2)} + ${convenienceFee.toFixed(2)} fee = ${totalWithFee.toFixed(2)} total
+                          Base amount: ${pendingPaymentAmount.toFixed(2)} + ${convenienceFee.toFixed(2)} fee = ${totalWithFee.toFixed(2)} total
                         </div>
                       )}
                     </>
