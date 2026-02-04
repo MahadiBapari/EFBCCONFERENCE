@@ -826,6 +826,19 @@ export class RegistrationController {
           dbPayload.pending_payment_reason = null;
           dbPayload.pending_payment_created_at = null;
         }
+
+        // If admin manually marks as paid, update paid_amount to match total_price
+        if ((updateData as any).paid === true || (updateData as any).paid === 1) {
+          dbPayload.paid = 1;
+          dbPayload.paid_amount = newTotalPrice;
+          dbPayload.pending_payment_amount = 0;
+          dbPayload.pending_payment_reason = null;
+          dbPayload.pending_payment_created_at = null;
+          // Set paid_at if not set
+          if (!existingRow.paid_at || existingRow.paid_at === '0000-00-00 00:00:00') {
+            dbPayload.paid_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+          }
+        }
       }
       
       // If a non-admin user just completed a pending payment,
