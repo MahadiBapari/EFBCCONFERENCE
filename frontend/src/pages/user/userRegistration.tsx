@@ -3432,22 +3432,23 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 <div className="payment-summary">
                   {hasPendingPayment && (
                     <div style={{ 
-                      backgroundColor: '#fef3c7', 
-                      border: '1px solid #f59e0b', 
-                      borderRadius: '8px', 
-                      padding: '12px', 
-                      marginBottom: '16px' 
+                      backgroundColor: '#ffffff', 
+                      borderLeft: '4px solid #ea580c', // Orange-600
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                      borderRadius: '4px', 
+                      padding: '16px', 
+                      marginBottom: '20px' 
                     }}>
-                      <div style={{ fontWeight: 600, color: '#92400e', marginBottom: '8px' }}>
-                        ⚠️ Additional Payment Required
+                      <div style={{ fontWeight: 700, color: '#ea580c', marginBottom: '8px', fontSize: '1.1rem' }}>
+                        Payment Due
                       </div>
                       {pendingPaymentReason && (
-                        <div style={{ color: '#92400e', marginBottom: '8px', fontSize: '0.9rem' }}>
-                          <strong>Reason:</strong> {pendingPaymentReason}
+                        <div style={{ color: '#4b5563', marginBottom: '8px', fontSize: '0.95rem' }}>
+                          <strong style={{ color: '#374151' }}>Reason:</strong> {pendingPaymentReason}
                         </div>
                       )}
-                      <div style={{ color: '#92400e', fontSize: '0.9rem' }}>
-                        <strong>Amount Due:</strong> ${pendingPaymentAmount.toFixed(2)}
+                      <div style={{ color: '#374151', fontSize: '1rem' }}>
+                        <strong style={{ color: '#374151' }}>Amount Due:</strong> <span style={{ fontWeight: 600 }}>${pendingPaymentAmount.toFixed(2)}</span>
                       </div>
                     </div>
                   )}
