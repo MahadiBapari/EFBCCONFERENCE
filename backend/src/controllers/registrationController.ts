@@ -904,7 +904,8 @@ export class RegistrationController {
       // Note: auth and isAdminUpdate are already declared above
       
       // Send pending payment email if admin created a pending payment
-      if (isAdminUpdate && verifyRow.pending_payment_amount && Number(verifyRow.pending_payment_amount) > 0) {
+      // Skip email if payment method is Check (as admin usually handles checks manually)
+      if (isAdminUpdate && verifyRow.pending_payment_amount && Number(verifyRow.pending_payment_amount) > 0 && updatedRegistration.paymentMethod !== 'Check') {
         try {
           const { sendPendingPaymentEmail } = await import('../services/emailService');
           const eventRow: any = await this.db.findById('events', updatedRegistration.eventId);

@@ -402,8 +402,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       return;
     }
 
-    // For paid registrations, preserve price unless something is being added
-    if (isAlreadyPaid) {
+    // For existing registrations (paid or unpaid), preserve price unless something is being added
+    if (isEditing && registration) {
       // Check if spouse is being added
       const isAddingSpouse = formData.spouseDinnerTicket && !hadSpouseTicket;
       // Check if kids are being added
@@ -414,7 +414,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         const storedPrice = registration?.totalPrice || 675;
         // Always set to stored price to prevent any recalculation
         setFormData(prev => {
-          // Force update to stored price when viewing paid registration with no changes
+          // Force update to stored price when viewing existing registration with no changes
           return { ...prev, totalPrice: storedPrice };
         });
         return;
