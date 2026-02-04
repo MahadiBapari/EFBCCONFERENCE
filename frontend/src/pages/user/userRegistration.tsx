@@ -582,7 +582,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     }
     // if (childLunchSelected) total += childLunchPrice;
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration?.totalPrice, kids, kids.length, originalKidsCount, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers, priceOverrideEnabled, formData.pendingPaymentAmount]);
+  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration, registration?.totalPrice, kids, kids.length, originalKidsCount, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers, priceOverrideEnabled, formData.pendingPaymentAmount]);
 
   // Sync priceOverride with calculated price when override is disabled
   useEffect(() => {
