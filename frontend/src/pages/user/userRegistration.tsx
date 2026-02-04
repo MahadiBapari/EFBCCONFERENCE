@@ -395,6 +395,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (priceOverrideEnabled) {
       return;
     }
+    
+    // Skip price calculation if there is a pending payment amount
+    // This preserves the admin-set total price instead of reverting to current tiers
+    if ((formData.pendingPaymentAmount || 0) > 0) {
+      return;
+    }
 
     // For paid registrations, preserve price unless something is being added
     if (isAlreadyPaid) {
@@ -576,7 +582,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     }
     // if (childLunchSelected) total += childLunchPrice;
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration?.totalPrice, kids, kids.length, originalKidsCount, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers, priceOverrideEnabled]);
+  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration?.totalPrice, kids, kids.length, originalKidsCount, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers, priceOverrideEnabled, formData.pendingPaymentAmount]);
 
   // Sync priceOverride with calculated price when override is disabled
   useEffect(() => {

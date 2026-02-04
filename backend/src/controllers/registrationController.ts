@@ -394,12 +394,33 @@ export class RegistrationController {
               // Continue without discount if validation fails
             }
           }
+          // If Admin overrides price, use that instead
+          const auth = this.getAuth(req);
+          const isAdmin = auth.role === 'admin';
+          if (isAdmin && (registrationData as any).totalPrice !== undefined) {
+             registration.totalPrice = Number((registrationData as any).totalPrice);
+          }
         }
       } catch (e) {
         // fallback to existing total if compute fails
       }
       
-      const result = await this.db.insert('registrations', registration.toDatabase());
+      const dbPayload = registration.toDatabase();
+
+      // If Admin creates an unpaid registration (e.g. Card payment, pay later), set pending amount
+      const auth = this.getAuth(req);
+      const isAdmin = auth.role === 'admin';
+      
+      if (isAdmin && (registration.paymentMethod === 'Card' || !registration.paid)) {
+        // If not marked as paid, the entire amount is pending
+        if (!registration.paid) {
+          dbPayload.pending_payment_amount = dbPayload.total_price;
+          dbPayload.pending_payment_reason = 'Admin created registration (Payment Due)';
+          dbPayload.pending_payment_created_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        }
+      }
+
+      const result = await this.db.insert('registrations', dbPayload);
       registration.id = result.insertId;
 
       // Fire-and-forget confirmation emails (primary, secondary if any, and admin copy)
@@ -804,6 +825,39 @@ export class RegistrationController {
           dbPayload.pending_payment_amount = 0;
           dbPayload.pending_payment_reason = null;
           dbPayload.pending_payment_created_at = null;
+        }
+      }
+      
+      // If a non-admin user just completed a pending payment,
+      // move the pending amount into paid_amount and clear pending fields
+      const isPaidUpdate = updateDataObj.paid === true || updateDataObj.paid === 1 || (updateDataObj as any).paid === 'true';
+      if (!isAdminUpdate && isPaidUpdate && existingRow.pending_payment_amount && Number(existingRow.pending_payment_amount) > 0) {
+        const totalPrice = Number(existingRow.total_price || 0);
+        const previousPaidAmount = Number(existingRow.paid_amount || 0);
+        const pending = Number(existingRow.pending_payment_amount || 0);
+        const newPaidAmount = previousPaidAmount + pending;
+
+        // Preserve the existing total_price (don't let frontend overwrite it with pending amount)
+        // Remove total_price from dbPayload if it was set, to preserve the correct full amount
+        if (dbPayload.total_price !== undefined) {
+          delete dbPayload.total_price;
+        }
+
+        // Update paid_amount
+        dbPayload.paid_amount = newPaidAmount;
+
+        // Clear pending payment fields
+        dbPayload.pending_payment_amount = 0;
+        dbPayload.pending_payment_reason = null;
+        dbPayload.pending_payment_created_at = null;
+
+        // If now fully paid, ensure paid flag and paid_at are set
+        if (newPaidAmount >= totalPrice) {
+          dbPayload.paid = 1;
+          // Only set paid_at if not already set
+          if (!existingRow.paid_at || existingRow.paid_at === '0000-00-00 00:00:00') {
+            dbPayload.paid_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+          }
         }
       }
       
