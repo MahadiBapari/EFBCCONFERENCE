@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
 const getDb = (): DatabaseService => (globalThis as any).databaseService as DatabaseService;
 
-const sign = (u: any) => jwt.sign({ sub: u.id, email: u.email, role: u.role, name: u.name }, JWT_SECRET, { expiresIn: '7d' });
+const sign = (u: any) => jwt.sign({ sub: u.id, email: u.email, role: u.role, name: u.name }, JWT_SECRET, { expiresIn: '12h' });
 
 router.post('/login', async (req: Request, res: Response) => {
   try {
