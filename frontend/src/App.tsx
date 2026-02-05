@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { MOCK_REGISTRATIONS } from './data/mockData';
 import { LoginPage } from './pages/authentication/login';
 import { RegistrationPage } from './pages/authentication/registration';
@@ -25,6 +26,9 @@ import { cancelApi, groupsApi } from './services/apiClient';
 import { AdminCancellations } from './pages/admin/adminCancellations';
 
 const App: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [role, setRole] = useState<'admin' | 'user' | null>(null);
   const [authInitializing, setAuthInitializing] = useState<boolean>(true);
@@ -35,7 +39,7 @@ const App: React.FC = () => {
   const [viewingEventId, setViewingEventId] = useState<number | null>(null);
   const [user, setUser] = useState<User>({ id: 999, name: "Current User", email: "current.user@example.com" });
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [showRegistration, setShowRegistration] = useState(false);
+  // showRegistration state is replaced by /register route
   const [registrationTargetEventId, setRegistrationTargetEventId] = useState<number | null>(null);
   const [adminEditingEvent, setAdminEditingEvent] = useState<Event | null>(null);
   const [adminEditingRegistrationId, setAdminEditingRegistrationId] = useState<number | null>(null);
@@ -132,51 +136,6 @@ const App: React.FC = () => {
       console.error('Failed to load events from API:', err);
     }
   };
-
-// Restore session and initial data once on mount
-useEffect(() => {
-  const init = async () => {
-    // Skip auth check if on reset password or resend verification page
-    if (window.location.pathname === '/reset-password' || window.location.pathname === '/resend-verification') {
-      setAuthInitializing(false);
-      return;
-    }
-
-    const token = localStorage.getItem('token');
-
-    try {
-      if (token) {
-        const res = await authApi.me();
-        const me = (res as any).data || {};
-        if (me.role) {
-          setRole(me.role);
-          setUser({
-            id: me.id || 999,
-            name: me.name || 'Current User',
-            email: me.email || 'current.user@example.com',
-            role: me.role,
-          });
-          setView(me.role === 'admin' ? 'events' : 'dashboard');
-        } else {
-          localStorage.removeItem('token');
-        }
-      } else {
-        // no token, stay on auth screens
-      }
-
-      // Load shared data regardless of auth so admin/user see latest lists after login
-      await Promise.all([loadEventsFromApi(), loadRegistrationsFromApi(), loadGroupsFromApi()]);
-    } catch (e) {
-      if (token) {
-        localStorage.removeItem('token');
-      }
-    } finally {
-      setAuthInitializing(false);
-    }
-  };
-
-  init();
-}, []);
 
   // Load registrations from backend (persistence)
   const loadRegistrationsFromApi = async () => {
@@ -320,6 +279,66 @@ useEffect(() => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
 
+  // Restore session and initial data once on mount
+  useEffect(() => {
+    const init = async () => {
+      // Skip auth check if on reset password or resend verification page
+      if (location.pathname === '/reset-password' || location.pathname === '/resend-verification') {
+        setAuthInitializing(false);
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+
+      try {
+        if (token) {
+          const res = await authApi.me();
+          const me = (res as any).data || {};
+          if (me.role) {
+            setRole(me.role);
+            setUser({
+              id: me.id || 999,
+              name: me.name || 'Current User',
+              email: me.email || 'current.user@example.com',
+              role: me.role,
+            });
+            
+            // If we are at root, redirect to dashboard
+            // Note: If we are already at /dashboard (or child routes), we stay there.
+            // The routing logic in the return statement will handle redirect from /login
+            if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register') {
+               // Navigation will happen via the render redirects, or we can explicit push here
+               // But state update will trigger re-render and router will handle it.
+            }
+
+            if (!view) {
+                setView(me.role === 'admin' ? 'events' : 'dashboard');
+            }
+          } else {
+            localStorage.removeItem('token');
+            setRole(null);
+          }
+        } else {
+           // no token
+           setRole(null);
+        }
+
+        // Load shared data regardless of auth so admin/user see latest lists after login
+        await Promise.all([loadEventsFromApi(), loadRegistrationsFromApi(), loadGroupsFromApi()]);
+      } catch (e) {
+        if (token) {
+          localStorage.removeItem('token');
+        }
+        setRole(null);
+      } finally {
+        setAuthInitializing(false);
+      }
+    };
+
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleLogin = async (selectedRole: 'admin' | 'user') => {
     try {
       const res = await authApi.me();
@@ -337,15 +356,17 @@ useEffect(() => {
     await loadEventsFromApi();
     await loadRegistrationsFromApi();
     setView(selectedRole === 'admin' ? 'events' : 'dashboard');
+    navigate('/dashboard');
   };
 
-const handleLogout = () => {
+  const handleLogout = () => {
     setRole(null);
     setView('');
-    setShowRegistration(false);
-  localStorage.removeItem('token');
-  // Ensure auth pages default to light theme
-  setTheme('light');
+    // setShowRegistration(false); // No longer needed
+    localStorage.removeItem('token');
+    // Ensure auth pages default to light theme
+    setTheme('light');
+    navigate('/login');
   };
 
   const handleRegister = async (formData: RegisterForm) => {
@@ -363,25 +384,29 @@ const handleLogout = () => {
       setUser(newUser);
       setRole(newUser.role as any);
       setView('dashboard');
-      setShowRegistration(false);
+      // setShowRegistration(false); // No longer needed
       alert(`Welcome to EFBC Conference Portal, ${newUser.name}! Your account has been created successfully.`);
+      navigate('/dashboard');
     } catch {
       // Fallback if /auth/me not available yet; still proceed with minimal state
       setUser({ id: 0, name: `${(formData as any).firstName} ${(formData as any).lastName}`.trim(), email: formData.email, role: 'user' });
       setRole('user');
       setView('dashboard');
-      setShowRegistration(false);
+      // setShowRegistration(false); // No longer needed
       alert(`Welcome to EFBC Conference Portal, ${(formData as any).firstName}! Your account has been created successfully.`);
+      navigate('/dashboard');
     }
   };
 
+  // showRegistration handlers are no longer needed
+  /*
   const handleBackToLogin = () => {
     setShowRegistration(false);
   };
-
   const handleShowRegistration = () => {
     setShowRegistration(true);
   };
+  */
 
   const beginRegistration = (eventId?: number) => {
     setRegistrationTargetEventId(eventId ?? null);
@@ -523,8 +548,6 @@ const handleLogout = () => {
       alert(e?.response?.data?.error || 'Failed to update profile');
     }
   };
-
-  // Removed unused handleDeleteEvent to satisfy CI lint rules
 
   const handleDeleteGroup = async (groupId: number) => {
     if (!window.confirm("Are you sure you want to delete this group? All members will become unassigned.")) {
@@ -885,6 +908,88 @@ const handleLogout = () => {
     return null;
   };
 
+  const DashboardLayout = () => {
+    return (
+      <div className="app-layout">
+        <Sidebar 
+          role={role as 'admin' | 'user'} 
+          onLogout={handleLogout} 
+          theme={theme} 
+          toggleTheme={toggleTheme} 
+          activeView={view}
+          setActiveView={handleSetActiveView}
+          isMobileOpen={isMobileSidebarOpen}
+          onClose={() => setMobileSidebarOpen(false)}
+        />
+        <main className="main-content">
+          <header className="mobile-header no-print">
+            <div className="logo">EFBC</div>
+            <button className="icon-btn menu-toggle" onClick={() => setMobileSidebarOpen(true)} aria-label="Open menu">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+          </header>
+          {renderView()}
+          {cancelModalOpen && (
+            <Modal
+              title="Cancel Registration"
+              onClose={() => !cancelSubmitting && setCancelModalOpen(false)}
+            >
+              <div className="form-group">
+                <p>Please share a brief reason for your cancellation request and we will be in touch soon.</p>
+                <label htmlFor="cancelReason" className="form-label">Reason for cancellation</label>
+                <textarea
+                  id="cancelReason"
+                  className="form-control"
+                  rows={4}
+                  value={cancelReason}
+                  onChange={e => setCancelReason(e.target.value)}
+                  placeholder="Example: schedule conflict, travel issues, etc."
+                  disabled={cancelSubmitting}
+                />
+              </div>
+              {cancelError && <div className="error-message" style={{ marginTop: '0.5rem' }}>{cancelError}</div>}
+              <div className="modal-footer-actions" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setCancelModalOpen(false)}
+                  disabled={cancelSubmitting}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={confirmCancelRegistration}
+                  disabled={cancelSubmitting}
+                >
+                  {cancelSubmitting ? 'Sending...' : 'Send Request'}
+                </button>
+              </div>
+            </Modal>
+          )}
+          {alertState.open && (
+            <Modal
+              title="Notification"
+              onClose={() => setAlertState({ open: false, message: '' })}
+            >
+              <p>{alertState.message}</p>
+              <div className="modal-footer-actions" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setAlertState({ open: false, message: '' })}
+                >
+                  OK
+                </button>
+              </div>
+            </Modal>
+          )}
+        </main>
+      </div>
+    );
+  };
+
   if (authInitializing) {
     return (
       <div className="app-loading-screen">
@@ -893,97 +998,26 @@ const handleLogout = () => {
     );
   }
 
-  if (!role) {
-    if (window.location.pathname === '/reset-password') {
-      return <ResetPasswordPage />;
-    }
-    if (window.location.pathname === '/resend-verification') {
-      return <ResendVerificationPage />;
-    }
-    if (showRegistration) {
-      return <RegistrationPage onRegister={handleRegister} onBackToLogin={handleBackToLogin} />;
-    }
-    return <LoginPage onLogin={handleLogin} onShowRegistration={handleShowRegistration} />;
-  }
-
   return (
-    <div className="app-layout">
-      <Sidebar 
-        role={role} 
-        onLogout={handleLogout} 
-        theme={theme} 
-        toggleTheme={toggleTheme} 
-        activeView={view}
-        setActiveView={handleSetActiveView}
-        isMobileOpen={isMobileSidebarOpen}
-        onClose={() => setMobileSidebarOpen(false)}
-      />
-      <main className="main-content">
-        <header className="mobile-header no-print">
-          <div className="logo">EFBC</div>
-          <button className="icon-btn menu-toggle" onClick={() => setMobileSidebarOpen(true)} aria-label="Open menu">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-          </button>
-        </header>
-        {renderView()}
-        {cancelModalOpen && (
-          <Modal
-            title="Cancel Registration"
-            onClose={() => !cancelSubmitting && setCancelModalOpen(false)}
-          >
-            <div className="form-group">
-              <p>Please share a brief reason for your cancellation request and we will be in touch soon.</p>
-              <label htmlFor="cancelReason" className="form-label">Reason for cancellation</label>
-              <textarea
-                id="cancelReason"
-                className="form-control"
-                rows={4}
-                value={cancelReason}
-                onChange={e => setCancelReason(e.target.value)}
-                placeholder="Example: schedule conflict, travel issues, etc."
-                disabled={cancelSubmitting}
-              />
-            </div>
-            {cancelError && <div className="error-message" style={{ marginTop: '0.5rem' }}>{cancelError}</div>}
-            <div className="modal-footer-actions" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setCancelModalOpen(false)}
-                disabled={cancelSubmitting}
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={confirmCancelRegistration}
-                disabled={cancelSubmitting}
-              >
-                {cancelSubmitting ? 'Sending...' : 'Send Request'}
-              </button>
-            </div>
-          </Modal>
-        )}
-        {alertState.open && (
-          <Modal
-            title="Notification"
-            onClose={() => setAlertState({ open: false, message: '' })}
-          >
-            <p>{alertState.message}</p>
-            <div className="modal-footer-actions" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => setAlertState({ open: false, message: '' })}
-              >
-                OK
-              </button>
-            </div>
-          </Modal>
-        )}
-      </main>
-    </div>
+    <Routes>
+      <Route path="/login" element={
+        role ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={handleLogin} onShowRegistration={() => navigate('/register')} />
+      } />
+      <Route path="/register" element={
+        role ? <Navigate to="/dashboard" replace /> : <RegistrationPage onRegister={handleRegister} onBackToLogin={() => navigate('/login')} />
+      } />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/resend-verification" element={<ResendVerificationPage />} />
+      
+      {/* Protected Routes */}
+      <Route path="/dashboard" element={
+        !role ? <Navigate to="/login" replace /> : <DashboardLayout />
+      } />
+
+      {/* Default Redirects */}
+      <Route path="/" element={<Navigate to={role ? "/dashboard" : "/login"} replace />} />
+      <Route path="*" element={<Navigate to={role ? "/dashboard" : "/login"} replace />} />
+    </Routes>
   );
 };
 
