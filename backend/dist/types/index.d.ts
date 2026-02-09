@@ -74,6 +74,8 @@ export interface Registration {
     emergencyContactName?: string;
     emergencyContactPhone?: string;
     wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
+    wednesdayActivityWaitlisted?: boolean;
+    wednesdayActivityWaitlistedAt?: string;
     golfHandicap?: string;
     clubRentals?: string;
     massageTimeSlot?: string;
@@ -115,6 +117,11 @@ export interface Registration {
     discountCode?: string;
     discountAmount?: number;
     groupAssigned?: number;
+    originalTotalPrice?: number;
+    paidAmount?: number;
+    pendingPaymentAmount?: number;
+    pendingPaymentReason?: string;
+    pendingPaymentCreatedAt?: string;
     name: string;
     category: string;
     createdAt?: string;
@@ -190,6 +197,8 @@ export interface CreateRegistrationRequest {
     emergencyContactName?: string;
     emergencyContactPhone?: string;
     wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
+    wednesdayActivityWaitlisted?: boolean;
+    wednesdayActivityWaitlistedAt?: string;
     golfHandicap?: string;
     clubRentals?: string;
     wednesdayReception: 'I will attend' | 'I will NOT attend';

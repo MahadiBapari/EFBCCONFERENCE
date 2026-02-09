@@ -217,6 +217,11 @@ useEffect(() => {
         emergencyContactPhone: r.emergencyContactPhone ?? '',
         // Conference
         wednesdayActivity: r.wednesdayActivity ?? r.category ?? 'None',
+        wednesdayActivityWaitlisted: (() => {
+          const v = r.wednesdayActivityWaitlisted ?? r.wednesday_activity_waitlisted;
+          return v === true || v === 1 || v === '1';
+        })(),
+        wednesdayActivityWaitlistedAt: r.wednesdayActivityWaitlistedAt ?? r.wednesday_activity_waitlisted_at ?? undefined,
         golfHandicap: r.golfHandicap ?? '',
         golfClubPreference: r.golfClubPreference ?? 'Own Clubs',
         clubRentals: r.clubRentals ?? r.club_rentals ?? '',
@@ -759,6 +764,7 @@ const handleLogout = () => {
           registrations={registrations}
           groups={groups}
           onBack={() => setViewingEventId(null)}
+          onRefreshRegistrations={loadRegistrationsFromApi}
         />;
       }
 

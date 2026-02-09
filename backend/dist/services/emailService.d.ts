@@ -63,5 +63,15 @@ export declare function sendRegistrationRestoredEmail(params: {
     userName?: string;
     eventName?: string;
 }): Promise<void>;
+export declare function sendPendingPaymentEmail(params: {
+    to: string;
+    name: string;
+    eventName?: string;
+    eventDate?: string;
+    eventStartDate?: string;
+    pendingAmount: number;
+    reason: string;
+    registration?: any;
+}): Promise<void>;
 export {};
 //# sourceMappingURL=emailService.d.ts.map

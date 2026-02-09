@@ -100,6 +100,8 @@ const createTables = async () => {
         emergency_contact_name VARCHAR(255),
         emergency_contact_phone VARCHAR(50),
         wednesday_activity VARCHAR(255),
+        wednesday_activity_waitlisted BOOLEAN DEFAULT FALSE,
+        wednesday_activity_waitlisted_at TIMESTAMP NULL,
         wednesday_reception VARCHAR(50),
         thursday_breakfast VARCHAR(50),
         thursday_luncheon VARCHAR(50),
@@ -131,6 +133,9 @@ const createTables = async () => {
         await migrateAdditionalRegistrationQuestions();
         await migratePickleballEquipment();
         await migrateDiscountCodes();
+        await migrateBackfillPaidAt();
+        await migratePendingPaymentFields();
+        await migrateActivityWaitlist();
         await databaseService.query(`
       CREATE TABLE IF NOT EXISTS \`activity_groups\` (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -423,6 +428,28 @@ const migratePickleballEquipment = async () => {
         console.error('Error migrating pickleball equipment feature:', error?.message || error);
     }
 };
+const migrateActivityWaitlist = async () => {
+    try {
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (!dbName)
+            return;
+        const regCols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, 'registrations']);
+        const hasWaitlisted = regCols.some((c) => c.COLUMN_NAME === 'wednesday_activity_waitlisted');
+        const hasWaitlistedAt = regCols.some((c) => c.COLUMN_NAME === 'wednesday_activity_waitlisted_at');
+        if (!hasWaitlisted) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `wednesday_activity_waitlisted` BOOLEAN DEFAULT FALSE AFTER `wednesday_activity`');
+            console.log('🛠️ Added registrations.wednesday_activity_waitlisted column');
+        }
+        if (!hasWaitlistedAt) {
+            await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `wednesday_activity_waitlisted_at` TIMESTAMP NULL AFTER `wednesday_activity_waitlisted`');
+            console.log('🛠️ Added registrations.wednesday_activity_waitlisted_at column');
+        }
+    }
+    catch (error) {
+        console.error('Error migrating activity waitlist feature:', error?.message || error);
+    }
+};
 const migrateChildLunchFeature = async () => {
     try {
         const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
@@ -703,6 +730,65 @@ const migrateDiscountCodes = async () => {
     }
     catch (error) {
         console.error('Error migrating discount codes:', error?.message || error);
+    }
+};
+const migrateBackfillPaidAt = async () => {
+    try {
+        const result = await databaseService.query(`UPDATE registrations 
+       SET paid_at = created_at 
+       WHERE paid = true 
+       AND (paid_at IS NULL OR paid_at = '0000-00-00 00:00:00')
+       AND created_at IS NOT NULL`);
+        const affectedRows = result?.affectedRows || result || 0;
+        if (affectedRows > 0) {
+            console.log(`🛠️ Backfilled paid_at for ${affectedRows} existing paid registrations`);
+        }
+    }
+    catch (error) {
+        console.error('Error backfilling paid_at:', error?.message || error);
+    }
+};
+const migratePendingPaymentFields = async () => {
+    try {
+        const dbNameRows = await databaseService.query('SELECT DATABASE() as db');
+        const dbName = dbNameRows[0]?.db;
+        if (!dbName)
+            return;
+        const regCols = await databaseService.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?', [dbName, 'registrations']);
+        const columnNames = regCols.map((c) => c.COLUMN_NAME);
+        const alter = [];
+        if (!columnNames.includes('original_total_price')) {
+            alter.push('ADD COLUMN `original_total_price` DECIMAL(10, 2) NULL');
+        }
+        if (!columnNames.includes('paid_amount')) {
+            alter.push('ADD COLUMN `paid_amount` DECIMAL(10, 2) DEFAULT 0');
+        }
+        if (!columnNames.includes('pending_payment_amount')) {
+            alter.push('ADD COLUMN `pending_payment_amount` DECIMAL(10, 2) DEFAULT 0');
+        }
+        if (!columnNames.includes('pending_payment_reason')) {
+            alter.push('ADD COLUMN `pending_payment_reason` TEXT NULL');
+        }
+        if (!columnNames.includes('pending_payment_created_at')) {
+            alter.push('ADD COLUMN `pending_payment_created_at` TIMESTAMP NULL');
+        }
+        if (alter.length > 0) {
+            await databaseService.query(`ALTER TABLE \`registrations\` ${alter.join(', ')}`);
+            console.log('🛠️ Added pending payment fields to registrations table');
+        }
+        const initResult = await databaseService.query(`UPDATE registrations 
+       SET paid_amount = CASE 
+         WHEN paid = 1 THEN total_price 
+         ELSE 0 
+       END
+       WHERE paid_amount IS NULL OR paid_amount = 0`);
+        const affectedRows = initResult?.affectedRows || 0;
+        if (affectedRows > 0) {
+            console.log(`🛠️ Initialized paid_amount for ${affectedRows} existing registrations`);
+        }
+    }
+    catch (error) {
+        console.error('Error migrating pending payment fields:', error?.message || error);
     }
 };
 const migrateCancellationFeature = async () => {

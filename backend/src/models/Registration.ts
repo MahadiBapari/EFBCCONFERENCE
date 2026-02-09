@@ -25,6 +25,8 @@ export class Registration {
   public emergencyContactName?: string;
   public emergencyContactPhone?: string;
   public wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
+  public wednesdayActivityWaitlisted?: boolean;
+  public wednesdayActivityWaitlistedAt?: string;
   public wednesdayReception: 'I will attend' | 'I will NOT attend';
   public thursdayBreakfast: 'I will attend' | 'I will NOT attend';
   public thursdayLunch: 'I will attend' | 'I will NOT attend';
@@ -117,6 +119,8 @@ export class Registration {
     this.emergencyContactName = data.emergencyContactName;
     this.emergencyContactPhone = data.emergencyContactPhone;
     this.wednesdayActivity = data.wednesdayActivity || 'None';
+    this.wednesdayActivityWaitlisted = (data as any).wednesdayActivityWaitlisted ?? (data as any).wednesday_activity_waitlisted ?? false;
+    this.wednesdayActivityWaitlistedAt = (data as any).wednesdayActivityWaitlistedAt ?? (data as any).wednesday_activity_waitlisted_at ?? undefined;
     this.wednesdayReception = data.wednesdayReception || 'I will attend';
     this.thursdayBreakfast = data.thursdayBreakfast || 'I will attend';
     // Support both thursdayLunch/thursdayLuncheon and thursdayReception/thursdayDinner for frontend compatibility
@@ -237,6 +241,8 @@ export class Registration {
       emergencyContactName: this.emergencyContactName,
       emergencyContactPhone: this.emergencyContactPhone,
       wednesdayActivity: this.wednesdayActivity,
+      wednesdayActivityWaitlisted: !!this.wednesdayActivityWaitlisted,
+      wednesdayActivityWaitlistedAt: this.wednesdayActivityWaitlistedAt,
       wednesdayReception: this.wednesdayReception,
       thursdayBreakfast: this.thursdayBreakfast,
       thursdayLunch: this.thursdayLunch,
@@ -327,6 +333,8 @@ export class Registration {
       emergency_contact_name: this.nullIfUndefined(this.emergencyContactName),
       emergency_contact_phone: this.nullIfUndefined(this.emergencyContactPhone),
       wednesday_activity: this.wednesdayActivity || null,
+      wednesday_activity_waitlisted: this.wednesdayActivityWaitlisted ? 1 : 0,
+      wednesday_activity_waitlisted_at: this.wednesdayActivityWaitlistedAt ? this.formatDateForDB(this.wednesdayActivityWaitlistedAt) : null,
       wednesday_reception: this.wednesdayReception || null,
       thursday_breakfast: this.thursdayBreakfast || null,
       thursday_luncheon: this.thursdayLunch || null,
@@ -415,6 +423,8 @@ export class Registration {
       emergencyContactName: row.emergency_contact_name,
       emergencyContactPhone: row.emergency_contact_phone,
       wednesdayActivity: row.wednesday_activity,
+      wednesdayActivityWaitlisted: row.wednesday_activity_waitlisted !== undefined ? !!row.wednesday_activity_waitlisted : false,
+      wednesdayActivityWaitlistedAt: row.wednesday_activity_waitlisted_at ?? undefined,
       wednesdayReception: row.wednesday_reception,
       thursdayBreakfast: row.thursday_breakfast,
       thursdayLunch: row.thursday_luncheon,

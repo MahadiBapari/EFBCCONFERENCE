@@ -621,6 +621,13 @@ export async function sendRegistrationConfirmationEmail(params: {
   
   // Get activity-specific details
   const wednesdayActivity = registration?.wednesdayActivity || registration?.wednesday_activity || '';
+  const wednesdayActivityWaitlistedRaw =
+    registration?.wednesdayActivityWaitlisted ?? registration?.wednesday_activity_waitlisted;
+  const isActivityWaitlisted =
+    !!wednesdayActivity &&
+    (wednesdayActivityWaitlistedRaw === true ||
+      wednesdayActivityWaitlistedRaw === 1 ||
+      wednesdayActivityWaitlistedRaw === '1');
   const clubRentals = registration?.clubRentals || registration?.club_rentals || '';
   const golfHandicap = registration?.golfHandicap || registration?.golf_handicap || '';
   const massageTimeSlot = registration?.massageTimeSlot || registration?.massage_time_slot || '';
@@ -697,7 +704,7 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${isFirstTimeAttending !== null ? `<tr><td style="color:#6b7280;">First Time Attending?</td><td>${isFirstTimeAttending ? 'Yes' : 'No'}</td></tr>`:''}
         ${companyType ? `<tr><td style="color:#6b7280;">Company Type</td><td>${companyType}</td></tr>`:''}
         ${companyTypeOther ? `<tr><td style="color:#6b7280;">Company Type (Other)</td><td>${companyTypeOther}</td></tr>`:''}
-        ${wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${wednesdayActivity}</td></tr>`:''}
+        ${wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${wednesdayActivity}${isActivityWaitlisted ? ' <strong style="color:#b91c1c;">(WAITLISTED)</strong>' : ''}</td></tr>`:''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && golfHandicap ? `<tr><td style="color:#6b7280;">Golf Handicap</td><td>${golfHandicap}</td></tr>`:''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && clubRentals ? `<tr><td style="color:#6b7280;">Golf Club Preference</td><td>${clubRentals}</td></tr>`:''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('massage') && massageTimeSlot ? `<tr><td style="color:#6b7280;">Massage Time Slot</td><td>${massageTimeSlot}</td></tr>`:''}
@@ -821,6 +828,13 @@ export async function sendRegistrationUpdateEmail(params: {
   
   // Get activity-specific details
   const wednesdayActivity = registration?.wednesdayActivity || registration?.wednesday_activity || '';
+  const wednesdayActivityWaitlistedRaw =
+    registration?.wednesdayActivityWaitlisted ?? registration?.wednesday_activity_waitlisted;
+  const isActivityWaitlisted =
+    !!wednesdayActivity &&
+    (wednesdayActivityWaitlistedRaw === true ||
+      wednesdayActivityWaitlistedRaw === 1 ||
+      wednesdayActivityWaitlistedRaw === '1');
   const clubRentals = registration?.clubRentals || registration?.club_rentals || '';
   const golfHandicap = registration?.golfHandicap || registration?.golf_handicap || '';
   const massageTimeSlot = registration?.massageTimeSlot || registration?.massage_time_slot || '';
@@ -897,7 +911,7 @@ export async function sendRegistrationUpdateEmail(params: {
         ${isFirstTimeAttending !== null ? `<tr><td style="color:#6b7280;">First Time Attending?</td><td>${isFirstTimeAttending ? 'Yes' : 'No'}</td></tr>`:''}
         ${companyType ? `<tr><td style="color:#6b7280;">Company Type</td><td>${companyType}</td></tr>`:''}
         ${companyTypeOther ? `<tr><td style="color:#6b7280;">Company Type (Other)</td><td>${companyTypeOther}</td></tr>`:''}
-        ${wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${wednesdayActivity}</td></tr>`:''}
+        ${wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${wednesdayActivity}${isActivityWaitlisted ? ' <strong style="color:#b91c1c;">(WAITLISTED)</strong>' : ''}</td></tr>`:''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && golfHandicap ? `<tr><td style="color:#6b7280;">Golf Handicap</td><td>${golfHandicap}</td></tr>`:''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && clubRentals ? `<tr><td style="color:#6b7280;">Golf Club Preference</td><td>${clubRentals}</td></tr>`:''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('massage') && massageTimeSlot ? `<tr><td style="color:#6b7280;">Massage Time Slot</td><td>${massageTimeSlot}</td></tr>`:''}

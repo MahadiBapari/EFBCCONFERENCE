@@ -227,6 +227,8 @@ class RegistrationController {
     async createRegistration(req, res) {
         try {
             const registrationData = req.body;
+            registrationData.wednesdayActivityWaitlisted = false;
+            registrationData.wednesdayActivityWaitlistedAt = undefined;
             if (registrationData.wednesdayActivity && registrationData.eventId) {
                 const event = await this.db.findById('events', registrationData.eventId);
                 if (event && event.activities) {
@@ -241,16 +243,12 @@ class RegistrationController {
                  WHERE event_id = ? 
                  AND wednesday_activity = ? 
                  AND (status IS NULL OR status != 'cancelled')
-                 AND cancellation_at IS NULL`, [registrationData.eventId, registrationData.wednesdayActivity]);
-                            const currentCount = existingRegs[0]?.count || 0;
-                            if (currentCount >= activity.seatLimit) {
-                                const response = {
-                                    success: false,
-                                    error: `Sorry, ${activity.name} is full (${activity.seatLimit} seats). Please select another activity.`
-                                };
-                                res.status(400).json(response);
-                                return;
-                            }
+                 AND cancellation_at IS NULL
+                 AND (wednesday_activity_waitlisted IS NULL OR wednesday_activity_waitlisted = 0)`, [registrationData.eventId, registrationData.wednesdayActivity]);
+                            const confirmedCount = Number(existingRegs[0]?.count || 0);
+                            const willBeWaitlisted = confirmedCount >= activity.seatLimit;
+                            registrationData.wednesdayActivityWaitlisted = willBeWaitlisted;
+                            registrationData.wednesdayActivityWaitlistedAt = willBeWaitlisted ? new Date().toISOString() : undefined;
                         }
                     }
                 }
@@ -326,11 +324,26 @@ class RegistrationController {
                             console.error('Error applying discount code:', discountError);
                         }
                     }
+                    const auth = this.getAuth(req);
+                    const isAdmin = auth.role === 'admin';
+                    if (isAdmin && registrationData.totalPrice !== undefined) {
+                        registration.totalPrice = Number(registrationData.totalPrice);
+                    }
                 }
             }
             catch (e) {
             }
-            const result = await this.db.insert('registrations', registration.toDatabase());
+            const dbPayload = registration.toDatabase();
+            const auth = this.getAuth(req);
+            const isAdmin = auth.role === 'admin';
+            if (isAdmin && (registration.paymentMethod === 'Card' || !registration.paid)) {
+                if (!registration.paid) {
+                    dbPayload.pending_payment_amount = dbPayload.total_price;
+                    dbPayload.pending_payment_reason = 'Admin created registration (Payment Due)';
+                    dbPayload.pending_payment_created_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                }
+            }
+            const result = await this.db.insert('registrations', dbPayload);
             registration.id = result.insertId;
             const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || process.env.SUPPORT_EMAIL || 'planner@efbcconference.org';
             const toName = registration.badgeName || `${registration.firstName} ${registration.lastName}`.trim();
@@ -373,6 +386,8 @@ class RegistrationController {
         try {
             const { id } = req.params;
             const updateData = req.body || {};
+            let computedActivityWaitlisted;
+            let computedActivityWaitlistedAtDb;
             console.log(`[UPDATE] Received update request for registration ${id}`);
             console.log(`[UPDATE] Update data keys:`, Object.keys(updateData));
             console.log(`[UPDATE] Sample fields:`, {
@@ -393,6 +408,8 @@ class RegistrationController {
             }
             if (updateData.wednesdayActivity &&
                 updateData.wednesdayActivity !== existingRow.wednesday_activity) {
+                computedActivityWaitlisted = false;
+                computedActivityWaitlistedAtDb = null;
                 const event = await this.db.findById('events', existingRow.event_id);
                 if (event && event.activities) {
                     const activities = typeof event.activities === 'string'
@@ -407,16 +424,14 @@ class RegistrationController {
                  AND wednesday_activity = ? 
                  AND (status IS NULL OR status != 'cancelled')
                  AND cancellation_at IS NULL
+                 AND (wednesday_activity_waitlisted IS NULL OR wednesday_activity_waitlisted = 0)
                  AND id != ?`, [existingRow.event_id, updateData.wednesdayActivity, Number(id)]);
-                            const currentCount = existingRegs[0]?.count || 0;
-                            if (currentCount >= activity.seatLimit) {
-                                const response = {
-                                    success: false,
-                                    error: `Sorry, ${activity.name} is full (${activity.seatLimit} seats). Please select another activity.`
-                                };
-                                res.status(400).json(response);
-                                return;
-                            }
+                            const confirmedCount = Number(existingRegs[0]?.count || 0);
+                            const willBeWaitlisted = confirmedCount >= activity.seatLimit;
+                            computedActivityWaitlisted = willBeWaitlisted;
+                            computedActivityWaitlistedAtDb = willBeWaitlisted
+                                ? new Date().toISOString().slice(0, 19).replace('T', ' ')
+                                : null;
                         }
                     }
                 }
@@ -509,6 +524,10 @@ class RegistrationController {
                     dbPayload[dbKey] = value;
                 }
             }
+            if (computedActivityWaitlisted !== undefined) {
+                dbPayload.wednesday_activity_waitlisted = computedActivityWaitlisted ? 1 : 0;
+                dbPayload.wednesday_activity_waitlisted_at = computedActivityWaitlisted ? computedActivityWaitlistedAtDb : null;
+            }
             if (updateDataObj.wednesdayActivity !== undefined) {
                 if (!isGolf) {
                     dbPayload.club_rentals = null;
@@ -521,12 +540,188 @@ class RegistrationController {
                     dbPayload.pickleball_equipment = null;
                 }
             }
+            const auth = this.getAuth(req);
+            const isAdminUpdate = auth.role === 'admin';
+            if (isAdminUpdate) {
+                const oldTotalPrice = Number(existingRow.total_price || 0);
+                const oldPaidAmount = Number(existingRow.paid_amount || (existingRow.paid ? oldTotalPrice : 0));
+                const oldSpouseTicket = existingRow.spouse_dinner_ticket || false;
+                const oldKidsData = existingRow.kids_data ? JSON.parse(existingRow.kids_data) : [];
+                const oldKidsCount = Array.isArray(oldKidsData) ? oldKidsData.length : 0;
+                let newTotalPrice = oldTotalPrice;
+                let pendingAmount = 0;
+                const reasonParts = [];
+                const adminReason = updateData.pendingPaymentReason || '';
+                if (updateData.totalPrice !== undefined && updateData.totalPrice !== oldTotalPrice) {
+                    const priceDiff = Number(updateData.totalPrice) - oldTotalPrice;
+                    if (priceDiff > 0) {
+                        pendingAmount += priceDiff;
+                        reasonParts.push(`Price increased by admin from $${oldTotalPrice.toFixed(2)} to $${Number(updateData.totalPrice).toFixed(2)}`);
+                        newTotalPrice = Number(updateData.totalPrice);
+                    }
+                    else if (priceDiff < 0) {
+                        newTotalPrice = Number(updateData.totalPrice);
+                    }
+                }
+                else {
+                    try {
+                        const ev = await this.db.findById('events', existingRow.event_id);
+                        if (ev) {
+                            const parseJson = (v) => { try {
+                                return JSON.parse(v || '[]');
+                            }
+                            catch {
+                                return [];
+                            } };
+                            const regTiers = parseJson(ev.registration_pricing);
+                            const spouseTiers = parseJson(ev.spouse_pricing);
+                            const kidsTiers = parseJson(ev.kids_pricing);
+                            const breakfastPrice = Number(ev.breakfast_price ?? 0);
+                            const bEnd = ev.breakfast_end_date ? getEasternTimeEndOfDay(ev.breakfast_end_date) : Infinity;
+                            const now = getCurrentEasternTime();
+                            const pick = (tiers) => {
+                                const mapped = (tiers || []).map(t => ({
+                                    ...t,
+                                    s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+                                    e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
+                                }));
+                                return mapped.find((t) => now >= t.s && now < t.e) || mapped[mapped.length - 1] || null;
+                            };
+                            const base = pick(regTiers);
+                            let calculatedTotal = 0;
+                            if (base && typeof base.price === 'number') {
+                                calculatedTotal += base.price;
+                            }
+                            else {
+                                calculatedTotal += Number(ev.default_price || 0);
+                            }
+                            const newSpouseTicket = updateData.spouseDinnerTicket || false;
+                            if (newSpouseTicket && !oldSpouseTicket) {
+                                const spouse = pick(spouseTiers);
+                                const spousePrice = spouse && typeof spouse.price === 'number' ? spouse.price : 200;
+                                calculatedTotal += spousePrice;
+                                pendingAmount += spousePrice;
+                                reasonParts.push(`Spouse dinner ticket added ($${spousePrice.toFixed(2)})`);
+                            }
+                            else if (newSpouseTicket && oldSpouseTicket) {
+                                const spouse = pick(spouseTiers);
+                                const spousePrice = spouse && typeof spouse.price === 'number' ? spouse.price : 200;
+                                calculatedTotal += spousePrice;
+                            }
+                            if (updateData.spouseBreakfast && now <= bEnd) {
+                                calculatedTotal += (isNaN(breakfastPrice) ? 0 : breakfastPrice);
+                            }
+                            const newKids = updateData.kids || [];
+                            const newKidsCount = Array.isArray(newKids) ? newKids.length : 0;
+                            if (newKidsCount > oldKidsCount) {
+                                const addedKidsCount = newKidsCount - oldKidsCount;
+                                const kidsActive = pick(kidsTiers);
+                                const pricePerKid = kidsActive?.price ?? 50;
+                                const kidsPrice = pricePerKid * addedKidsCount;
+                                calculatedTotal += kidsPrice;
+                                pendingAmount += kidsPrice;
+                                reasonParts.push(`${addedKidsCount} children added ($${kidsPrice.toFixed(2)})`);
+                            }
+                            else if (newKidsCount > 0) {
+                                const kidsActive = pick(kidsTiers);
+                                const pricePerKid = kidsActive?.price ?? 50;
+                                calculatedTotal += pricePerKid * newKidsCount;
+                            }
+                            if (existingRow.discount_code) {
+                                try {
+                                    const codeRows = await this.db.query('SELECT * FROM discount_codes WHERE code = ? AND event_id = ?', [existingRow.discount_code.toUpperCase().trim(), existingRow.event_id]);
+                                    if (codeRows.length > 0) {
+                                        const { DiscountCode } = await Promise.resolve().then(() => __importStar(require('../models/DiscountCode')));
+                                        const discountCode = DiscountCode.fromDatabase(codeRows[0]);
+                                        const validation = discountCode.isValid();
+                                        if (validation.valid) {
+                                            let discountAmount = 0;
+                                            if (discountCode.discountType === 'percentage') {
+                                                discountAmount = (calculatedTotal * discountCode.discountValue) / 100;
+                                            }
+                                            else {
+                                                discountAmount = discountCode.discountValue;
+                                            }
+                                            calculatedTotal = Math.max(0, calculatedTotal - discountAmount);
+                                        }
+                                    }
+                                }
+                                catch (discountError) {
+                                    console.error('Error applying discount code:', discountError);
+                                }
+                            }
+                            if (updateData.totalPrice === undefined && Math.abs(calculatedTotal - oldTotalPrice) > 0.01) {
+                                const priceDiff = calculatedTotal - oldTotalPrice;
+                                if (priceDiff > 0) {
+                                    pendingAmount += priceDiff;
+                                    reasonParts.push(`Price recalculated from $${oldTotalPrice.toFixed(2)} to $${calculatedTotal.toFixed(2)}`);
+                                }
+                                newTotalPrice = calculatedTotal;
+                            }
+                        }
+                    }
+                    catch (e) {
+                        console.error('Error calculating pending payment:', e);
+                    }
+                }
+                let finalReason = reasonParts.join('. ');
+                if (adminReason) {
+                    finalReason += (finalReason ? '. ' : '') + adminReason;
+                }
+                if (pendingAmount > 0) {
+                    dbPayload.total_price = newTotalPrice;
+                    dbPayload.paid_amount = oldPaidAmount;
+                    dbPayload.pending_payment_amount = pendingAmount;
+                    dbPayload.pending_payment_reason = finalReason;
+                    dbPayload.pending_payment_created_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                    dbPayload.paid = 0;
+                    if (!existingRow.original_total_price) {
+                        dbPayload.original_total_price = oldTotalPrice;
+                    }
+                }
+                else if (pendingAmount === 0 && existingRow.pending_payment_amount) {
+                    dbPayload.pending_payment_amount = 0;
+                    dbPayload.pending_payment_reason = null;
+                    dbPayload.pending_payment_created_at = null;
+                }
+                if (updateData.paid === true || updateData.paid === 1) {
+                    dbPayload.paid = 1;
+                    dbPayload.paid_amount = newTotalPrice;
+                    dbPayload.pending_payment_amount = 0;
+                    dbPayload.pending_payment_reason = null;
+                    dbPayload.pending_payment_created_at = null;
+                    if (!existingRow.paid_at || existingRow.paid_at === '0000-00-00 00:00:00') {
+                        dbPayload.paid_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                    }
+                }
+            }
+            const isPaidUpdate = updateDataObj.paid === true || updateDataObj.paid === 1 || updateDataObj.paid === 'true';
+            if (!isAdminUpdate && isPaidUpdate && existingRow.pending_payment_amount && Number(existingRow.pending_payment_amount) > 0) {
+                const totalPrice = Number(existingRow.total_price || 0);
+                const previousPaidAmount = Number(existingRow.paid_amount || 0);
+                const pending = Number(existingRow.pending_payment_amount || 0);
+                const newPaidAmount = previousPaidAmount + pending;
+                if (dbPayload.total_price !== undefined) {
+                    delete dbPayload.total_price;
+                }
+                dbPayload.paid_amount = newPaidAmount;
+                dbPayload.pending_payment_amount = 0;
+                dbPayload.pending_payment_reason = null;
+                dbPayload.pending_payment_created_at = null;
+                if (newPaidAmount >= totalPrice) {
+                    dbPayload.paid = 1;
+                    if (!existingRow.paid_at || existingRow.paid_at === '0000-00-00 00:00:00') {
+                        dbPayload.paid_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                    }
+                }
+            }
             console.log(`[UPDATE] Database payload keys:`, Object.keys(dbPayload));
             console.log(`[UPDATE] Sample DB fields:`, {
                 first_name: dbPayload.first_name,
                 email: dbPayload.email,
                 club_rentals: dbPayload.club_rentals,
-                wednesday_activity: dbPayload.wednesday_activity
+                wednesday_activity: dbPayload.wednesday_activity,
+                pending_payment_amount: dbPayload.pending_payment_amount
             });
             const updateResult = await this.db.update('registrations', Number(id), dbPayload);
             console.log(`[UPDATE] Database update result:`, updateResult);
@@ -538,8 +733,29 @@ class RegistrationController {
                 wednesday_activity: verifyRow?.wednesday_activity
             });
             const updatedRegistration = Registration_1.Registration.fromDatabase(verifyRow);
-            const auth = this.getAuth(req);
-            const isAdminUpdate = auth.role === 'admin';
+            if (isAdminUpdate && verifyRow.pending_payment_amount && Number(verifyRow.pending_payment_amount) > 0 && updatedRegistration.paymentMethod !== 'Check') {
+                try {
+                    const { sendPendingPaymentEmail } = await Promise.resolve().then(() => __importStar(require('../services/emailService')));
+                    const eventRow = await this.db.findById('events', updatedRegistration.eventId);
+                    const evName = eventRow?.name;
+                    const evDate = eventRow?.date;
+                    const evStartDate = eventRow?.start_date;
+                    const toName = updatedRegistration.badgeName || `${updatedRegistration.firstName} ${updatedRegistration.lastName}`.trim();
+                    await sendPendingPaymentEmail({
+                        to: updatedRegistration.email,
+                        name: toName,
+                        eventName: evName,
+                        eventDate: evDate,
+                        eventStartDate: evStartDate,
+                        pendingAmount: Number(verifyRow.pending_payment_amount),
+                        reason: verifyRow.pending_payment_reason || '',
+                        registration: updatedRegistration.toJSON ? updatedRegistration.toJSON() : updatedRegistration
+                    });
+                }
+                catch (emailError) {
+                    console.error('Error sending pending payment email:', emailError?.message || emailError);
+                }
+            }
             if (!isAdminUpdate) {
                 try {
                     const adminCopy = process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || process.env.SUPPORT_EMAIL || 'planner@efbcconference.org';
@@ -700,6 +916,79 @@ class RegistrationController {
                 error: 'Failed to resend confirmation email'
             };
             res.status(500).json(response);
+        }
+    }
+    async promoteWaitlistedRegistration(req, res) {
+        try {
+            const auth = this.getAuth(req);
+            if (auth.role !== 'admin') {
+                res.status(403).json({ success: false, error: 'Forbidden' });
+                return;
+            }
+            const registrationId = Number(req.params.id);
+            if (!registrationId || isNaN(registrationId)) {
+                res.status(400).json({ success: false, error: 'Invalid registration ID' });
+                return;
+            }
+            const row = await this.db.findById('registrations', registrationId);
+            if (!row) {
+                res.status(404).json({ success: false, error: 'Registration not found' });
+                return;
+            }
+            if (row.status === 'cancelled' || row.cancellation_at) {
+                res.status(400).json({ success: false, error: 'Cannot promote a cancelled registration' });
+                return;
+            }
+            const activityName = String(row.wednesday_activity || '').trim();
+            if (!activityName) {
+                res.status(400).json({ success: false, error: 'Registration has no selected activity' });
+                return;
+            }
+            const isWaitlisted = row.wednesday_activity_waitlisted === 1 || row.wednesday_activity_waitlisted === true;
+            if (!isWaitlisted) {
+                res.status(400).json({ success: false, error: 'Registration is not waitlisted for this activity' });
+                return;
+            }
+            const event = await this.db.findById('events', Number(row.event_id));
+            if (event && event.activities) {
+                const activities = typeof event.activities === 'string' ? JSON.parse(event.activities) : event.activities;
+                if (Array.isArray(activities) && activities.length > 0 && typeof activities[0] === 'object') {
+                    const activity = activities.find(a => a.name === activityName);
+                    if (activity?.seatLimit !== undefined) {
+                        const existingRegs = await this.db.query(`SELECT COUNT(*) as count FROM registrations
+               WHERE event_id = ?
+               AND wednesday_activity = ?
+               AND (status IS NULL OR status != 'cancelled')
+               AND cancellation_at IS NULL
+               AND (wednesday_activity_waitlisted IS NULL OR wednesday_activity_waitlisted = 0)`, [row.event_id, activityName]);
+                        const confirmedCount = Number(existingRegs[0]?.count || 0);
+                        if (confirmedCount >= activity.seatLimit) {
+                            res.status(400).json({
+                                success: false,
+                                error: `No seats available for ${activityName} (${activity.seatLimit} seats).`
+                            });
+                            return;
+                        }
+                    }
+                }
+            }
+            const nowDb = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            await this.db.update('registrations', registrationId, {
+                wednesday_activity_waitlisted: 0,
+                wednesday_activity_waitlisted_at: null,
+                updated_at: nowDb,
+            });
+            const updatedRow = await this.db.findById('registrations', registrationId);
+            const updated = Registration_1.Registration.fromDatabase(updatedRow);
+            res.status(200).json({
+                success: true,
+                data: updated.toJSON(),
+                message: 'Promoted from waitlist'
+            });
+        }
+        catch (error) {
+            console.error('Error promoting waitlisted registration:', error);
+            res.status(500).json({ success: false, error: 'Failed to promote from waitlist' });
         }
     }
 }

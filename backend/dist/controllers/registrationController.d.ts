@@ -11,5 +11,6 @@ export declare class RegistrationController {
     deleteRegistration(req: Request, res: Response): Promise<void>;
     bulkDeleteRegistrations(req: Request, res: Response): Promise<void>;
     resendConfirmationEmail(req: Request, res: Response): Promise<void>;
+    promoteWaitlistedRegistration(req: Request, res: Response): Promise<void>;
 }
 //# sourceMappingURL=registrationController.d.ts.map

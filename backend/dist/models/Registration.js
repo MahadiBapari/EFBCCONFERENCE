@@ -37,6 +37,8 @@ class Registration {
         this.emergencyContactName = data.emergencyContactName;
         this.emergencyContactPhone = data.emergencyContactPhone;
         this.wednesdayActivity = data.wednesdayActivity || 'None';
+        this.wednesdayActivityWaitlisted = data.wednesdayActivityWaitlisted ?? data.wednesday_activity_waitlisted ?? false;
+        this.wednesdayActivityWaitlistedAt = data.wednesdayActivityWaitlistedAt ?? data.wednesday_activity_waitlisted_at ?? undefined;
         this.wednesdayReception = data.wednesdayReception || 'I will attend';
         this.thursdayBreakfast = data.thursdayBreakfast || 'I will attend';
         this.thursdayLunch = data.thursdayLunch || data.thursdayLuncheon || 'I will attend';
@@ -96,6 +98,7 @@ class Registration {
         this.cancellationReason = data.cancellationReason;
         this.cancellationAt = data.cancellationAt;
         this.paid = data.paid;
+        this.paidAt = data.paidAt ?? data.paid_at ?? undefined;
         this.squarePaymentId = data.squarePaymentId;
         this.spousePaymentId = data.spousePaymentId ?? data.spouse_payment_id ?? undefined;
         this.spousePaidAt = data.spousePaidAt ?? data.spouse_paid_at ?? undefined;
@@ -119,6 +122,11 @@ class Registration {
         }
         this.kidsPaidAt = data.kidsPaidAt ?? data.kids_paid_at ?? undefined;
         this.groupAssigned = data.groupAssigned ?? data.group_assigned ?? undefined;
+        this.originalTotalPrice = data.originalTotalPrice ?? data.original_total_price ?? undefined;
+        this.paidAmount = data.paidAmount ?? data.paid_amount ?? undefined;
+        this.pendingPaymentAmount = data.pendingPaymentAmount ?? data.pending_payment_amount ?? undefined;
+        this.pendingPaymentReason = data.pendingPaymentReason ?? data.pending_payment_reason ?? undefined;
+        this.pendingPaymentCreatedAt = data.pendingPaymentCreatedAt ?? data.pending_payment_created_at ?? undefined;
     }
     toJSON() {
         const base = {
@@ -146,6 +154,8 @@ class Registration {
             emergencyContactName: this.emergencyContactName,
             emergencyContactPhone: this.emergencyContactPhone,
             wednesdayActivity: this.wednesdayActivity,
+            wednesdayActivityWaitlisted: !!this.wednesdayActivityWaitlisted,
+            wednesdayActivityWaitlistedAt: this.wednesdayActivityWaitlistedAt,
             wednesdayReception: this.wednesdayReception,
             thursdayBreakfast: this.thursdayBreakfast,
             thursdayLunch: this.thursdayLunch,
@@ -193,6 +203,8 @@ class Registration {
             base.tuesdayEarlyReception = this.tuesdayEarlyReception;
         if (typeof this.paid === 'boolean')
             base.paid = this.paid;
+        if (this.paid)
+            base.paidAt = this.paidAt || null;
         if (this.squarePaymentId)
             base.squarePaymentId = this.squarePaymentId;
         if (this.spousePaymentId)
@@ -205,6 +217,16 @@ class Registration {
             base.kidsPaidAt = this.kidsPaidAt;
         if (this.groupAssigned)
             base.groupAssigned = this.groupAssigned;
+        if (this.originalTotalPrice !== undefined)
+            base.originalTotalPrice = this.originalTotalPrice;
+        if (this.paidAmount !== undefined)
+            base.paidAmount = this.paidAmount;
+        if (this.pendingPaymentAmount !== undefined)
+            base.pendingPaymentAmount = this.pendingPaymentAmount;
+        if (this.pendingPaymentReason)
+            base.pendingPaymentReason = this.pendingPaymentReason;
+        if (this.pendingPaymentCreatedAt)
+            base.pendingPaymentCreatedAt = this.pendingPaymentCreatedAt;
         return base;
     }
     nullIfUndefined(value) {
@@ -235,6 +257,8 @@ class Registration {
             emergency_contact_name: this.nullIfUndefined(this.emergencyContactName),
             emergency_contact_phone: this.nullIfUndefined(this.emergencyContactPhone),
             wednesday_activity: this.wednesdayActivity || null,
+            wednesday_activity_waitlisted: this.wednesdayActivityWaitlisted ? 1 : 0,
+            wednesday_activity_waitlisted_at: this.wednesdayActivityWaitlistedAt ? this.formatDateForDB(this.wednesdayActivityWaitlistedAt) : null,
             wednesday_reception: this.wednesdayReception || null,
             thursday_breakfast: this.thursdayBreakfast || null,
             thursday_luncheon: this.thursdayLunch || null,
@@ -280,6 +304,11 @@ class Registration {
                 : null,
             kids_paid_at: this.kidsPaidAt ? this.formatDateForDB(this.kidsPaidAt) : null,
             group_assigned: this.nullIfUndefined(this.groupAssigned),
+            original_total_price: this.originalTotalPrice ?? null,
+            paid_amount: this.paidAmount ?? (this.paid ? this.totalPrice : 0),
+            pending_payment_amount: this.pendingPaymentAmount ?? null,
+            pending_payment_reason: this.nullIfUndefined(this.pendingPaymentReason),
+            pending_payment_created_at: this.pendingPaymentCreatedAt ? this.formatDateForDB(this.pendingPaymentCreatedAt) : null,
             updated_at: this.formatDateForDB(this.updatedAt || new Date().toISOString()),
         };
         if (!this.id) {
@@ -313,6 +342,8 @@ class Registration {
             emergencyContactName: row.emergency_contact_name,
             emergencyContactPhone: row.emergency_contact_phone,
             wednesdayActivity: row.wednesday_activity,
+            wednesdayActivityWaitlisted: row.wednesday_activity_waitlisted !== undefined ? !!row.wednesday_activity_waitlisted : false,
+            wednesdayActivityWaitlistedAt: row.wednesday_activity_waitlisted_at ?? undefined,
             wednesdayReception: row.wednesday_reception,
             thursdayBreakfast: row.thursday_breakfast,
             thursdayLunch: row.thursday_luncheon,
@@ -394,6 +425,11 @@ class Registration {
             spousePaymentId: row.spouse_payment_id,
             spousePaidAt: row.spouse_paid_at,
             groupAssigned: row.group_assigned || undefined,
+            originalTotalPrice: row.original_total_price ?? undefined,
+            paidAmount: row.paid_amount ?? undefined,
+            pendingPaymentAmount: row.pending_payment_amount ?? undefined,
+            pendingPaymentReason: row.pending_payment_reason ?? undefined,
+            pendingPaymentCreatedAt: row.pending_payment_created_at ?? undefined,
             name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
             category: row.wednesday_activity || 'Networking',
         });

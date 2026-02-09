@@ -270,6 +270,10 @@ export class RegistrationController {
   async createRegistration(req: Request, res: Response): Promise<void> {
     try {
       const registrationData: CreateRegistrationRequest = req.body;
+
+      // Never trust client-provided waitlist fields. Compute server-side.
+      (registrationData as any).wednesdayActivityWaitlisted = false;
+      (registrationData as any).wednesdayActivityWaitlistedAt = undefined;
       
       // Check activity seat limit if specified
       if (registrationData.wednesdayActivity && registrationData.eventId) {
@@ -284,27 +288,24 @@ export class RegistrationController {
               .find(a => a.name === registrationData.wednesdayActivity);
             
             if (activity?.seatLimit !== undefined) {
-              // Count existing ACTIVE registrations for this activity
-              // Exclude cancelled registrations
+              // Count existing CONFIRMED (non-waitlisted) ACTIVE registrations for this activity
+              // Exclude cancelled registrations and waitlisted registrations
               const existingRegs = await this.db.query(
                 `SELECT COUNT(*) as count FROM registrations 
                  WHERE event_id = ? 
                  AND wednesday_activity = ? 
                  AND (status IS NULL OR status != 'cancelled')
-                 AND cancellation_at IS NULL`,
+                 AND cancellation_at IS NULL
+                 AND (wednesday_activity_waitlisted IS NULL OR wednesday_activity_waitlisted = 0)`,
                 [registrationData.eventId, registrationData.wednesdayActivity]
               );
               
-              const currentCount = existingRegs[0]?.count || 0;
+              const confirmedCount = Number(existingRegs[0]?.count || 0);
               
-              if (currentCount >= activity.seatLimit) {
-                const response: ApiResponse = {
-                  success: false,
-                  error: `Sorry, ${activity.name} is full (${activity.seatLimit} seats). Please select another activity.`
-                };
-                res.status(400).json(response);
-                return;
-              }
+              // If seats are full, allow selection but mark the registration as waitlisted
+              const willBeWaitlisted = confirmedCount >= activity.seatLimit;
+              (registrationData as any).wednesdayActivityWaitlisted = willBeWaitlisted;
+              (registrationData as any).wednesdayActivityWaitlistedAt = willBeWaitlisted ? new Date().toISOString() : undefined;
             }
           }
         }
@@ -480,6 +481,11 @@ export class RegistrationController {
     try {
       const { id } = req.params;
       const updateData: UpdateRegistrationRequest = req.body || {};
+
+      // If the activity changes, we may need to recompute waitlist status.
+      // Keep these values separate so users can't spoof them via payload.
+      let computedActivityWaitlisted: boolean | undefined;
+      let computedActivityWaitlistedAtDb: string | null | undefined;
       
       console.log(`[UPDATE] Received update request for registration ${id}`);
       console.log(`[UPDATE] Update data keys:`, Object.keys(updateData));
@@ -505,6 +511,10 @@ export class RegistrationController {
       if (updateData.wednesdayActivity && 
           updateData.wednesdayActivity !== existingRow.wednesday_activity) {
         
+        // Default: if the new activity has no seat limit, it should not be waitlisted
+        computedActivityWaitlisted = false;
+        computedActivityWaitlistedAtDb = null;
+
         const event = await this.db.findById('events', existingRow.event_id);
         if (event && event.activities) {
           const activities = typeof event.activities === 'string' 
@@ -516,28 +526,26 @@ export class RegistrationController {
               .find(a => a.name === updateData.wednesdayActivity);
             
             if (activity?.seatLimit !== undefined) {
-              // Count existing registrations for the NEW activity
-              // Exclude the current registration (since it's changing activities)
+              // Count existing CONFIRMED (non-waitlisted) ACTIVE registrations for the NEW activity
+              // Exclude cancelled registrations and the current registration (since it's changing activities)
               const existingRegs = await this.db.query(
                 `SELECT COUNT(*) as count FROM registrations 
                  WHERE event_id = ? 
                  AND wednesday_activity = ? 
                  AND (status IS NULL OR status != 'cancelled')
                  AND cancellation_at IS NULL
+                 AND (wednesday_activity_waitlisted IS NULL OR wednesday_activity_waitlisted = 0)
                  AND id != ?`,
                 [existingRow.event_id, updateData.wednesdayActivity, Number(id)]
               );
               
-              const currentCount = existingRegs[0]?.count || 0;
-              
-              if (currentCount >= activity.seatLimit) {
-                const response: ApiResponse = {
-                  success: false,
-                  error: `Sorry, ${activity.name} is full (${activity.seatLimit} seats). Please select another activity.`
-                };
-                res.status(400).json(response);
-                return;
-              }
+              const confirmedCount = Number(existingRegs[0]?.count || 0);
+              const willBeWaitlisted = confirmedCount >= activity.seatLimit;
+
+              computedActivityWaitlisted = willBeWaitlisted;
+              computedActivityWaitlistedAtDb = willBeWaitlisted
+                ? new Date().toISOString().slice(0, 19).replace('T', ' ')
+                : null;
             }
           }
         }
@@ -645,6 +653,12 @@ export class RegistrationController {
           
           dbPayload[dbKey] = value;
         }
+      }
+
+      // Apply computed waitlist status if activity changed.
+      if (computedActivityWaitlisted !== undefined) {
+        dbPayload.wednesday_activity_waitlisted = computedActivityWaitlisted ? 1 : 0;
+        dbPayload.wednesday_activity_waitlisted_at = computedActivityWaitlisted ? computedActivityWaitlistedAtDb : null;
       }
       
       // Explicitly clear fields if activity changed and they're not applicable
@@ -1135,6 +1149,95 @@ export class RegistrationController {
         error: 'Failed to resend confirmation email'
       };
       res.status(500).json(response);
+    }
+  }
+
+  // Admin action: promote a waitlisted registration to confirmed (if seats are available)
+  async promoteWaitlistedRegistration(req: Request, res: Response): Promise<void> {
+    try {
+      const auth = this.getAuth(req);
+      if (auth.role !== 'admin') {
+        res.status(403).json({ success: false, error: 'Forbidden' } satisfies ApiResponse);
+        return;
+      }
+
+      const registrationId = Number(req.params.id);
+      if (!registrationId || isNaN(registrationId)) {
+        res.status(400).json({ success: false, error: 'Invalid registration ID' } satisfies ApiResponse);
+        return;
+      }
+
+      const row: any = await this.db.findById('registrations', registrationId);
+      if (!row) {
+        res.status(404).json({ success: false, error: 'Registration not found' } satisfies ApiResponse);
+        return;
+      }
+
+      // Don't promote cancelled registrations
+      if (row.status === 'cancelled' || row.cancellation_at) {
+        res.status(400).json({ success: false, error: 'Cannot promote a cancelled registration' } satisfies ApiResponse);
+        return;
+      }
+
+      const activityName = String(row.wednesday_activity || '').trim();
+      if (!activityName) {
+        res.status(400).json({ success: false, error: 'Registration has no selected activity' } satisfies ApiResponse);
+        return;
+      }
+
+      const isWaitlisted = row.wednesday_activity_waitlisted === 1 || row.wednesday_activity_waitlisted === true;
+      if (!isWaitlisted) {
+        res.status(400).json({ success: false, error: 'Registration is not waitlisted for this activity' } satisfies ApiResponse);
+        return;
+      }
+
+      // Load seat limit from event (if any)
+      const event: any = await this.db.findById('events', Number(row.event_id));
+      if (event && event.activities) {
+        const activities = typeof event.activities === 'string' ? JSON.parse(event.activities) : event.activities;
+        if (Array.isArray(activities) && activities.length > 0 && typeof activities[0] === 'object') {
+          const activity = (activities as Array<{ name: string; seatLimit?: number }>).find(a => a.name === activityName);
+          if (activity?.seatLimit !== undefined) {
+            // Count current CONFIRMED (non-waitlisted) active registrations for this activity
+            const existingRegs = await this.db.query(
+              `SELECT COUNT(*) as count FROM registrations
+               WHERE event_id = ?
+               AND wednesday_activity = ?
+               AND (status IS NULL OR status != 'cancelled')
+               AND cancellation_at IS NULL
+               AND (wednesday_activity_waitlisted IS NULL OR wednesday_activity_waitlisted = 0)`,
+              [row.event_id, activityName]
+            );
+            const confirmedCount = Number(existingRegs[0]?.count || 0);
+            if (confirmedCount >= activity.seatLimit) {
+              res.status(400).json({
+                success: false,
+                error: `No seats available for ${activityName} (${activity.seatLimit} seats).`
+              } satisfies ApiResponse);
+              return;
+            }
+          }
+        }
+      }
+
+      const nowDb = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      await this.db.update('registrations', registrationId, {
+        wednesday_activity_waitlisted: 0,
+        wednesday_activity_waitlisted_at: null,
+        updated_at: nowDb,
+      } as any);
+
+      const updatedRow = await this.db.findById('registrations', registrationId);
+      const updated = Registration.fromDatabase(updatedRow);
+
+      res.status(200).json({
+        success: true,
+        data: updated.toJSON(),
+        message: 'Promoted from waitlist'
+      } satisfies ApiResponse);
+    } catch (error) {
+      console.error('Error promoting waitlisted registration:', error);
+      res.status(500).json({ success: false, error: 'Failed to promote from waitlist' } satisfies ApiResponse);
     }
   }
 }

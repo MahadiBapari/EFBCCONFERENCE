@@ -14,6 +14,7 @@ exports.sendCancellationRequestAdminEmail = sendCancellationRequestAdminEmail;
 exports.sendCancellationRequestConfirmationEmail = sendCancellationRequestConfirmationEmail;
 exports.sendCancellationDecisionEmail = sendCancellationDecisionEmail;
 exports.sendRegistrationRestoredEmail = sendRegistrationRestoredEmail;
+exports.sendPendingPaymentEmail = sendPendingPaymentEmail;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const dotenv_1 = __importDefault(require("dotenv"));
 if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
@@ -518,6 +519,11 @@ async function sendRegistrationConfirmationEmail(params) {
     const totalWithFee = paymentAmount + convenienceFee;
     const formattedEventDate = formatEventDateRange(eventStartDate || null, eventDate || null);
     const wednesdayActivity = registration?.wednesdayActivity || registration?.wednesday_activity || '';
+    const wednesdayActivityWaitlistedRaw = registration?.wednesdayActivityWaitlisted ?? registration?.wednesday_activity_waitlisted;
+    const isActivityWaitlisted = !!wednesdayActivity &&
+        (wednesdayActivityWaitlistedRaw === true ||
+            wednesdayActivityWaitlistedRaw === 1 ||
+            wednesdayActivityWaitlistedRaw === '1');
     const clubRentals = registration?.clubRentals || registration?.club_rentals || '';
     const golfHandicap = registration?.golfHandicap || registration?.golf_handicap || '';
     const massageTimeSlot = registration?.massageTimeSlot || registration?.massage_time_slot || '';
@@ -579,7 +585,7 @@ async function sendRegistrationConfirmationEmail(params) {
         ${isFirstTimeAttending !== null ? `<tr><td style="color:#6b7280;">First Time Attending?</td><td>${isFirstTimeAttending ? 'Yes' : 'No'}</td></tr>` : ''}
         ${companyType ? `<tr><td style="color:#6b7280;">Company Type</td><td>${companyType}</td></tr>` : ''}
         ${companyTypeOther ? `<tr><td style="color:#6b7280;">Company Type (Other)</td><td>${companyTypeOther}</td></tr>` : ''}
-        ${wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${wednesdayActivity}</td></tr>` : ''}
+        ${wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${wednesdayActivity}${isActivityWaitlisted ? ' <strong style="color:#b91c1c;">(WAITLISTED)</strong>' : ''}</td></tr>` : ''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && golfHandicap ? `<tr><td style="color:#6b7280;">Golf Handicap</td><td>${golfHandicap}</td></tr>` : ''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && clubRentals ? `<tr><td style="color:#6b7280;">Golf Club Preference</td><td>${clubRentals}</td></tr>` : ''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('massage') && massageTimeSlot ? `<tr><td style="color:#6b7280;">Massage Time Slot</td><td>${massageTimeSlot}</td></tr>` : ''}
@@ -686,6 +692,11 @@ async function sendRegistrationUpdateEmail(params) {
     const totalWithFee = paymentAmount + convenienceFee;
     const formattedEventDate = formatEventDateRange(eventStartDate || null, eventDate || null);
     const wednesdayActivity = registration?.wednesdayActivity || registration?.wednesday_activity || '';
+    const wednesdayActivityWaitlistedRaw = registration?.wednesdayActivityWaitlisted ?? registration?.wednesday_activity_waitlisted;
+    const isActivityWaitlisted = !!wednesdayActivity &&
+        (wednesdayActivityWaitlistedRaw === true ||
+            wednesdayActivityWaitlistedRaw === 1 ||
+            wednesdayActivityWaitlistedRaw === '1');
     const clubRentals = registration?.clubRentals || registration?.club_rentals || '';
     const golfHandicap = registration?.golfHandicap || registration?.golf_handicap || '';
     const massageTimeSlot = registration?.massageTimeSlot || registration?.massage_time_slot || '';
@@ -747,7 +758,7 @@ async function sendRegistrationUpdateEmail(params) {
         ${isFirstTimeAttending !== null ? `<tr><td style="color:#6b7280;">First Time Attending?</td><td>${isFirstTimeAttending ? 'Yes' : 'No'}</td></tr>` : ''}
         ${companyType ? `<tr><td style="color:#6b7280;">Company Type</td><td>${companyType}</td></tr>` : ''}
         ${companyTypeOther ? `<tr><td style="color:#6b7280;">Company Type (Other)</td><td>${companyTypeOther}</td></tr>` : ''}
-        ${wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${wednesdayActivity}</td></tr>` : ''}
+        ${wednesdayActivity ? `<tr><td style="color:#6b7280;">Selected Activity</td><td>${wednesdayActivity}${isActivityWaitlisted ? ' <strong style="color:#b91c1c;">(WAITLISTED)</strong>' : ''}</td></tr>` : ''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && golfHandicap ? `<tr><td style="color:#6b7280;">Golf Handicap</td><td>${golfHandicap}</td></tr>` : ''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('golf') && clubRentals ? `<tr><td style="color:#6b7280;">Golf Club Preference</td><td>${clubRentals}</td></tr>` : ''}
         ${wednesdayActivity && wednesdayActivity.toLowerCase().includes('massage') && massageTimeSlot ? `<tr><td style="color:#6b7280;">Massage Time Slot</td><td>${massageTimeSlot}</td></tr>` : ''}
@@ -1016,5 +1027,43 @@ async function sendRegistrationRestoredEmail(params) {
         lines.push(`Event: ${params.eventName}.`);
     const text = lines.join(' ');
     await sendMailWithAdminCopy({ to: params.to, subject, text, html }, true);
+}
+async function sendPendingPaymentEmail(params) {
+    const { to, name, eventName, eventDate, eventStartDate, pendingAmount, reason, registration } = params;
+    const from = process.env.EMAIL_FROM || 'no-reply@efbc.local';
+    const subject = sanitizeSubjectLine('Action Required: Additional Payment Due - EFBC Conference');
+    const convenienceFee = pendingAmount * 0.035;
+    const totalWithFee = pendingAmount + convenienceFee;
+    const formattedEventDate = formatEventDateRange(eventStartDate || null, eventDate || null);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const registrationUrl = `${frontendUrl}/registration${registration?.id ? `?id=${registration.id}` : ''}`;
+    const html = await renderEmailTemplate({
+        heading: 'Additional Payment Required',
+        preheader: `An additional payment of $${pendingAmount.toFixed(2)} is required for your registration.`,
+        contentHtml: `
+      <p>Hi ${name || 'there'},</p>
+      <p>An additional payment is required for your EFBC Conference registration.</p>
+      ${eventName ? `<p><strong>Event:</strong> ${eventName}${formattedEventDate ? ` (${formattedEventDate})` : ''}</p>` : ''}
+      <div style="background-color:#fef3c7;border-left:4px solid #f59e0b;padding:12px;margin:16px 0;border-radius:4px;">
+        <p style="margin:0;font-weight:600;color:#92400e;">Amount Due: $${pendingAmount.toFixed(2)}</p>
+        ${convenienceFee > 0 ? `<p style="margin:4px 0 0 0;color:#92400e;">Convenience Fee (3.5%): $${convenienceFee.toFixed(2)}</p>` : ''}
+        ${convenienceFee > 0 ? `<p style="margin:4px 0 0 0;font-weight:600;color:#92400e;">Total to Pay: $${totalWithFee.toFixed(2)}</p>` : ''}
+      </div>
+      ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+      <p>Please complete your payment by visiting your registration page:</p>
+    `,
+        cta: { label: 'Complete Payment', url: registrationUrl },
+    });
+    const text = [
+        `Hi ${name || 'there'},`,
+        'An additional payment is required for your EFBC Conference registration.',
+        eventName ? `Event: ${eventName}${formattedEventDate ? ` (${formattedEventDate})` : ''}` : '',
+        `Amount Due: $${pendingAmount.toFixed(2)}`,
+        convenienceFee > 0 ? `Convenience Fee (3.5%): $${convenienceFee.toFixed(2)}` : '',
+        convenienceFee > 0 ? `Total to Pay: $${totalWithFee.toFixed(2)}` : '',
+        reason ? `Reason: ${reason}` : '',
+        `Please complete your payment by visiting: ${registrationUrl}`
+    ].filter(Boolean).join('\n');
+    (0, exports.queueEmail)({ to, subject, text, html });
 }
 //# sourceMappingURL=emailService.js.map

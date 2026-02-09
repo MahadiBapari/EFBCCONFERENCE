@@ -34,6 +34,9 @@ router.get('/event/:eventId', async (req, res) => {
 router.post('/:id/resend-confirmation', async (req, res) => {
     await req.registrationController.resendConfirmationEmail(req, res);
 });
+router.post('/:id/promote-waitlist', async (req, res) => {
+    await req.registrationController.promoteWaitlistedRegistration(req, res);
+});
 router.get('/:id', async (req, res) => {
     await req.registrationController.getRegistrationById(req, res);
 });

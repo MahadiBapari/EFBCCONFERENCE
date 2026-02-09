@@ -123,6 +123,8 @@ const createTables = async () => {
         emergency_contact_name VARCHAR(255),
         emergency_contact_phone VARCHAR(50),
         wednesday_activity VARCHAR(255),
+        wednesday_activity_waitlisted BOOLEAN DEFAULT FALSE,
+        wednesday_activity_waitlisted_at TIMESTAMP NULL,
         wednesday_reception VARCHAR(50),
         thursday_breakfast VARCHAR(50),
         thursday_luncheon VARCHAR(50),
@@ -162,6 +164,7 @@ const createTables = async () => {
     await migrateDiscountCodes();
     await migrateBackfillPaidAt();
     await migratePendingPaymentFields();
+    await migrateActivityWaitlist();
 
     // Activity Groups table (basic definition; columns may be extended by migrations)
     await databaseService.query(`
@@ -490,6 +493,39 @@ const migratePickleballEquipment = async (): Promise<void> => {
     }
   } catch (error: any) {
     console.error('Error migrating pickleball equipment feature:', error?.message || error);
+  }
+};
+
+// Migration helper to add activity waitlist fields
+const migrateActivityWaitlist = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    const regCols: any[] = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+      [dbName, 'registrations']
+    );
+
+    const hasWaitlisted = regCols.some((c: any) => c.COLUMN_NAME === 'wednesday_activity_waitlisted');
+    const hasWaitlistedAt = regCols.some((c: any) => c.COLUMN_NAME === 'wednesday_activity_waitlisted_at');
+
+    if (!hasWaitlisted) {
+      await databaseService.query(
+        'ALTER TABLE `registrations` ADD COLUMN `wednesday_activity_waitlisted` BOOLEAN DEFAULT FALSE AFTER `wednesday_activity`'
+      );
+      console.log('🛠️ Added registrations.wednesday_activity_waitlisted column');
+    }
+
+    if (!hasWaitlistedAt) {
+      await databaseService.query(
+        'ALTER TABLE `registrations` ADD COLUMN `wednesday_activity_waitlisted_at` TIMESTAMP NULL AFTER `wednesday_activity_waitlisted`'
+      );
+      console.log('🛠️ Added registrations.wednesday_activity_waitlisted_at column');
+    }
+  } catch (error: any) {
+    console.error('Error migrating activity waitlist feature:', error?.message || error);
   }
 };
 

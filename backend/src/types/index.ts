@@ -70,6 +70,8 @@ export interface Registration {
   
   // Conference Events
   wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
+  wednesdayActivityWaitlisted?: boolean;
+  wednesdayActivityWaitlistedAt?: string;
   golfHandicap?: string;
   clubRentals?: string;
   massageTimeSlot?: string;
@@ -208,6 +210,9 @@ export interface CreateRegistrationRequest {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
+  // Computed server-side when seat limits are reached
+  wednesdayActivityWaitlisted?: boolean;
+  wednesdayActivityWaitlistedAt?: string;
   golfHandicap?: string;
   clubRentals?: string;
   wednesdayReception: 'I will attend' | 'I will NOT attend';

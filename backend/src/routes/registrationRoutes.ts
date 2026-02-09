@@ -52,6 +52,11 @@ router.post('/:id/resend-confirmation', async (req: any, res: any) => {
   await req.registrationController.resendConfirmationEmail(req, res);
 });
 
+// Admin: promote a waitlisted registration to confirmed
+router.post('/:id/promote-waitlist', async (req: any, res: any) => {
+  await req.registrationController.promoteWaitlistedRegistration(req, res);
+});
+
 router.get('/:id', async (req: any, res: any) => {
   await req.registrationController.getRegistrationById(req, res);
 });

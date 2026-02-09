@@ -24,6 +24,8 @@ export declare class Registration {
     emergencyContactName?: string;
     emergencyContactPhone?: string;
     wednesdayActivity: 'Golf Tournament' | 'Fishing' | 'Networking' | 'None';
+    wednesdayActivityWaitlisted?: boolean;
+    wednesdayActivityWaitlistedAt?: string;
     wednesdayReception: 'I will attend' | 'I will NOT attend';
     thursdayBreakfast: 'I will attend' | 'I will NOT attend';
     thursdayLunch: 'I will attend' | 'I will NOT attend';
@@ -80,6 +82,11 @@ export declare class Registration {
     groupAssigned?: number;
     discountCode?: string;
     discountAmount?: number;
+    originalTotalPrice?: number;
+    paidAmount?: number;
+    pendingPaymentAmount?: number;
+    pendingPaymentReason?: string;
+    pendingPaymentCreatedAt?: string;
     private formatDateForDB;
     constructor(data: Partial<IRegistration>);
     toJSON(): IRegistration;

@@ -188,11 +188,23 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     return registrations.filter(reg => 
       reg.eventId === event.id && 
       reg.wednesdayActivity === activityName &&
+      // Only count CONFIRMED seats (exclude waitlisted)
+      !(reg as any).wednesdayActivityWaitlisted &&
       // Exclude cancelled registrations
       reg.status !== 'cancelled' &&
-      !(reg as any).cancellationAt &&
-      // If editing, exclude the current registration from the count
-      (!isEditing || reg.id !== registration?.id)
+      !(reg as any).cancellationAt
+    ).length;
+  };
+
+  // Helper function to count waitlisted registrations for an activity
+  const getActivityWaitlistCount = (activityName: string): number => {
+    if (!event) return 0;
+    return registrations.filter(reg =>
+      reg.eventId === event.id &&
+      reg.wednesdayActivity === activityName &&
+      (reg as any).wednesdayActivityWaitlisted &&
+      reg.status !== 'cancelled' &&
+      !(reg as any).cancellationAt
     ).length;
   };
 
@@ -2427,24 +2439,29 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 <option value="" disabled>Please Select Conference Event</option>
                 {getActivityNames(event.activities).map(activityName => {
                   const seatLimit = getActivitySeatLimit(event.activities, activityName);
-                  const currentCount = getActivityRegistrationCount(activityName);
-                  const isFull = seatLimit !== undefined && currentCount >= seatLimit;
-                  const availableSeats = seatLimit !== undefined ? seatLimit - currentCount : null;
+                  const confirmedCount = getActivityRegistrationCount(activityName);
+                  const waitlistCount = getActivityWaitlistCount(activityName);
+                  const isFull = seatLimit !== undefined && confirmedCount >= seatLimit;
+                  const availableSeats = seatLimit !== undefined ? seatLimit - confirmedCount : null;
                   
-                  // If editing and this is the currently selected activity, don't disable it
-                  const isCurrentActivity = isEditing && formData.wednesdayActivity === activityName;
+                  const isCurrentSelection = isEditing && formData.wednesdayActivity === activityName;
+                  const isExistingSelectedActivity = isEditing && registration?.wednesdayActivity === activityName;
+                  const existingIsWaitlisted = isExistingSelectedActivity ? !!(registration as any)?.wednesdayActivityWaitlisted : false;
                   
                   return (
                     <option 
                       key={activityName} 
                       value={activityName}
-                      disabled={isFull && !isCurrentActivity}
                     >
                       {activityName}
                       {seatLimit !== undefined && (
-                        isFull && !isCurrentActivity 
-                          ? ` (FULL - ${currentCount}/${seatLimit})` 
-                          : ` (${availableSeats} available, ${currentCount}/${seatLimit} registered)`
+                        isFull
+                          ? (
+                              isCurrentSelection && isExistingSelectedActivity
+                                ? ` (FULL — You are ${existingIsWaitlisted ? 'WAITLISTED' : 'CONFIRMED'}, ${confirmedCount}/${seatLimit} confirmed${waitlistCount ? `, ${waitlistCount} waitlisted` : ''})`
+                                : ` (FULL — Waitlist available, ${confirmedCount}/${seatLimit} confirmed${waitlistCount ? `, ${waitlistCount} waitlisted` : ''})`
+                            )
+                          : ` (${availableSeats} available, ${confirmedCount}/${seatLimit} confirmed${waitlistCount ? `, ${waitlistCount} waitlisted` : ''})`
                       )}
                     </option>
                   );
@@ -2453,14 +2470,22 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               {errors.wednesdayActivity && <div className="error-message">{errors.wednesdayActivity}</div>}
               {formData.wednesdayActivity && (() => {
                 const seatLimit = getActivitySeatLimit(event.activities, formData.wednesdayActivity);
-                const currentCount = getActivityRegistrationCount(formData.wednesdayActivity);
+                const confirmedCount = getActivityRegistrationCount(formData.wednesdayActivity);
+                const waitlistCount = getActivityWaitlistCount(formData.wednesdayActivity);
                 if (seatLimit !== undefined) {
-                  const isFull = currentCount >= seatLimit;
-                  const availableSeats = seatLimit - currentCount;
+                  const isFull = confirmedCount >= seatLimit;
+                  const availableSeats = seatLimit - confirmedCount;
+                  const isExistingSelectedActivity = isEditing && registration?.wednesdayActivity === formData.wednesdayActivity;
+                  const existingIsWaitlisted = isExistingSelectedActivity ? !!(registration as any)?.wednesdayActivityWaitlisted : false;
                   return (
                     <div style={{ marginTop: '5px', fontSize: '0.9em', color: isFull ? '#dc2626' : '#666' }}>
                       {isFull ? (
-                        <strong>This activity is FULL ({currentCount}/{seatLimit} seats registered). Please select a different activity.</strong>
+                        <strong>
+                          {isExistingSelectedActivity
+                            ? `This activity is FULL (${confirmedCount}/${seatLimit} seats confirmed). You are currently ${existingIsWaitlisted ? 'WAITLISTED' : 'CONFIRMED'} for this activity.`
+                            : `This activity is FULL (${confirmedCount}/${seatLimit} seats confirmed). You can still select it and you will be waitlisted.`}
+                          {waitlistCount ? ` (Current waitlist: ${waitlistCount})` : ''}
+                        </strong>
                       ) : (
                         `${availableSeats} of ${seatLimit} seats available`
                       )}

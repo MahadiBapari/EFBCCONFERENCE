@@ -11,7 +11,7 @@ const emailService_1 = require("../services/emailService");
 const router = (0, express_1.Router)();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const getDb = () => globalThis.databaseService;
-const sign = (u) => jsonwebtoken_1.default.sign({ sub: u.id, email: u.email, role: u.role, name: u.name }, JWT_SECRET, { expiresIn: '7d' });
+const sign = (u) => jsonwebtoken_1.default.sign({ sub: u.id, email: u.email, role: u.role, name: u.name }, JWT_SECRET, { expiresIn: '12h' });
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body || {};
