@@ -327,12 +327,31 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const [addrCity, setAddrCity] = useState<string>(initialAddr.city);
   const [addrState, setAddrState] = useState<string>(initialAddr.state);
   const [addrZip, setAddrZip] = useState<string>(initialAddr.zip);
-  const [addrCountry, setAddrCountry] = useState<string>(initialAddr.country || 'US');
+  const initialCountryRaw = String(registration?.country ?? initialAddr.country ?? '').trim();
+  const initialCountryCode = normalizeCountryCode(initialCountryRaw);
+  const initialCountrySelection = initialCountryCode
+    ? initialCountryCode
+    : (initialCountryRaw ? 'OTHER' : 'US');
+  const initialCountryOther = !initialCountryCode && initialCountryRaw ? initialCountryRaw : '';
+
+  const [addrCountrySelection, setAddrCountrySelection] = useState<string>(initialCountrySelection);
+  const [addrCountryOther, setAddrCountryOther] = useState<string>(initialCountryOther);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cardInstance, setCardInstance] = useState<any | null>(null);
   
-  const regionOptions = useMemo(() => getRegionOptionsForCountry(addrCountry), [addrCountry]);
+  const regionOptions = useMemo(() => getRegionOptionsForCountry(addrCountrySelection), [addrCountrySelection]);
   const showRegionDropdown = !!regionOptions && regionOptions.length > 0;
+
+  const countryForStorage = useMemo(() => {
+    if (addrCountrySelection === 'OTHER') return addrCountryOther.trim();
+    return (addrCountrySelection || '').trim();
+  }, [addrCountrySelection, addrCountryOther]);
+
+  const countryCodeForPayments = useMemo(() => {
+    // Square expects 2-letter country codes. If "Other" is selected, fall back to US.
+    const c = (addrCountrySelection || '').trim();
+    return c.length === 2 ? c.toUpperCase() : 'US';
+  }, [addrCountrySelection]);
   const [discountCodeInput, setDiscountCodeInput] = useState(registration?.discountCode || '');
   const [discountCodeData, setDiscountCodeData] = useState<any | null>(null);
   const [discountCodeError, setDiscountCodeError] = useState('');
@@ -643,7 +662,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (!addrCity.trim()) newErrors.city = 'City is required';
     if (!addrState.trim()) newErrors.state = 'State is required';
     if (!addrZip.trim()) newErrors.zip = 'Zip code is required';
-    if (!addrCountry.trim()) newErrors.country = 'Country is required';
+    if (!addrCountrySelection.trim()) {
+      newErrors.country = 'Country is required';
+    } else if (addrCountrySelection === 'OTHER' && !addrCountryOther.trim()) {
+      newErrors.country = 'Please enter your country';
+    }
     if (!formData.mobile?.trim()) newErrors.mobile = 'Mobile number is required';
     if (!formData.companyType?.trim()) newErrors.companyType = 'Please choose an option';
     if (!formData.wednesdayActivity?.trim()) newErrors.wednesdayActivity = 'Please choose an option';
@@ -879,7 +902,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const composedAddress = [
         addrStreet.trim(),
         `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
-        addrCountry.trim()
+        countryForStorage
       ].filter(Boolean).join('\n');
 
       // Determine clubRentals value based on user selection
@@ -920,7 +943,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         city: addrCity.trim(),
         state: addrState.trim(),
         zipCode: addrZip.trim(),
-        country: addrCountry.trim(),
+        country: countryForStorage,
         tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
         // childFirstName: (formData as any).childFirstName || '',
         // childLastName: (formData as any).childLastName || '',
@@ -1048,11 +1071,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           billingAddress: {
             firstName: formData.firstName,
             lastName: formData.lastName,
-            addressLine1: addrStreet,
+          addressLine1: addrStreet,
             locality: addrCity,
             administrativeDistrictLevel1: addrState,
             postalCode: addrZip,
-            country: (addrCountry && addrCountry.length === 2 ? addrCountry.toUpperCase() : 'US')
+          country: countryCodeForPayments
           }
         })
       });
@@ -1081,7 +1104,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const composedAddress = [
         addrStreet.trim(),
         `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
-        addrCountry.trim()
+        countryForStorage
       ].filter(Boolean).join('\n');
       
       const isGolf = (formData.wednesdayActivity || '').toLowerCase().includes('golf');
@@ -1116,7 +1139,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         city: addrCity.trim(),
         state: addrState.trim(),
         zipCode: addrZip.trim(),
-        country: addrCountry.trim(),
+        country: countryForStorage,
         tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
@@ -1261,11 +1284,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           billingAddress: {
             firstName: formData.firstName,
             lastName: formData.lastName,
-            addressLine1: addrStreet,
+          addressLine1: addrStreet,
             locality: addrCity,
             administrativeDistrictLevel1: addrState,
             postalCode: addrZip,
-            country: (addrCountry && addrCountry.length === 2 ? addrCountry.toUpperCase() : 'US')
+          country: countryCodeForPayments
           }
         })
       });
@@ -1294,7 +1317,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const composedAddress = [
         addrStreet.trim(),
         `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
-        addrCountry.trim()
+        countryForStorage
       ].filter(Boolean).join('\n');
       
       const isGolf = (formData.wednesdayActivity || '').toLowerCase().includes('golf');
@@ -1329,7 +1352,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         city: addrCity.trim(),
         state: addrState.trim(),
         zipCode: addrZip.trim(),
-        country: addrCountry.trim(),
+        country: countryForStorage,
         tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
@@ -1514,7 +1537,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             locality: addrCity,
             administrativeDistrictLevel1: addrState,
             postalCode: addrZip,
-            country: (addrCountry && addrCountry.length === 2 ? addrCountry.toUpperCase() : 'US')
+            country: countryCodeForPayments
           }
         })
       });
@@ -1543,7 +1566,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const composedAddress = [
         addrStreet.trim(),
         `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
-        addrCountry.trim()
+        countryForStorage
       ].filter(Boolean).join('\n');
       
       const isGolf = (formData.wednesdayActivity || '').toLowerCase().includes('golf');
@@ -1580,7 +1603,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         city: addrCity.trim(),
         state: addrState.trim(),
         zipCode: addrZip.trim(),
-        country: addrCountry.trim(),
+        country: countryForStorage,
         tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
         name: `${formData.firstName} ${formData.lastName}`,
         category: formData.wednesdayActivity || 'Networking',
@@ -1844,11 +1867,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           billingAddress: {
             firstName: formData.firstName,
             lastName: formData.lastName,
-            addressLine1: addrStreet,
+          addressLine1: addrStreet,
             locality: addrCity,
             administrativeDistrictLevel1: addrState,
             postalCode: addrZip,
-            country: (addrCountry && addrCountry.length === 2 ? addrCountry.toUpperCase() : 'US')
+          country: countryCodeForPayments
           }
         })
       });
@@ -1894,7 +1917,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const composedAddress = [
         addrStreet.trim(),
         `${addrCity.trim()}${addrCity ? ', ' : ''}${addrState.trim()} ${addrZip.trim()}`.trim(),
-        addrCountry.trim()
+        countryForStorage
       ].filter(Boolean).join('\n');
 
       // Now save registration including payment markers
@@ -1917,7 +1940,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         city: addrCity.trim(),
         state: addrState.trim(),
         zipCode: addrZip.trim(),
-        country: addrCountry.trim(),
+        country: countryForStorage,
         tuesdayEarlyReception: (formData as any).tuesdayEarlyReception || '',
         // childFirstName: (formData as any).childFirstName || '',
         // childLastName: (formData as any).childLastName || '',
@@ -2361,10 +2384,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 <select
                   id="addrCountry"
                   className={`form-control ${errors.country ? 'error' : ''}`}
-                  value={addrCountry}
+                  value={addrCountrySelection}
                   onChange={e => {
                     const newCountry = e.target.value;
-                    setAddrCountry(newCountry);
+                    setAddrCountrySelection(newCountry);
                     if (errors.country) setErrors(prev => ({ ...prev, country: '' }));
 
                     // If switching to a country with a region dropdown, clear invalid existing region
@@ -2376,6 +2399,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                         if (errors.state) setErrors(prev => ({ ...prev, state: '' }));
                       }
                     }
+
+                    // Reset "Other" text unless Other is selected
+                    if (newCountry !== 'OTHER') {
+                      if (addrCountryOther) setAddrCountryOther('');
+                    }
                   }}
                   required
                 >
@@ -2384,15 +2412,34 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   </option>
                   {COUNTRY_OPTIONS.map(o => (
                     <option key={o.value} value={o.value}>
-                      {o.label}
+                      {o.value === 'OTHER' ? o.label : o.value}
                     </option>
                   ))}
                 </select>
                 {errors.country && <div className="error-message">{errors.country}</div>}
+                {addrCountrySelection === 'OTHER' && (
+                  <div style={{ marginTop: '8px' }}>
+                    <label htmlFor="addrCountryOther" className="form-label">
+                      Country (Other) <span className="required-asterisk">*</span>
+                    </label>
+                    <input
+                      id="addrCountryOther"
+                      type="text"
+                      className={`form-control ${errors.country ? 'error' : ''}`}
+                      value={addrCountryOther}
+                      onChange={e => {
+                        setAddrCountryOther(e.target.value);
+                        if (errors.country) setErrors(prev => ({ ...prev, country: '' }));
+                      }}
+                      placeholder="Type your country"
+                      required
+                    />
+                  </div>
+                )}
               </div>
               <div className="form-group">
                 <label htmlFor="addrState" className="form-label">
-                  {addrCountry === 'CA' ? 'Province' : 'State'} <span className="required-asterisk">*</span>
+                  {addrCountrySelection === 'CA' ? 'Province' : 'State'} <span className="required-asterisk">*</span>
                 </label>
                 {showRegionDropdown ? (
                   <select
@@ -2406,7 +2453,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     required
                   >
                     <option value="" disabled>
-                      {addrCountry === 'CA' ? 'Select Province' : 'Select State'}
+                      {addrCountrySelection === 'CA' ? 'Select Province' : 'Select State'}
                     </option>
                     {(regionOptions || []).map(o => (
                       <option key={o.value} value={o.value}>

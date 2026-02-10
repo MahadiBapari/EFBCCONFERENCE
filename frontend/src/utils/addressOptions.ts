@@ -5,9 +5,20 @@ export const COUNTRY_OPTIONS: Option[] = [
   { value: 'US', label: 'United States' },
   { value: 'CA', label: 'Canada' },
   { value: 'GB', label: 'United Kingdom' },
+  { value: 'IE', label: 'Ireland' },
+  { value: 'FR', label: 'France' },
+  { value: 'DE', label: 'Germany' },
+  { value: 'NL', label: 'Netherlands' },
+  { value: 'ES', label: 'Spain' },
+  { value: 'IT', label: 'Italy' },
+  { value: 'CH', label: 'Switzerland' },
+  { value: 'SE', label: 'Sweden' },
+  { value: 'NO', label: 'Norway' },
+  { value: 'DK', label: 'Denmark' },
   { value: 'AU', label: 'Australia' },
+  { value: 'NZ', label: 'New Zealand' },
   { value: 'MX', label: 'Mexico' },
-  { value: 'IN', label: 'India' },
+  { value: 'OTHER', label: 'Other' },
 ];
 
 export const US_STATE_OPTIONS: Option[] = [
@@ -94,9 +105,20 @@ export function normalizeCountryCode(input?: string): string {
   if (lowered === 'united states' || lowered === 'united states of america' || lowered === 'usa') return 'US';
   if (lowered === 'canada') return 'CA';
   if (lowered === 'united kingdom' || lowered === 'uk' || lowered === 'great britain') return 'GB';
+  if (lowered === 'ireland') return 'IE';
+  if (lowered === 'france') return 'FR';
+  if (lowered === 'germany') return 'DE';
+  if (lowered === 'netherlands') return 'NL';
+  if (lowered === 'spain') return 'ES';
+  if (lowered === 'italy') return 'IT';
+  if (lowered === 'switzerland') return 'CH';
+  if (lowered === 'sweden') return 'SE';
+  if (lowered === 'norway') return 'NO';
+  if (lowered === 'denmark') return 'DK';
   if (lowered === 'australia') return 'AU';
+  if (lowered === 'new zealand') return 'NZ';
   if (lowered === 'mexico') return 'MX';
-  if (lowered === 'india') return 'IN';
+  if (lowered === 'other') return 'OTHER';
 
   // Try to match against curated option labels
   const found = COUNTRY_OPTIONS.find(o => o.label.toLowerCase() === lowered);
