@@ -10,6 +10,7 @@ import {
 } from '../../types';
 import { formatDateShort } from '../../utils/dateUtils';
 import { getActivityNames, getActivitySeatLimit } from '../../utils/eventUtils';
+import { COUNTRY_OPTIONS, getRegionOptionsForCountry, normalizeCountryCode } from '../../utils/addressOptions';
 import '../../styles/RegistrationModal.css';
 
 /**
@@ -316,16 +317,22 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         city: registration.city ?? '',
         state: registration.state ?? '',
         zip: registration.zipCode ?? '',
-        country: registration.country ?? ''
+        country: normalizeCountryCode(registration.country ?? '') || 'US'
       }
-    : parseAddress(registration?.address);
+    : (() => {
+        const parsed = parseAddress(registration?.address);
+        return { ...parsed, country: normalizeCountryCode(parsed.country) || 'US' };
+      })();
   const [addrStreet, setAddrStreet] = useState<string>(initialAddr.street);
   const [addrCity, setAddrCity] = useState<string>(initialAddr.city);
   const [addrState, setAddrState] = useState<string>(initialAddr.state);
   const [addrZip, setAddrZip] = useState<string>(initialAddr.zip);
-  const [addrCountry, setAddrCountry] = useState<string>(initialAddr.country);
+  const [addrCountry, setAddrCountry] = useState<string>(initialAddr.country || 'US');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cardInstance, setCardInstance] = useState<any | null>(null);
+  
+  const regionOptions = useMemo(() => getRegionOptionsForCountry(addrCountry), [addrCountry]);
+  const showRegionDropdown = !!regionOptions && regionOptions.length > 0;
   const [discountCodeInput, setDiscountCodeInput] = useState(registration?.discountCode || '');
   const [discountCodeData, setDiscountCodeData] = useState<any | null>(null);
   const [discountCodeError, setDiscountCodeError] = useState('');
@@ -2350,26 +2357,112 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="addrCity" className="form-label">City <span className="required-asterisk">*</span></label>
-                <input id="addrCity" type="text" className={`form-control ${errors.city ? 'error' : ''}`} value={addrCity} onChange={e=>{ setAddrCity(e.target.value); if (errors.city) setErrors(prev=>({ ...prev, city:'' })); }} placeholder="New York" required />
-                {errors.city && <div className="error-message">{errors.city}</div>}
+                <label htmlFor="addrCountry" className="form-label">Country <span className="required-asterisk">*</span></label>
+                <select
+                  id="addrCountry"
+                  className={`form-control ${errors.country ? 'error' : ''}`}
+                  value={addrCountry}
+                  onChange={e => {
+                    const newCountry = e.target.value;
+                    setAddrCountry(newCountry);
+                    if (errors.country) setErrors(prev => ({ ...prev, country: '' }));
+
+                    // If switching to a country with a region dropdown, clear invalid existing region
+                    const opts = getRegionOptionsForCountry(newCountry);
+                    if (opts && opts.length > 0) {
+                      const valid = opts.some(o => o.value === (addrState || '').toUpperCase());
+                      if (!valid) {
+                        setAddrState('');
+                        if (errors.state) setErrors(prev => ({ ...prev, state: '' }));
+                      }
+                    }
+                  }}
+                  required
+                >
+                  <option value="" disabled>
+                    Select Country
+                  </option>
+                  {COUNTRY_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.country && <div className="error-message">{errors.country}</div>}
               </div>
               <div className="form-group">
-                <label htmlFor="addrState" className="form-label">State <span className="required-asterisk">*</span></label>
-                <input id="addrState" type="text" className={`form-control ${errors.state ? 'error' : ''}`} value={addrState} onChange={e=>{ setAddrState(e.target.value); if (errors.state) setErrors(prev=>({ ...prev, state:'' })); }} placeholder="NY" required />
+                <label htmlFor="addrState" className="form-label">
+                  {addrCountry === 'CA' ? 'Province' : 'State'} <span className="required-asterisk">*</span>
+                </label>
+                {showRegionDropdown ? (
+                  <select
+                    id="addrState"
+                    className={`form-control ${errors.state ? 'error' : ''}`}
+                    value={(addrState || '').toUpperCase()}
+                    onChange={e => {
+                      setAddrState(e.target.value);
+                      if (errors.state) setErrors(prev => ({ ...prev, state: '' }));
+                    }}
+                    required
+                  >
+                    <option value="" disabled>
+                      {addrCountry === 'CA' ? 'Select Province' : 'Select State'}
+                    </option>
+                    {(regionOptions || []).map(o => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id="addrState"
+                    type="text"
+                    className={`form-control ${errors.state ? 'error' : ''}`}
+                    value={addrState}
+                    onChange={e => {
+                      setAddrState(e.target.value);
+                      if (errors.state) setErrors(prev => ({ ...prev, state: '' }));
+                    }}
+                    placeholder="State / Province / Region"
+                    required
+                  />
+                )}
                 {errors.state && <div className="error-message">{errors.state}</div>}
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="addrZip" className="form-label">Zip Code <span className="required-asterisk">*</span></label>
-                <input id="addrZip" type="text" className={`form-control ${errors.zip ? 'error' : ''}`} value={addrZip} onChange={e=>{ setAddrZip(e.target.value); if (errors.zip) setErrors(prev=>({ ...prev, zip:'' })); }} placeholder="10001" required />
-                {errors.zip && <div className="error-message">{errors.zip}</div>}
+                <label htmlFor="addrCity" className="form-label">City <span className="required-asterisk">*</span></label>
+                <input
+                  id="addrCity"
+                  type="text"
+                  className={`form-control ${errors.city ? 'error' : ''}`}
+                  value={addrCity}
+                  onChange={e => {
+                    setAddrCity(e.target.value);
+                    if (errors.city) setErrors(prev => ({ ...prev, city: '' }));
+                  }}
+                  placeholder="New York"
+                  required
+                />
+                {errors.city && <div className="error-message">{errors.city}</div>}
               </div>
               <div className="form-group">
-                <label htmlFor="addrCountry" className="form-label">Country <span className="required-asterisk">*</span></label>
-                <input id="addrCountry" type="text" className={`form-control ${errors.country ? 'error' : ''}`} value={addrCountry} onChange={e=>{ setAddrCountry(e.target.value); if (errors.country) setErrors(prev=>({ ...prev, country:'' })); }} placeholder="US" required />
-                {errors.country && <div className="error-message">{errors.country}</div>}
+                <label htmlFor="addrZip" className="form-label">Zip Code <span className="required-asterisk">*</span></label>
+                <input
+                  id="addrZip"
+                  type="text"
+                  className={`form-control ${errors.zip ? 'error' : ''}`}
+                  value={addrZip}
+                  onChange={e => {
+                    setAddrZip(e.target.value);
+                    if (errors.zip) setErrors(prev => ({ ...prev, zip: '' }));
+                  }}
+                  placeholder="10001"
+                  required
+                />
+                {errors.zip && <div className="error-message">{errors.zip}</div>}
               </div>
             </div>
             <div className="form-row">
