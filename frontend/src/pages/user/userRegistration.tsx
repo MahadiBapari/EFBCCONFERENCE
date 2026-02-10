@@ -2412,7 +2412,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   </option>
                   {COUNTRY_OPTIONS.map(o => (
                     <option key={o.value} value={o.value}>
-                      {o.value === 'OTHER' ? o.label : o.value}
+                      {o.label}
                     </option>
                   ))}
                 </select>
