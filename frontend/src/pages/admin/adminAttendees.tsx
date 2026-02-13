@@ -281,8 +281,9 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
           bValue = b.id || 0;
           break;
         case 'name':
-          aValue = a.name?.toLowerCase() || '';
-          bValue = b.name?.toLowerCase() || '';
+          // Sort by last name, then first name (display still uses reg.name)
+          aValue = `${(a.lastName || '').toLowerCase().trim()}, ${(a.firstName || '').toLowerCase().trim()}`;
+          bValue = `${(b.lastName || '').toLowerCase().trim()}, ${(b.firstName || '').toLowerCase().trim()}`;
           break;
         case 'email':
           aValue = a.email?.toLowerCase() || '';
