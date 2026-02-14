@@ -21,6 +21,8 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
   onRefreshRegistrations
 }) => {
   const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([]);
+  const [discountUsersCode, setDiscountUsersCode] = useState<DiscountCode | null>(null);
+  const [discountUsersSearch, setDiscountUsersSearch] = useState('');
   const [waitlistActivity, setWaitlistActivity] = useState<string | null>(null);
   const [waitlistSearch, setWaitlistSearch] = useState('');
   const [promoteLoadingId, setPromoteLoadingId] = useState<number | null>(null);
@@ -62,6 +64,48 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
       !(r as any).cancellationAt
     );
   }, [registrations, event.id]);
+
+  // Registrations that used a discount code (per code)
+  const discountUseCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    registrations
+      .filter(r => r.eventId === event.id)
+      .forEach(r => {
+        const c = (r.discountCode || '').toUpperCase().trim();
+        if (!c) return;
+        map[c] = (map[c] || 0) + 1;
+      });
+    return map;
+  }, [registrations, event.id]);
+
+  const discountCodeUsers = useMemo(() => {
+    if (!discountUsersCode?.code) return [];
+    const code = discountUsersCode.code.toUpperCase().trim();
+    const q = discountUsersSearch.trim().toLowerCase();
+
+    return registrations
+      .filter(r => r.eventId === event.id)
+      .filter(r => (r.discountCode || '').toUpperCase().trim() === code)
+      .filter(r => {
+        if (!q) return true;
+        const hay = [
+          r.badgeName,
+          r.firstName,
+          r.lastName,
+          r.email,
+          r.organization,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return hay.includes(q);
+      })
+      .sort(
+        (a, b) =>
+          (a.lastName || '').localeCompare(b.lastName || '') ||
+          (a.firstName || '').localeCompare(b.firstName || '')
+      );
+  }, [discountUsersCode, discountUsersSearch, registrations, event.id]);
 
   // Get activity details with seat availability
   const activityDetails = useMemo(() => {
@@ -529,6 +573,7 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
                     <th>Expiry Date</th>
                     <th>Usage Limit</th>
                     <th>Used</th>
+                    <th>Users</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -537,8 +582,9 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
                     const isExpired = code.expiryDate ? new Date(code.expiryDate) < new Date() : false;
                     const isLimitReached = code.usageLimit !== undefined && code.usedCount !== undefined && code.usedCount >= code.usageLimit;
                     const isActive = !isExpired && !isLimitReached;
+                    const usedBy = discountUseCounts[(code.code || '').toUpperCase().trim()] || 0;
                     return (
-                      <tr key={code.id}>
+                      <tr key={code.id ?? code.code}>
                         <td><strong>{code.code}</strong></td>
                         <td>{code.discountType === 'percentage' ? 'Percentage' : 'Fixed Amount'}</td>
                         <td>
@@ -549,6 +595,20 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
                         <td>{code.expiryDate ? formatDateShort(code.expiryDate) : 'No expiry'}</td>
                         <td>{code.usageLimit || 'Unlimited'}</td>
                         <td>{code.usedCount || 0}</td>
+                        <td>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 10px', fontSize: '12px' }}
+                            disabled={usedBy === 0}
+                            onClick={() => {
+                              setDiscountUsersCode(code);
+                              setDiscountUsersSearch('');
+                            }}
+                            title={usedBy ? 'View users who used this code' : 'No registrations used this code'}
+                          >
+                            Users ({usedBy})
+                          </button>
+                        </td>
                         <td>
                           <span style={{ 
                             color: isActive ? '#27ae60' : '#e74c3c',
@@ -567,6 +627,78 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
             <p style={{ color: '#666', fontStyle: 'italic' }}>No discount codes configured for this event.</p>
           )}
         </div>
+
+        {/* Discount code users modal */}
+        {discountUsersCode && (
+          <Modal
+            title={`Discount Code Users — ${discountUsersCode.code}`}
+            onClose={() => {
+              setDiscountUsersCode(null);
+              setDiscountUsersSearch('');
+            }}
+            size="xl"
+            footer={
+              <button className="btn btn-secondary" onClick={() => setDiscountUsersCode(null)}>
+                Close
+              </button>
+            }
+          >
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '12px' }}>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search (name, email, organization)..."
+                value={discountUsersSearch}
+                onChange={(e) => setDiscountUsersSearch(e.target.value)}
+              />
+              <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                {discountCodeUsers.length} user(s)
+              </div>
+            </div>
+
+            <div className="table-wrapper">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Badge Name</th>
+                    <th>First</th>
+                    <th>Last</th>
+                    <th>Email</th>
+                    <th>Organization</th>
+                    <th>Discount Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {discountCodeUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} style={{ padding: '16px', color: '#6b7280' }}>
+                        No registrations found for this code.
+                      </td>
+                    </tr>
+                  ) : (
+                    discountCodeUsers.map((r) => {
+                      const isCancelled = r.status === 'cancelled' || !!(r as any).cancellationAt;
+                      return (
+                        <tr key={r.id}>
+                          <td>{r.id}</td>
+                          <td><strong>{r.badgeName || `${r.firstName} ${r.lastName}`.trim()}</strong></td>
+                          <td>{r.firstName}</td>
+                          <td>{r.lastName}</td>
+                          <td>{r.email}</td>
+                          <td>{r.organization}</td>
+                          <td>${Number(r.discountAmount || 0).toFixed(2)}</td>
+                          <td>{isCancelled ? 'Cancelled' : 'Active'}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Modal>
+        )}
 
         {/* Additional Event Information */}
         <div className="card" style={{ marginBottom: '20px' }}>
