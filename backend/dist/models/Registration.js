@@ -2,6 +2,39 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Registration = void 0;
 class Registration {
+    normalizeEmail(value) {
+        const v = (value ?? '').toString().trim();
+        return v ? v : undefined;
+    }
+    isSameEmail(a, b) {
+        const aa = this.normalizeEmail(a);
+        const bb = this.normalizeEmail(b);
+        if (!aa || !bb)
+            return false;
+        return aa.toLowerCase() === bb.toLowerCase();
+    }
+    toTitleCaseName(value) {
+        const raw = (value ?? '').toString().trim();
+        if (!raw)
+            return '';
+        const normalized = raw.replace(/\s+/g, ' ').toLowerCase();
+        const titleWord = (word) => {
+            const parts = word.split(/([\-'])/);
+            return parts
+                .map((p) => {
+                if (p === '-' || p === "'")
+                    return p;
+                if (!p)
+                    return p;
+                return p.charAt(0).toUpperCase() + p.slice(1);
+            })
+                .join('');
+        };
+        return normalized
+            .split(' ')
+            .map(titleWord)
+            .join(' ');
+    }
     formatDateForDB(dateValue) {
         if (!dateValue) {
             return new Date().toISOString().slice(0, 19).replace('T', ' ');
@@ -18,9 +51,12 @@ class Registration {
         this.eventId = data.eventId ?? 1;
         this.firstName = data.firstName || '';
         this.lastName = data.lastName || '';
-        this.badgeName = data.badgeName || '';
-        this.email = data.email || '';
-        this.secondaryEmail = data.secondaryEmail;
+        this.email = this.normalizeEmail(data.email) || '';
+        const sec = this.normalizeEmail(data.secondaryEmail);
+        this.secondaryEmail = sec && !this.isSameEmail(sec, this.email) ? sec : undefined;
+        const fallbackBadge = `${this.firstName || ''} ${this.lastName || ''}`.trim();
+        const incomingBadge = data.badgeName || fallbackBadge;
+        this.badgeName = this.toTitleCaseName(incomingBadge);
         this.organization = data.organization || '';
         this.jobTitle = data.jobTitle || '';
         this.address = data.address || '';

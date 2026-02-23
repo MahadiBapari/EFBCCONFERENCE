@@ -92,6 +92,9 @@ export declare class Registration {
     pendingPaymentAmount?: number;
     pendingPaymentReason?: string;
     pendingPaymentCreatedAt?: string;
+    private normalizeEmail;
+    private isSameEmail;
+    private toTitleCaseName;
     private formatDateForDB;
     constructor(data: Partial<IRegistration>);
     toJSON(): IRegistration;

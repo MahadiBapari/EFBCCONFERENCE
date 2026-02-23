@@ -11,7 +11,7 @@ export class Registration {
   public secondaryEmail?: string;
   public organization: string;
   public jobTitle: string;
-  public address: string; // Legacy field, kept for backward compatibility
+  public address: string; 
   public addressStreet?: string;
   public city?: string;
   public state?: string;
@@ -71,12 +71,12 @@ export class Registration {
   public squarePaymentId?: string;
   public spousePaymentId?: string;
   public spousePaidAt?: string;
-  public kidsPaymentId?: string | string[]; // Support both single string (backward compat) and array
+  public kidsPaymentId?: string | string[]; 
   public kidsPaidAt?: string;
   public groupAssigned?: number;
   public discountCode?: string;
   public discountAmount?: number;
-  // Pricing tier tracking (labels + first-added timestamps for spouse/kids)
+  // Pricing tier tracking 
   public registrationTierLabel?: string;
   public spouseTierLabel?: string;
   public spouseAddedAt?: string;
@@ -87,6 +87,44 @@ export class Registration {
   public pendingPaymentAmount?: number;
   public pendingPaymentReason?: string;
   public pendingPaymentCreatedAt?: string;
+
+  // --- Normalization helpers ---
+  private normalizeEmail(value?: string): string | undefined {
+    const v = (value ?? '').toString().trim();
+    return v ? v : undefined;
+  }
+
+  private isSameEmail(a?: string, b?: string): boolean {
+    const aa = this.normalizeEmail(a);
+    const bb = this.normalizeEmail(b);
+    if (!aa || !bb) return false;
+    return aa.toLowerCase() === bb.toLowerCase();
+  }
+
+  private toTitleCaseName(value?: string): string {
+    const raw = (value ?? '').toString().trim();
+    if (!raw) return '';
+
+    // Normalize whitespace first
+    const normalized = raw.replace(/\s+/g, ' ').toLowerCase();
+
+    // Title-case each word; also handle common separators like '-' and "'"
+    const titleWord = (word: string) => {
+      const parts = word.split(/([\-'])/); // keep separators
+      return parts
+        .map((p) => {
+          if (p === '-' || p === "'") return p;
+          if (!p) return p;
+          return p.charAt(0).toUpperCase() + p.slice(1);
+        })
+        .join('');
+    };
+
+    return normalized
+      .split(' ')
+      .map(titleWord)
+      .join(' ');
+  }
 
   // Helper method to format dates for MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
   private formatDateForDB(dateValue: string | Date | undefined): string {
@@ -106,9 +144,17 @@ export class Registration {
     this.eventId = data.eventId ?? 1;
     this.firstName = data.firstName || '';
     this.lastName = data.lastName || '';
-    this.badgeName = data.badgeName || '';
-    this.email = data.email || '';
-    this.secondaryEmail = data.secondaryEmail;
+    this.email = this.normalizeEmail(data.email) || '';
+
+    // Secondary email is OPTIONAL; if empty or duplicate of primary, store as undefined
+    const sec = this.normalizeEmail((data as any).secondaryEmail);
+    this.secondaryEmail = sec && !this.isSameEmail(sec, this.email) ? sec : undefined;
+
+    // Badge name: normalize casing to Title Case
+    // If absent, default to first + last (also normalized).
+    const fallbackBadge = `${this.firstName || ''} ${this.lastName || ''}`.trim();
+    const incomingBadge = (data as any).badgeName || fallbackBadge;
+    this.badgeName = this.toTitleCaseName(incomingBadge);
     this.organization = data.organization || '';
     this.jobTitle = data.jobTitle || '';
     this.address = data.address || '';
