@@ -913,15 +913,23 @@ const migrateDiscountCodes = async (): Promise<void> => {
 // Migration helper to backfill paid_at for existing paid registrations
 const migrateBackfillPaidAt = async (): Promise<void> => {
   try {
-    // Update registrations where paid = true but paid_at IS NULL
-    // Use created_at as the payment date for historical records
-    const result = await databaseService.query(
-      `UPDATE registrations 
-       SET paid_at = created_at 
-       WHERE paid = true 
-       AND (paid_at IS NULL OR paid_at = '0000-00-00 00:00:00')
-       AND created_at IS NOT NULL`
-    );
+    // Some deployments run MySQL in strict modes where "zero-dates" are invalid.
+    // Normalize any legacy zero-date values to NULL using a string cast (safe),
+    // then backfill paid_at from created_at for historical paid records.
+    await databaseService.query(`
+      UPDATE registrations
+      SET paid_at = NULL
+      WHERE paid_at IS NOT NULL
+        AND CAST(paid_at AS CHAR) = '0000-00-00 00:00:00'
+    `);
+
+    const result = await databaseService.query(`
+      UPDATE registrations 
+      SET paid_at = created_at 
+      WHERE paid = true 
+        AND paid_at IS NULL
+        AND created_at IS NOT NULL
+    `);
     
     // Check how many rows were affected (MySQL returns affectedRows)
     const affectedRows = result?.affectedRows || result || 0;

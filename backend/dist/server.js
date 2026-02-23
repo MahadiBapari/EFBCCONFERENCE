@@ -773,11 +773,19 @@ const migrateDiscountCodes = async () => {
 };
 const migrateBackfillPaidAt = async () => {
     try {
-        const result = await databaseService.query(`UPDATE registrations 
-       SET paid_at = created_at 
-       WHERE paid = true 
-       AND (paid_at IS NULL OR paid_at = '0000-00-00 00:00:00')
-       AND created_at IS NOT NULL`);
+        await databaseService.query(`
+      UPDATE registrations
+      SET paid_at = NULL
+      WHERE paid_at IS NOT NULL
+        AND CAST(paid_at AS CHAR) = '0000-00-00 00:00:00'
+    `);
+        const result = await databaseService.query(`
+      UPDATE registrations 
+      SET paid_at = created_at 
+      WHERE paid = true 
+        AND paid_at IS NULL
+        AND created_at IS NOT NULL
+    `);
         const affectedRows = result?.affectedRows || result || 0;
         if (affectedRows > 0) {
             console.log(`🛠️ Backfilled paid_at for ${affectedRows} existing paid registrations`);

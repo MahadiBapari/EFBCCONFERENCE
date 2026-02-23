@@ -918,7 +918,9 @@ export class RegistrationController {
           dbPayload.pending_payment_reason = null;
           dbPayload.pending_payment_created_at = null;
           // Set paid_at if not set
-          if (!existingRow.paid_at || existingRow.paid_at === '0000-00-00 00:00:00') {
+          const paidAtStr = existingRow.paid_at ? String(existingRow.paid_at) : '';
+          const isMissingPaidAt = !paidAtStr || paidAtStr.startsWith('0000-00-00');
+          if (isMissingPaidAt) {
             dbPayload.paid_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
           }
         }
@@ -951,7 +953,9 @@ export class RegistrationController {
         if (newPaidAmount >= totalPrice) {
           dbPayload.paid = 1;
           // Only set paid_at if not already set
-          if (!existingRow.paid_at || existingRow.paid_at === '0000-00-00 00:00:00') {
+          const paidAtStr = existingRow.paid_at ? String(existingRow.paid_at) : '';
+          const isMissingPaidAt = !paidAtStr || paidAtStr.startsWith('0000-00-00');
+          if (isMissingPaidAt) {
             dbPayload.paid_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
           }
         }
