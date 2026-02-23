@@ -302,6 +302,25 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (lines[2]) res.country = lines[2];
     return res;
   };
+
+  const toTitleCaseName = (value: string): string => {
+    const raw = (value || '').toString().trim();
+    if (!raw) return '';
+    const normalized = raw.replace(/\s+/g, ' ').toLowerCase();
+    return normalized
+      .split(' ')
+      .map((word) =>
+        word
+          .split(/([-'])/)
+          .map((p) => {
+            if (p === '-' || p === "'") return p;
+            if (!p) return p;
+            return p.charAt(0).toUpperCase() + p.slice(1);
+          })
+          .join('')
+      )
+      .join(' ');
+  };
   // Use new separate fields if available, otherwise parse legacy address field
   // Since these are separate database fields, always prefer them if the registration object exists
   // The fields may be null/undefined, but we should still use the structure
@@ -652,7 +671,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     if (!formData.lastName?.trim()) newErrors.lastName = 'Last name is required';
     if (!formData.badgeName?.trim()) newErrors.badgeName = 'Badge name is required';
     if (!formData.email?.trim()) newErrors.email = 'Email is required';
-    if (!formData.secondaryEmail?.trim()) newErrors.secondaryEmail = 'Secondary email is required';
     if (formData.secondaryEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.secondaryEmail)) {
       newErrors.secondaryEmail = 'Please enter a valid email address';
     }
@@ -933,10 +951,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         golfHandicap: golfHandicapValue,
         massageTimeSlot: massageTimeSlotValue,
         pickleballEquipment: pickleballEquipmentValue,
-        badgeName: (formData.badgeName || '').toUpperCase(), // Ensure badge name is saved in uppercase
+        badgeName: toTitleCaseName(formData.badgeName || ''),
         kids: kids.map(kid => ({
           ...kid,
-          badgeName: (kid.badgeName || '').toUpperCase(), // Ensure kids badge names are uppercase
+          badgeName: toTitleCaseName(kid.badgeName || ''),
         })),
         address: composedAddress, // Legacy field for backward compatibility
         addressStreet: addrStreet.trim(),
@@ -1128,7 +1146,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         ...formData,
         // Keep original totalPrice - don't add spouse price to it
         totalPrice: registration?.totalPrice || formData.totalPrice || '0',
-        badgeName: (formData.badgeName || '').toUpperCase(),
+        badgeName: toTitleCaseName(formData.badgeName || ''),
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
         golfHandicap: golfHandicapValue,
@@ -1341,7 +1359,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         ...formData,
         // Keep original totalPrice - don't add kids price to it
         totalPrice: registration?.totalPrice || formData.totalPrice || '0',
-        badgeName: (formData.badgeName || '').toUpperCase(),
+        badgeName: toTitleCaseName(formData.badgeName || ''),
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
         golfHandicap: golfHandicapValue,
@@ -1395,7 +1413,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         })() : undefined,
         kids: kids.map(kid => ({
           ...kid,
-          badgeName: (kid.badgeName || '').toUpperCase(), // Ensure kids badge names are uppercase
+          badgeName: toTitleCaseName(kid.badgeName || ''),
         })),
       } as Registration;
       
@@ -1592,7 +1610,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         ...formData,
         // Keep original totalPrice - don't add combined price to it
         totalPrice: registration?.totalPrice || formData.totalPrice || '0',
-        badgeName: (formData.badgeName || '').toUpperCase(),
+        badgeName: toTitleCaseName(formData.badgeName || ''),
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
         golfHandicap: golfHandicapValue,
@@ -1661,7 +1679,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         })() : undefined,
         kids: kids.map(kid => ({
           ...kid,
-          badgeName: (kid.badgeName || '').toUpperCase(), // Ensure kids badge names are uppercase
+          badgeName: toTitleCaseName(kid.badgeName || ''),
         })),
       } as Registration;
       
@@ -1927,7 +1945,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         eventId: event.id,
         ...formData,
         totalPrice: finalTotal.toString(), // Save the amount AFTER discount (no processing fee)
-        badgeName: (formData.badgeName || '').toUpperCase(), // Ensure badge name is saved in uppercase
+        badgeName: toTitleCaseName(formData.badgeName || ''),
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
         golfHandicap: golfHandicapValue,
@@ -2198,10 +2216,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => {
-      // Convert badgeName to uppercase
-      if (field === 'badgeName' && typeof value === 'string') {
-        value = value.toUpperCase();
-      }
       const updated = { ...prev, [field]: value };
       
       // Clear golf-related fields if activity is not golf
@@ -2342,9 +2356,12 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               <input 
                 id="badgeName" 
                 type="text" 
-                className={`form-control badge-name-uppercase ${errors.badgeName ? 'error' : ''}`} 
+                  className={`form-control ${errors.badgeName ? 'error' : ''}`} 
                 value={formData.badgeName || ''} 
                 onChange={e => handleInputChange('badgeName', e.target.value)} 
+                  onBlur={() => {
+                    setFormData(prev => ({ ...prev, badgeName: toTitleCaseName(String(prev.badgeName || '')) }));
+                  }}
                 required 
               />
               {errors.badgeName && <div className="error-message">{errors.badgeName}</div>}
@@ -2356,8 +2373,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                 {errors.email && <div className="error-message">{errors.email}</div>}
               </div>
               <div className="form-group">
-                <label htmlFor="secondaryEmail" className="form-label">Secondary Email <span className="required-asterisk">*</span></label>
-                <input id="secondaryEmail" type="email" className={`form-control ${errors.secondaryEmail ? 'error' : ''}`} value={formData.secondaryEmail || ''} onChange={e => handleInputChange('secondaryEmail', e.target.value)} placeholder="secondary@example.com" required />
+                <label htmlFor="secondaryEmail" className="form-label">Secondary Email</label>
+                <input
+                  id="secondaryEmail"
+                  type="email"
+                  className={`form-control ${errors.secondaryEmail ? 'error' : ''}`}
+                  value={formData.secondaryEmail || ''}
+                  onChange={e => handleInputChange('secondaryEmail', e.target.value)}
+                  placeholder="secondary@example.com"
+                />
                 {errors.secondaryEmail && <div className="error-message">{errors.secondaryEmail}</div>}
               </div>
             </div>
@@ -3142,6 +3166,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       onChange={(e) => {
                         const updatedKids = [...kids];
                         updatedKids[idx] = { ...updatedKids[idx], badgeName: e.target.value };
+                        handleInputChange('kids', updatedKids);
+                      }}
+                      onBlur={() => {
+                        const updatedKids = [...kids];
+                        updatedKids[idx] = { ...updatedKids[idx], badgeName: toTitleCaseName(updatedKids[idx].badgeName || '') };
                         handleInputChange('kids', updatedKids);
                       }}
                     />
