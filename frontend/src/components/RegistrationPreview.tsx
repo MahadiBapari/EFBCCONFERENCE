@@ -9,12 +9,14 @@ interface RegistrationPreviewProps {
   event: Event | undefined;
   registrationId: number | undefined;
   onClose: () => void;
+  showResendButton?: boolean;
 }
 
 export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
   event,
   registrationId,
-  onClose
+  onClose,
+  showResendButton = true
 }) => {
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [loading, setLoading] = useState(true);
@@ -543,15 +545,17 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       onClose={onClose}
       footer={
         <div className="modal-footer-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={handleResendConfirmation}
-            disabled={resendingEmail}
-          >
-            {resendingEmail ? 'Sending...' : 'Resend Confirmation Email'}
-          </button>
-          <div>
+          {showResendButton && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleResendConfirmation}
+              disabled={resendingEmail}
+            >
+              {resendingEmail ? 'Sending...' : 'Resend Confirmation Email'}
+            </button>
+          )}
+          <div style={{ marginLeft: showResendButton ? '0' : 'auto' }}>
             <button type="button" className="btn btn-secondary" onClick={downloadPDF} style={{ marginRight: '8px' }}>
               Download PDF
             </button>

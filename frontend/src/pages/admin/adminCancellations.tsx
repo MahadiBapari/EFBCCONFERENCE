@@ -204,6 +204,7 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({
             setPreviewRegId(null);
             setPreviewEvent(undefined);
           }}
+          showResendButton={false}
         />
       )}
     </div>
