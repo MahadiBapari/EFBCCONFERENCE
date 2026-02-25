@@ -304,7 +304,7 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({
   return (
     <div className="container">
       <div className="page-header">
-        <h1>Cancellation Requests</h1>
+        <h1>Cancellations</h1>
         <div className="event-selector">
           <label htmlFor="eventSelect" className="filter-label">Select Event:</label>
           <select
