@@ -203,7 +203,7 @@
   box-shadow: var(--card-shadow);
   position: sticky;
   top: 2rem;
-  height: fit-content;
+  align-self: flex-start;
   max-height: calc(100vh - 4rem);
   display: flex;
   flex-direction: column;
