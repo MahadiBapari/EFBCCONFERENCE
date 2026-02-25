@@ -198,13 +198,6 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({
                           Details
                         </button>
                         <button className="btn btn-secondary btn-sm" onClick={()=>restore(r.id)}>Restore</button>
-                        <button 
-                          className="btn btn-danger btn-sm" 
-                          onClick={() => handleDelete(r.id)}
-                          title="Delete"
-                        >
-                          Delete
-                        </button>
                       </div>
                     </td>
                   </tr>
