@@ -196,13 +196,16 @@
 }
 
 .attendees-column {
+  /* Keep the whole unassigned block visible while the page scrolls */
   position: sticky;
   top: 2rem;
-  height: fit-content;
-  max-height: calc(100vh - 4rem);
+  align-self: flex-start;
+  /* Let the page provide vertical scroll; only the inner list scrolls */
+  height: auto;
+  max-height: none;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .attendees-column h4 {
