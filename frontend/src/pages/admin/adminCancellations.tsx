@@ -39,7 +39,7 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({
   events = [],
   registrations = []
 }) => {
-  // Scroll to top when component mounts
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
