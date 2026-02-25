@@ -60,19 +60,6 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({
     await onReload();
     if (onChanged) await onChanged();
   };
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this cancellation request? This action cannot be undone.')) {
-      return;
-    }
-    try {
-      await cancelApi.delete(id);
-      await onReload();
-      if (onChanged) await onChanged();
-    } catch (error) {
-      console.error('Error deleting cancellation request:', error);
-      alert('Failed to delete cancellation request. Please try again.');
-    }
-  };
   const handleDetails = (row: CancelRow) => {
     setPreviewRegId(row.registration_id);
     const event = events.find(e => e.id === row.event_id);
