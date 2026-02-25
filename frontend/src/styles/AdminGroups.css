@@ -43,11 +43,9 @@
 }
 
 .group-column {
-  /* Constrain height so the groups column scrolls internally */
-  max-height: calc(100vh - 4rem);
+  /* Layout only; scrolling is handled by .group-list */
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
 }
 
 .group-column h4,
@@ -63,9 +61,11 @@
   flex-direction: column;
   gap: 1rem;
   margin-bottom: 1.5rem;
-  /* Allow list to scroll inside the constrained group column */
   flex: 1;
   min-height: 0;
+  /* Scroll groups within the column so the page height stays reasonable */
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
 }
 
 .group-header {
