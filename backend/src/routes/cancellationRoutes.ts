@@ -238,5 +238,21 @@ router.get('/my-cancel-requests', async (req: Request, res: Response) => {
   }
 });
 
+// Delete a cancellation request (admin)
+router.delete('/cancel-requests/:id', async (req: Request, res: Response) => {
+  try {
+    const auth = getAuth(req);
+    if (auth.role !== 'admin') return res.status(403).json({ success: false, error: 'Forbidden' });
+    const id = Number(req.params.id);
+    const db = getDb();
+    const rows = await db.query('SELECT * FROM cancellation_requests WHERE id=?', [id]);
+    if (!rows.length) return res.status(404).json({ success: false, error: 'Request not found' });
+    await db.query('DELETE FROM cancellation_requests WHERE id=?', [id]);
+    return res.json({ success: true, message: 'Cancellation request deleted' });
+  } catch {
+    return res.status(500).json({ success: false, error: 'Delete failed' });
+  }
+});
+
 export default router;
 

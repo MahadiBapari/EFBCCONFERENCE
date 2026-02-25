@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { cancelApi } from '../../services/apiClient';
+import { RegistrationPreview } from '../../components/RegistrationPreview';
 import '../../styles/AdminCancellations.css';
 
 type CancelRow = {
@@ -22,9 +23,17 @@ interface AdminCancellationsProps {
   loading: boolean;
   onReload: () => Promise<void> | void;
   onChanged?: () => void | Promise<void>;
+  events?: Array<{ id: number; name: string }>;
 }
 
-export const AdminCancellations: React.FC<AdminCancellationsProps> = ({ pendingRows, approvedRows, loading, onReload, onChanged }) => {
+export const AdminCancellations: React.FC<AdminCancellationsProps> = ({ 
+  pendingRows, 
+  approvedRows, 
+  loading, 
+  onReload, 
+  onChanged,
+  events = [] 
+}) => {
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -32,6 +41,8 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({ pendingR
 
   const [note, setNote] = useState<Record<number,string>>({});
   const [activeTab, setActiveTab] = useState<'requests' | 'cancelled'>('requests');
+  const [previewRegId, setPreviewRegId] = useState<number | null>(null);
+  const [previewEvent, setPreviewEvent] = useState<{ id: number; name: string } | undefined>(undefined);
 
   const approve = async (id: number) => {
     await cancelApi.approve(id, note[id]);
@@ -47,6 +58,34 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({ pendingR
     await cancelApi.restore(id);
     await onReload();
     if (onChanged) await onChanged();
+  };
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this cancellation request? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      await cancelApi.delete(id);
+      await onReload();
+      if (onChanged) await onChanged();
+    } catch (error) {
+      console.error('Error deleting cancellation request:', error);
+      alert('Failed to delete cancellation request. Please try again.');
+    }
+  };
+  const handleDetails = (row: CancelRow) => {
+    setPreviewRegId(row.registration_id);
+    const event = events.find(e => e.id === row.event_id);
+    setPreviewEvent(event);
+  };
+
+  // Helper to format reason text
+  const formatReason = (reason?: string) => {
+    if (!reason) return '-';
+    // Check if it's admin-initiated (case-insensitive)
+    if (reason.toLowerCase().includes('admin') && reason.toLowerCase().includes('initiated')) {
+      return 'Admin Initiated Cancellation';
+    }
+    return reason;
   };
 
   return (
@@ -85,7 +124,7 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({ pendingR
                   <th>Email</th>
                   <th>Event</th>
                   <th>Reason</th>
-                  <th>Note</th>
+                  <th>Admin Cancellation</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -95,13 +134,27 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({ pendingR
                     <td>{r.user_name || r.user_id}</td>
                     <td>{r.user_email}</td>
                     <td>{r.event_name || r.event_id}</td>
-                    <td>{r.reason || '-'}</td>
+                    <td>{formatReason(r.reason)}</td>
                     <td>
-                      <input className="form-control" value={note[r.id] || ''} onChange={e=>setNote(prev=>({ ...prev, [r.id]: e.target.value }))} placeholder="Admin note (optional)" />
+                      <input 
+                        className="form-control" 
+                        value={note[r.id] || ''} 
+                        onChange={e=>setNote(prev=>({ ...prev, [r.id]: e.target.value }))} 
+                        placeholder="Admin Cancellation" 
+                      />
                     </td>
                     <td>
-                      <button className="btn btn-primary btn-sm mr-8" onClick={()=>approve(r.id)}>Approve</button>
-                      <button className="btn btn-danger btn-sm" onClick={()=>reject(r.id)}>Reject</button>
+                      <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          className="btn btn-secondary btn-sm btn-details" 
+                          onClick={() => handleDetails(r)}
+                          title="Details"
+                        >
+                          Details
+                        </button>
+                        <button className="btn btn-primary btn-sm" onClick={()=>approve(r.id)}>Approve</button>
+                        <button className="btn btn-danger btn-sm" onClick={()=>reject(r.id)}>Reject</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -133,9 +186,25 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({ pendingR
                     <td>{r.user_name || r.user_id}</td>
                     <td>{r.user_email}</td>
                     <td>{r.event_name || r.event_id}</td>
-                    <td>{r.reason || '-'}</td>
+                    <td>{formatReason(r.reason)}</td>
                     <td>
-                      <button className="btn btn-secondary btn-sm" onClick={()=>restore(r.id)}>Restore</button>
+                      <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          className="btn btn-secondary btn-sm btn-details" 
+                          onClick={() => handleDetails(r)}
+                          title="Details"
+                        >
+                          Details
+                        </button>
+                        <button className="btn btn-secondary btn-sm" onClick={()=>restore(r.id)}>Restore</button>
+                        <button 
+                          className="btn btn-danger btn-sm" 
+                          onClick={() => handleDelete(r.id)}
+                          title="Delete"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -143,6 +212,18 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({ pendingR
             </table>
           </div>
         )
+      )}
+
+      {/* Registration Details Modal */}
+      {previewRegId && (
+        <RegistrationPreview
+          event={previewEvent}
+          registrationId={previewRegId}
+          onClose={() => {
+            setPreviewRegId(null);
+            setPreviewEvent(undefined);
+          }}
+        />
       )}
     </div>
   );

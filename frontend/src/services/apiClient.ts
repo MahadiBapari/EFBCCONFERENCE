@@ -143,6 +143,9 @@ export const cancelApi = {
   async restore(id: number): Promise<any> {
     return apiClient.put(`/cancel-requests/${id}/restore`, {});
   },
+  async delete(id: number): Promise<any> {
+    return apiClient.delete(`/cancel-requests/${id}`);
+  },
   async listMinePending(): Promise<any> {
     return apiClient.get('/my-cancel-requests');
   }
