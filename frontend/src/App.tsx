@@ -820,6 +820,7 @@ const handleLogout = () => {
               onReload={loadCancellationRequestsFromApi}
               onChanged={loadRegistrationsFromApi}
               events={events}
+              registrations={registrations}
             />
           );
         case 'allUsers':
