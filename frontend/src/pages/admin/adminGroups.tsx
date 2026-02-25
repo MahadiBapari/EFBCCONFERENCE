@@ -376,36 +376,38 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
           )}
         </div>
 
-        <div className="card attendees-column">
-          <h4>Unassigned Attendees</h4>
-          <span className="drag-hint">Drag a member to a group on the left.</span>
-          <div className="search-bar" style={{ marginTop: '10px', marginBottom: '10px' }}>
-            <input
-              type="search"
-              placeholder="Search unassigned attendees..."
-              className="form-control"
-              value={unassignedSearchQuery}
-              onChange={(e) => setUnassignedSearchQuery(e.target.value)}
-              style={{ width: '100%' }}
-            />
+        <div className="attendees-column-wrapper">
+          <div className="card attendees-column">
+            <h4>Unassigned Attendees</h4>
+            <span className="drag-hint">Drag a member to a group on the left.</span>
+            <div className="search-bar" style={{ marginTop: '10px', marginBottom: '10px' }}>
+              <input
+                type="search"
+                placeholder="Search unassigned attendees..."
+                className="form-control"
+                value={unassignedSearchQuery}
+                onChange={(e) => setUnassignedSearchQuery(e.target.value)}
+                style={{ width: '100%' }}
+              />
+            </div>
+            {filteredUnassigned.length > 0 ? (
+              <ul className="unassigned-list">
+                {filteredUnassigned.map(reg => (
+                  <li 
+                    key={reg.id} 
+                    className="unassigned-item"
+                    draggable
+                    onDragStart={(e) => handleUnassignedDragStart(e, reg.id)}
+                    onDragEnd={handleUnassignedDragEnd}
+                  >
+                    {reg.name}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>{unassignedSearchQuery.trim() ? 'No attendees found matching your search.' : 'No unassigned members in this category.'}</p>
+            )}
           </div>
-          {filteredUnassigned.length > 0 ? (
-            <ul className="unassigned-list">
-              {filteredUnassigned.map(reg => (
-                <li 
-                  key={reg.id} 
-                  className="unassigned-item"
-                  draggable
-                  onDragStart={(e) => handleUnassignedDragStart(e, reg.id)}
-                  onDragEnd={handleUnassignedDragEnd}
-                >
-                  {reg.name}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>{unassignedSearchQuery.trim() ? 'No attendees found matching your search.' : 'No unassigned members in this category.'}</p>
-          )}
         </div>
       </div>
     </div>
