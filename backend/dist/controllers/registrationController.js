@@ -306,7 +306,10 @@ class RegistrationController {
                         total += pricePerKid * registration.kids.length;
                     }
                     registration.totalPrice = total || registration.totalPrice || 0;
-                    if (registration.discountCode) {
+                    const hasClientDiscount = typeof registration.discountAmount === 'number' &&
+                        !isNaN(registration.discountAmount) &&
+                        registration.discountAmount > 0;
+                    if (registration.discountCode && !hasClientDiscount) {
                         try {
                             const codeRows = await this.db.query('SELECT * FROM discount_codes WHERE code = ? AND event_id = ?', [registration.discountCode.toUpperCase().trim(), registration.eventId]);
                             if (codeRows.length > 0) {
@@ -329,6 +332,22 @@ class RegistrationController {
                         }
                         catch (discountError) {
                             console.error('Error applying discount code:', discountError);
+                        }
+                    }
+                    else if (registration.discountCode && hasClientDiscount) {
+                        try {
+                            const codeRows = await this.db.query('SELECT * FROM discount_codes WHERE code = ? AND event_id = ?', [registration.discountCode.toUpperCase().trim(), registration.eventId]);
+                            if (codeRows.length > 0) {
+                                const { DiscountCode } = await Promise.resolve().then(() => __importStar(require('../models/DiscountCode')));
+                                const discountCode = DiscountCode.fromDatabase(codeRows[0]);
+                                const validation = discountCode.isValid();
+                                if (validation.valid) {
+                                    await this.db.query('UPDATE discount_codes SET used_count = used_count + 1 WHERE id = ?', [discountCode.id]);
+                                }
+                            }
+                        }
+                        catch (discountError) {
+                            console.error('Error incrementing discount code usage:', discountError);
                         }
                     }
                     const auth = this.getAuth(req);

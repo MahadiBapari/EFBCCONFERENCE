@@ -371,8 +371,14 @@ export class RegistrationController {
           
           registration.totalPrice = total || registration.totalPrice || 0;
           
-          // Apply discount code if provided
-          if (registration.discountCode) {
+          // Apply discount code ONLY if the client did not already apply it
+          // (Card payment flows send discountAmount pre-calculated, so we shouldn't re-apply)
+          const hasClientDiscount =
+            typeof registration.discountAmount === 'number' &&
+            !isNaN(registration.discountAmount) &&
+            registration.discountAmount > 0;
+
+          if (registration.discountCode && !hasClientDiscount) {
             try {
               const codeRows = await this.db.query(
                 'SELECT * FROM discount_codes WHERE code = ? AND event_id = ?',
@@ -404,6 +410,31 @@ export class RegistrationController {
             } catch (discountError: any) {
               console.error('Error applying discount code:', discountError);
               // Continue without discount if validation fails
+            }
+          } else if (registration.discountCode && hasClientDiscount) {
+            // Client already applied discount - just increment usage count (don't re-apply)
+            try {
+              const codeRows = await this.db.query(
+                'SELECT * FROM discount_codes WHERE code = ? AND event_id = ?',
+                [registration.discountCode.toUpperCase().trim(), registration.eventId]
+              );
+              
+              if (codeRows.length > 0) {
+                const { DiscountCode } = await import('../models/DiscountCode');
+                const discountCode = DiscountCode.fromDatabase(codeRows[0]);
+                const validation = discountCode.isValid();
+                
+                if (validation.valid) {
+                  // Increment used count (discount already applied by client)
+                  await this.db.query(
+                    'UPDATE discount_codes SET used_count = used_count + 1 WHERE id = ?',
+                    [discountCode.id]
+                  );
+                }
+              }
+            } catch (discountError: any) {
+              console.error('Error incrementing discount code usage:', discountError);
+              // Continue even if usage count increment fails
             }
           }
           // If Admin overrides price, use that instead
