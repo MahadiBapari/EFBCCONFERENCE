@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { cancelApi } from '../../services/apiClient';
 import { RegistrationPreview } from '../../components/RegistrationPreview';
+import { Event } from '../../types';
 import '../../styles/AdminCancellations.css';
 
 type CancelRow = {
@@ -23,7 +24,7 @@ interface AdminCancellationsProps {
   loading: boolean;
   onReload: () => Promise<void> | void;
   onChanged?: () => void | Promise<void>;
-  events?: Array<{ id: number; name: string }>;
+  events?: Event[];
 }
 
 export const AdminCancellations: React.FC<AdminCancellationsProps> = ({ 
@@ -42,7 +43,7 @@ export const AdminCancellations: React.FC<AdminCancellationsProps> = ({
   const [note, setNote] = useState<Record<number,string>>({});
   const [activeTab, setActiveTab] = useState<'requests' | 'cancelled'>('requests');
   const [previewRegId, setPreviewRegId] = useState<number | null>(null);
-  const [previewEvent, setPreviewEvent] = useState<{ id: number; name: string } | undefined>(undefined);
+  const [previewEvent, setPreviewEvent] = useState<Event | undefined>(undefined);
 
   const approve = async (id: number) => {
     await cancelApi.approve(id, note[id]);
