@@ -196,16 +196,18 @@
 }
 
 .attendees-column {
-  /* Keep the whole unassigned block visible while the page scrolls */
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  box-shadow: var(--card-shadow);
   position: sticky;
   top: 2rem;
-  align-self: flex-start;
-  /* Let the page provide vertical scroll; only the inner list scrolls */
-  height: auto;
-  max-height: none;
+  height: fit-content;
+  max-height: calc(100vh - 4rem);
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .attendees-column h4 {
