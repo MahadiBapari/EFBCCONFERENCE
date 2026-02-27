@@ -279,8 +279,16 @@ useEffect(() => {
         // Timestamps
         createdAt: r.createdAt ?? r.created_at,
         updatedAt: r.updatedAt ?? r.updated_at,
-        // Legacy
-        name: r.name ?? `${r.firstName || ''} ${r.lastName || ''}`.trim(),
+        // Legacy / display name: Badge Name + Last Name (fallback to First Name + Last Name)
+        name: (() => {
+          const rawBadge = r.badgeName ?? r.badge_name ?? r.firstName ?? '';
+          const badge = String(rawBadge || '').trim();
+          const last = String(r.lastName ?? r.last_name ?? '').trim();
+          if (badge && last) return `${badge} ${last}`;
+          if (badge) return badge;
+          if (last) return last;
+          return `${r.firstName || ''} ${r.lastName || ''}`.trim();
+        })(),
         category: r.category ?? (r.wednesdayActivity ?? 'Networking'),
       }));
       setRegistrations(normalized);

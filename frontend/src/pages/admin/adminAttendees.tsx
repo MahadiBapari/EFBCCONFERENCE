@@ -237,12 +237,24 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
 
     if (searchQuery.trim() !== "") {
       const lowercasedQuery = searchQuery.toLowerCase();
-      results = results.filter(r => 
-        r.name.toLowerCase().includes(lowercasedQuery) || 
-        r.email.toLowerCase().includes(lowercasedQuery) ||
-        (r.organization && r.organization.toLowerCase().includes(lowercasedQuery)) ||
-        (r.id && String(r.id).includes(searchQuery.trim()))
-      );
+      results = results.filter(r => {
+        const nameParts = [
+          r.name,                    // Display name: badge + last
+          r.badgeName,
+          r.firstName,
+          r.lastName,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        return (
+          nameParts.includes(lowercasedQuery) ||
+          r.email.toLowerCase().includes(lowercasedQuery) ||
+          (r.organization && r.organization.toLowerCase().includes(lowercasedQuery)) ||
+          (r.id && String(r.id).includes(searchQuery.trim()))
+        );
+      });
     }
     return results;
   }, [filter, registrations, searchQuery, selectedEventId]);
