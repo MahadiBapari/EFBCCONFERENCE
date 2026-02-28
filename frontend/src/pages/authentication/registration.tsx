@@ -449,6 +449,10 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({ onRegister, 
             </button>
           </p>
         </div>
+
+        <div className="help-link">
+          <p>Need help? <a href="mailto:info@efbcconference.org">info@efbcconference.org</a></p>
+        </div>
       </div>
     </div>
   );

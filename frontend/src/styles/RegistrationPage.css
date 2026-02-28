@@ -11,7 +11,7 @@
   background-color: var(--surface-color);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
-  padding: 3rem;
+  padding: 2rem;
   text-align: center;
   max-width: 650px;
   width: 100%;
@@ -22,12 +22,12 @@
   font-size: 32px;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
-.registration-card p {
+.registration-card > p {
   color: var(--text-secondary);
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   font-size: 18px;
 }
 
@@ -42,7 +42,7 @@
 .inline-action:hover svg { opacity:1; }
 
 .registration-form .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .registration-form .form-group label {
@@ -78,7 +78,7 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
 }
 
 .registration-actions .btn {
@@ -87,7 +87,7 @@
 }
 
 .login-link {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   text-align: center;
 }
 
@@ -105,6 +105,31 @@
 }
 
 .login-link a:hover {
+  color: var(--primary-hover-color);
+  text-decoration: underline;
+}
+
+.help-link {
+  margin-top: 1rem;
+  text-align: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.help-link p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 14px;
+}
+
+.help-link a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.help-link a:hover {
   color: var(--primary-hover-color);
   text-decoration: underline;
 }
