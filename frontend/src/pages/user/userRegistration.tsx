@@ -368,8 +368,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
 
   const countryCodeForPayments = useMemo(() => {
     // Square expects 2-letter country codes. If "Other" is selected, fall back to US.
-    const c = (addrCountrySelection || '').trim();
-    return c.length === 2 ? c.toUpperCase() : 'US';
+    // Convert UK to GB for Square payments (Square uses ISO 3166-1 alpha-2, which uses GB for United Kingdom)
+    const c = (addrCountrySelection || '').trim().toUpperCase();
+    if (c === 'UK') return 'GB'; // Square expects GB, not UK
+    return c.length === 2 ? c : 'US';
   }, [addrCountrySelection]);
   const [discountCodeInput, setDiscountCodeInput] = useState(registration?.discountCode || '');
   const [discountCodeData, setDiscountCodeData] = useState<any | null>(null);

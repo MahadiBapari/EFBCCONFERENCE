@@ -4,7 +4,7 @@ export type Option = { value: string; label: string };
 export const COUNTRY_OPTIONS: Option[] = [
   { value: 'US', label: 'United States' },
   { value: 'CA', label: 'Canada' },
-  { value: 'GB', label: 'United Kingdom' },
+  { value: 'UK', label: 'United Kingdom' },
   { value: 'IE', label: 'Ireland' },
   { value: 'FR', label: 'France' },
   { value: 'DE', label: 'Germany' },
@@ -104,7 +104,7 @@ export function normalizeCountryCode(input?: string): string {
   // Common names we might have stored previously
   if (lowered === 'united states' || lowered === 'united states of america' || lowered === 'usa') return 'US';
   if (lowered === 'canada') return 'CA';
-  if (lowered === 'united kingdom' || lowered === 'uk' || lowered === 'great britain') return 'GB';
+  if (lowered === 'united kingdom' || lowered === 'uk' || lowered === 'great britain') return 'UK';
   if (lowered === 'ireland') return 'IE';
   if (lowered === 'france') return 'FR';
   if (lowered === 'germany') return 'DE';
