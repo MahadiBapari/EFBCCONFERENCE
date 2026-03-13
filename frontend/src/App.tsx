@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { MOCK_REGISTRATIONS } from './data/mockData';
 import { LoginPage } from './pages/authentication/login';
 import { RegistrationPage } from './pages/authentication/registration';
@@ -35,7 +36,6 @@ const App: React.FC = () => {
   const [viewingEventId, setViewingEventId] = useState<number | null>(null);
   const [user, setUser] = useState<User>({ id: 999, name: "Current User", email: "current.user@example.com" });
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [showRegistration, setShowRegistration] = useState(false);
   const [registrationTargetEventId, setRegistrationTargetEventId] = useState<number | null>(null);
   const [adminEditingEvent, setAdminEditingEvent] = useState<Event | null>(null);
   const [adminEditingRegistrationId, setAdminEditingRegistrationId] = useState<number | null>(null);
@@ -60,6 +60,8 @@ const App: React.FC = () => {
   const [faqsCache, setFaqsCache] = useState<any[] | null>(null);
   const [adminUsersCache, setAdminUsersCache] = useState<User[]>([]);
   const [adminUsersPaginationCache, setAdminUsersPaginationCache] = useState<any | null>(null);
+
+  const navigate = useNavigate();
 
   const handleAdminUsersCacheUpdate = useCallback(
     (users: User[], pagination: any | null) => {
@@ -137,7 +139,8 @@ const App: React.FC = () => {
 useEffect(() => {
   const init = async () => {
     // Skip auth check if on reset password or resend verification page
-    if (window.location.pathname === '/reset-password' || window.location.pathname === '/resend-verification') {
+    const pathname = window.location.pathname;
+    if (pathname === '/reset-password' || pathname === '/resend-verification') {
       setAuthInitializing(false);
       return;
     }
@@ -356,20 +359,20 @@ useEffect(() => {
     await loadEventsFromApi();
     await loadRegistrationsFromApi();
     setView(selectedRole === 'admin' ? 'events' : 'dashboard');
+    navigate('/dashboard');
   };
 
-const handleLogout = () => {
+  const handleLogout = () => {
     setRole(null);
     setView('');
-    setShowRegistration(false);
-  localStorage.removeItem('token');
-  // Ensure auth pages default to light theme
-  setTheme('light');
+    localStorage.removeItem('token');
+    setTheme('light');
+    navigate('/login');
   };
 
   const handleRegister = async (formData: RegisterForm) => {
     try {
-      // Registration page already stored token after calling /users/register + login
+      
       const res = await authApi.me();
       const payload: any = (res as any).data || res;
       const me = payload?.data || payload;
@@ -382,24 +385,24 @@ const handleLogout = () => {
       setUser(newUser);
       setRole(newUser.role as any);
       setView('dashboard');
-      setShowRegistration(false);
       alert(`Welcome to EFBC Conference Portal, ${newUser.name}! Your account has been created successfully.`);
+      navigate('/dashboard');
     } catch {
-      // Fallback if /auth/me not available yet; still proceed with minimal state
+      
       setUser({ id: 0, name: `${(formData as any).firstName} ${(formData as any).lastName}`.trim(), email: formData.email, role: 'user' });
       setRole('user');
       setView('dashboard');
-      setShowRegistration(false);
       alert(`Welcome to EFBC Conference Portal, ${(formData as any).firstName}! Your account has been created successfully.`);
+      navigate('/dashboard');
     }
   };
 
   const handleBackToLogin = () => {
-    setShowRegistration(false);
+    navigate('/login');
   };
 
   const handleShowRegistration = () => {
-    setShowRegistration(true);
+    navigate('/signup');
   };
 
   const beginRegistration = (eventId?: number) => {
@@ -543,7 +546,7 @@ const handleLogout = () => {
     }
   };
 
-  // Removed unused handleDeleteEvent to satisfy CI lint rules
+
 
   const handleDeleteGroup = async (groupId: number) => {
     if (!window.confirm("Are you sure you want to delete this group? All members will become unassigned.")) {
@@ -915,26 +918,13 @@ const handleLogout = () => {
     );
   }
 
-  if (!role) {
-    if (window.location.pathname === '/reset-password') {
-      return <ResetPasswordPage />;
-    }
-    if (window.location.pathname === '/resend-verification') {
-      return <ResendVerificationPage />;
-    }
-    if (showRegistration) {
-      return <RegistrationPage onRegister={handleRegister} onBackToLogin={handleBackToLogin} />;
-    }
-    return <LoginPage onLogin={handleLogin} onShowRegistration={handleShowRegistration} />;
-  }
-
-  return (
+  const DashboardLayout = () => (
     <div className="app-layout">
-      <Sidebar 
-        role={role} 
-        onLogout={handleLogout} 
-        theme={theme} 
-        toggleTheme={toggleTheme} 
+      <Sidebar
+        role={role!}
+        onLogout={handleLogout}
+        theme={theme}
+        toggleTheme={toggleTheme}
         activeView={view}
         setActiveView={handleSetActiveView}
         isMobileOpen={isMobileSidebarOpen}
@@ -1006,6 +996,18 @@ const handleLogout = () => {
         )}
       </main>
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/login" element={role ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={handleLogin} onShowRegistration={handleShowRegistration} />} />
+      <Route path="/signup" element={role ? <Navigate to="/dashboard" replace /> : <RegistrationPage onRegister={handleRegister} onBackToLogin={handleBackToLogin} />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/resend-verification" element={<ResendVerificationPage />} />
+      <Route path="/dashboard" element={role ? <DashboardLayout /> : <Navigate to="/login" replace />} />
+      <Route path="/" element={<Navigate to={role ? "/dashboard" : "/login"} replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 };
 
