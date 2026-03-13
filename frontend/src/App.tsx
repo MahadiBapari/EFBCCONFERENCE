@@ -918,93 +918,98 @@ useEffect(() => {
     );
   }
 
-  const DashboardLayout = () => (
-    <div className="app-layout">
-      <Sidebar
-        role={role!}
-        onLogout={handleLogout}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        activeView={view}
-        setActiveView={handleSetActiveView}
-        isMobileOpen={isMobileSidebarOpen}
-        onClose={() => setMobileSidebarOpen(false)}
-      />
-      <main className="main-content">
-        <header className="mobile-header no-print">
-          <div className="logo">EFBC</div>
-          <button className="icon-btn menu-toggle" onClick={() => setMobileSidebarOpen(true)} aria-label="Open menu">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-          </button>
-        </header>
-        {renderView()}
-        {cancelModalOpen && (
-          <Modal
-            title="Cancel Registration"
-            onClose={() => !cancelSubmitting && setCancelModalOpen(false)}
-          >
-            <div className="form-group">
-              <p>Please share a brief reason for your cancellation request and we will be in touch soon.</p>
-              <label htmlFor="cancelReason" className="form-label">Reason for cancellation</label>
-              <textarea
-                id="cancelReason"
-                className="form-control"
-                rows={4}
-                value={cancelReason}
-                onChange={e => setCancelReason(e.target.value)}
-                placeholder="Example: schedule conflict, travel issues, etc."
-                disabled={cancelSubmitting}
-              />
-            </div>
-            {cancelError && <div className="error-message" style={{ marginTop: '0.5rem' }}>{cancelError}</div>}
-            <div className="modal-footer-actions" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setCancelModalOpen(false)}
-                disabled={cancelSubmitting}
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={confirmCancelRegistration}
-                disabled={cancelSubmitting}
-              >
-                {cancelSubmitting ? 'Sending...' : 'Send Request'}
-              </button>
-            </div>
-          </Modal>
-        )}
-        {alertState.open && (
-          <Modal
-            title="Notification"
-            onClose={() => setAlertState({ open: false, message: '' })}
-          >
-            <p>{alertState.message}</p>
-            <div className="modal-footer-actions" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => setAlertState({ open: false, message: '' })}
-              >
-                OK
-              </button>
-            </div>
-          </Modal>
-        )}
-      </main>
-    </div>
-  );
-
   return (
     <Routes>
       <Route path="/login" element={role ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={handleLogin} onShowRegistration={handleShowRegistration} />} />
       <Route path="/signup" element={role ? <Navigate to="/dashboard" replace /> : <RegistrationPage onRegister={handleRegister} onBackToLogin={handleBackToLogin} />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/resend-verification" element={<ResendVerificationPage />} />
-      <Route path="/dashboard" element={role ? <DashboardLayout /> : <Navigate to="/login" replace />} />
+      <Route
+        path="/dashboard"
+        element={
+          role ? (
+            <div className="app-layout">
+              <Sidebar
+                role={role}
+                onLogout={handleLogout}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                activeView={view}
+                setActiveView={handleSetActiveView}
+                isMobileOpen={isMobileSidebarOpen}
+                onClose={() => setMobileSidebarOpen(false)}
+              />
+              <main className="main-content">
+                <header className="mobile-header no-print">
+                  <div className="logo">EFBC</div>
+                  <button className="icon-btn menu-toggle" onClick={() => setMobileSidebarOpen(true)} aria-label="Open menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                  </button>
+                </header>
+                {renderView()}
+                {cancelModalOpen && (
+                  <Modal
+                    title="Cancel Registration"
+                    onClose={() => !cancelSubmitting && setCancelModalOpen(false)}
+                  >
+                    <div className="form-group">
+                      <p>Please share a brief reason for your cancellation request and we will be in touch soon.</p>
+                      <label htmlFor="cancelReason" className="form-label">Reason for cancellation</label>
+                      <textarea
+                        id="cancelReason"
+                        className="form-control"
+                        rows={4}
+                        value={cancelReason}
+                        onChange={e => setCancelReason(e.target.value)}
+                        placeholder="Example: schedule conflict, travel issues, etc."
+                        disabled={cancelSubmitting}
+                      />
+                    </div>
+                    {cancelError && <div className="error-message" style={{ marginTop: '0.5rem' }}>{cancelError}</div>}
+                    <div className="modal-footer-actions" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => setCancelModalOpen(false)}
+                        disabled={cancelSubmitting}
+                      >
+                        Close
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        onClick={confirmCancelRegistration}
+                        disabled={cancelSubmitting}
+                      >
+                        {cancelSubmitting ? 'Sending...' : 'Send Request'}
+                      </button>
+                    </div>
+                  </Modal>
+                )}
+                {alertState.open && (
+                  <Modal
+                    title="Notification"
+                    onClose={() => setAlertState({ open: false, message: '' })}
+                  >
+                    <p>{alertState.message}</p>
+                    <div className="modal-footer-actions" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => setAlertState({ open: false, message: '' })}
+                      >
+                        OK
+                      </button>
+                    </div>
+                  </Modal>
+                )}
+              </main>
+            </div>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
       <Route path="/" element={<Navigate to={role ? "/dashboard" : "/login"} replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
