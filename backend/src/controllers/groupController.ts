@@ -104,7 +104,19 @@ export class GroupController {
     try {
       const groupData: CreateGroupRequest = req.body;
       const group = new Group(groupData);
-      
+
+      const existing = await this.db.query(
+        'SELECT id FROM `activity_groups` WHERE eventId = ? AND category = ? AND LOWER(TRIM(name)) = LOWER(TRIM(?))',
+        [group.eventId, group.category, group.name]
+      );
+      if (Array.isArray(existing) && existing.length > 0) {
+        res.status(409).json({
+          success: false,
+          error: 'A group with this name already exists for this event and activity.',
+        });
+        return;
+      }
+
       const result = await this.db.insert('activity_groups', group.toDatabase());
       group.id = result.insertId;
 
@@ -142,8 +154,25 @@ export class GroupController {
       }
 
       const oldGroup = Group.fromDatabase(existingGroup);
+
+      if (updateData.name !== undefined && updateData.name !== null) {
+        const newName = String(updateData.name).trim();
+        const eventId = oldGroup.eventId;
+        const category = oldGroup.category;
+        const duplicate = await this.db.query(
+          'SELECT id FROM `activity_groups` WHERE eventId = ? AND category = ? AND LOWER(TRIM(name)) = LOWER(TRIM(?)) AND id != ?',
+          [eventId, category, newName, Number(id)]
+        );
+        if (Array.isArray(duplicate) && duplicate.length > 0) {
+          res.status(409).json({
+            success: false,
+            error: 'A group with this name already exists for this event and activity.',
+          });
+          return;
+        }
+      }
+
       const oldMemberIds = oldGroup.members || [];
-      
       const group = new Group({ ...existingGroup, ...updateData });
       group.updatedAt = new Date().toISOString();
       const newMemberIds = group.members || [];

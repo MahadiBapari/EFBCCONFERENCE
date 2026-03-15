@@ -67,6 +67,16 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     const name = newGroupName.trim();
     if (!name) return;
     const evId = selectedEventId || (events[0]?.id ?? 1);
+    const duplicate = groups.some(
+      g =>
+        g.eventId === evId &&
+        g.category === activeTab &&
+        g.name.trim().toLowerCase() === name.toLowerCase()
+    );
+    if (duplicate) {
+      alert('A group with this name already exists for this activity.');
+      return;
+    }
     handleCreateGroup({ eventId: evId, category: activeTab, name, members: [] });
     setNewGroupName("");
     setIsCreatingGroup(false);
@@ -76,15 +86,42 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     setEditingGroup({ id: group.id, name: group.name });
   };
 
-  const handleSaveRename = () => {
+  const handleSaveRename = async () => {
     if (!editingGroup.id || !editingGroup.name.trim()) {
       setEditingGroup({ id: null, name: "" });
       return;
     }
-    setGroups(g => g.map(group =>
-      group.id === editingGroup.id ? { ...group, name: editingGroup.name.trim() } : group
+    const group = groups.find(g => g.id === editingGroup.id);
+    if (!group) {
+      setEditingGroup({ id: null, name: "" });
+      return;
+    }
+    const newName = editingGroup.name.trim();
+    const duplicate = groups.some(
+      g =>
+        g.eventId === group.eventId &&
+        g.category === group.category &&
+        g.id !== editingGroup.id &&
+        g.name.trim().toLowerCase() === newName.toLowerCase()
+    );
+    if (duplicate) {
+      alert('A group with this name already exists for this activity.');
+      return;
+    }
+    setGroups(grp => grp.map(g =>
+      g.id === editingGroup.id ? { ...g, name: newName } : g
     ));
     setEditingGroup({ id: null, name: "" });
+    try {
+      await groupsApi.update(editingGroup.id, { name: newName });
+    } catch (err: any) {
+      console.error('Failed to persist group rename', err);
+      setGroups(grp => grp.map(g =>
+        g.id === editingGroup.id ? { ...g, name: group.name } : g
+      ));
+      const msg = err?.response?.data?.error || 'Failed to save group name.';
+      alert(msg);
+    }
   };
 
   const persistMembers = async (groupId: number, members: number[]) => {

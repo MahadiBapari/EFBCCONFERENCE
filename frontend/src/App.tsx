@@ -571,9 +571,10 @@ useEffect(() => {
         // Fallback: reload from API
         await loadGroupsFromApi();
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to create group', e);
-      alert('Failed to create group. Please try again.');
+      const msg = e?.response?.data?.error || 'Failed to create group. Please try again.';
+      alert(msg);
     }
   };
   
