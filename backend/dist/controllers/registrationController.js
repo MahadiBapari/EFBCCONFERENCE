@@ -432,6 +432,21 @@ class RegistrationController {
                 res.status(404).json(response);
                 return;
             }
+            const authForActivity = this.getAuth(req);
+            const isAdminForActivity = authForActivity.role === 'admin';
+            const existingActivity = String(existingRow.wednesday_activity ?? '').trim();
+            const incomingActivity = updateData.wednesdayActivity !== undefined
+                ? String(updateData.wednesdayActivity ?? '').trim()
+                : undefined;
+            if (incomingActivity !== undefined &&
+                incomingActivity !== existingActivity &&
+                !isAdminForActivity) {
+                res.status(403).json({
+                    success: false,
+                    error: 'Only administrators can change the Wednesday activity after registration.',
+                });
+                return;
+            }
             if (updateData.wednesdayActivity &&
                 updateData.wednesdayActivity !== existingRow.wednesday_activity) {
                 computedActivityWaitlisted = false;

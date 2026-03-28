@@ -21,6 +21,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   onSave,
   isAdmin = false
 }) => {
+  const wednesdayActivityLocked = !!registration && !isAdmin;
+
   const [formData, setFormData] = useState<Partial<Registration>>({
     // Personal Information
     firstName: registration?.firstName || user.name.split(' ')[0] || '',
@@ -155,6 +157,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   };
 
   const handleInputChange = (field: string, value: any) => {
+    if (field === 'wednesdayActivity' && wednesdayActivityLocked) {
+      return;
+    }
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -500,12 +505,18 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               <label htmlFor="wednesdayActivity" className="form-label">
                 Please indicate which Wednesday activity you will be attending (Select ONE) <span className="required-asterisk">*</span>
               </label>
+              {wednesdayActivityLocked && (
+                <p className="form-hint" style={{ marginBottom: '8px', fontSize: '0.9em', color: '#6b7280' }}>
+                  Your Wednesday activity cannot be changed here. Contact an administrator if you need to update it.
+                </p>
+              )}
               <select
                 id="wednesdayActivity"
                 className={`form-control ${errors.wednesdayActivity ? 'error' : ''}`}
                 value={formData.wednesdayActivity || ''}
                 onChange={(e) => handleInputChange('wednesdayActivity', e.target.value)}
                 required
+                disabled={wednesdayActivityLocked}
               >
                 <option value="" disabled>Please Select Conference Event</option>
                 {getActivityNames(event.activities).map(activity => (
