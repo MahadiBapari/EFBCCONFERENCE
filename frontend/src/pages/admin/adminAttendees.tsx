@@ -752,6 +752,14 @@ const confirmSingleDelete = async () => {
       'Emergency Contact Name': reg.emergencyContactName,
       'Emergency Contact Phone': reg.emergencyContactPhone,
       'Activity': reg.wednesdayActivity,
+      'Activity seat status':
+        !reg.wednesdayActivity || reg.wednesdayActivity === 'None'
+          ? '—'
+          : (reg as any).wednesdayActivityWaitlisted === true ||
+              (reg as any).wednesdayActivityWaitlisted === 1 ||
+              (reg as any).wednesdayActivityWaitlisted === '1'
+            ? 'Waitlisted'
+            : 'Confirmed',
       'Group Assigned': getGroupForRegistration(reg),
       'Club Rentals': (reg as any).clubRentals,
       'Golf Handicap': reg.golfHandicap,
