@@ -373,19 +373,23 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
           </button>
         ))}
       </div>
-      <div className="export-activity-actions">
-        <button
-          className="btn btn-primary"
-          onClick={handleExportActivityXlsx}
-          disabled={!activeTab}
-        >
-          Export {activeTab || 'Activity'} Excel
-        </button>
-      </div>
+      
 
       <div className="group-management-layout">
         <div className="card group-column">
-          <h4>{activeTab} Groups</h4>
+          <div className="group-column-header">
+            <h4>{activeTab} Groups</h4>
+            <div className="export-activity-actions">
+              <button
+                className="btn btn-primary"
+                onClick={handleExportActivityXlsx}
+                disabled={!activeTab}
+              >
+                Export {activeTab || 'Activity'} XLSX
+              </button>
+            </div>
+          </div>
+          
           <div className="group-list">
             {categoryGroups.map(group => (
               <div 

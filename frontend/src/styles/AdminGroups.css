@@ -56,6 +56,26 @@
   color: var(--text-primary);
 }
 
+.group-column-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap; 
+  margin-bottom: 1.5rem;
+}
+
+.group-column-header h4 {
+  margin: 0;
+  flex: 1;
+  min-width: 0; 
+}
+
+.export-activity-actions {
+  flex-shrink: 0;
+}
+
 .group-list {
   display: flex;
   flex-direction: column;
@@ -63,7 +83,6 @@
   margin-bottom: 1.5rem;
   flex: 1;
   min-height: 0;
-  /* Scroll groups within the column so the page height stays reasonable */
   max-height: calc(100vh - 8rem);
   overflow-y: auto;
 }
