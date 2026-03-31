@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Registration, Group, Event } from '../../types';
 import { formatDateShort } from '../../utils/dateUtils';
 import { getActivityNames } from '../../utils/eventUtils';
+import * as XLSX from 'xlsx';
 import '../../styles/AdminGroups.css';
 import { groupsApi } from '../../services/apiClient';
 
@@ -271,6 +272,70 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     return reg.name.toLowerCase().includes(query);
   });
 
+  const handleExportActivityXlsx = () => {
+    const normalizedActivity = (activeTab || '').trim().toLowerCase();
+    const isGolfActivity = normalizedActivity.includes('golf');
+    const isMassageActivity = normalizedActivity.includes('massage');
+    const isPickleballActivity = normalizedActivity.includes('pickleball');
+
+    const rows = categoryGroups.flatMap(group =>
+      group.members
+        .map(memberId => registrations.find(r => r.id === memberId))
+        .filter((reg): reg is Registration => !!reg)
+        .map(reg => {
+          const baseRow: Record<string, string> = {
+            'Last Name': reg.lastName || '',
+            'First Name (=Badge name)': reg.badgeName || reg.firstName || '',
+            'GRP': group.name || '',
+            'Mobile': reg.mobile || '',
+            'Email': reg.email || '',
+            '2nd Email': reg.secondaryEmail || '',
+            'Company': reg.organization || '',
+          };
+
+          if (isGolfActivity) {
+            baseRow['Rental Clubs Requests'] = reg.clubRentals || '';
+            baseRow['HDCP'] = reg.golfHandicap || '';
+          }
+
+          if (isMassageActivity) {
+            baseRow['Time Slot'] = reg.massageTimeSlot || '';
+          }
+
+          if (isPickleballActivity) {
+            baseRow['Pickleball Equipment'] = reg.pickleballEquipment ? 'Yes' : '';
+          }
+
+          return baseRow;
+        })
+    );
+
+    rows.sort((a, b) => {
+      const groupCompare = a['GRP'].localeCompare(b['GRP'], undefined, { sensitivity: 'base' });
+      if (groupCompare !== 0) return groupCompare;
+      const lastNameCompare = a['Last Name'].localeCompare(b['Last Name'], undefined, { sensitivity: 'base' });
+      if (lastNameCompare !== 0) return lastNameCompare;
+      return a['First Name (=Badge name)'].localeCompare(b['First Name (=Badge name)'], undefined, { sensitivity: 'base' });
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, (activeTab || 'Activity').slice(0, 31));
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    const safeActivity = (activeTab || 'activity').replace(/[^a-z0-9-_]/gi, '_');
+    link.download = `${safeActivity}_groups.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="container">
       <div className="page-header">
@@ -307,6 +372,15 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
             {cat}
           </button>
         ))}
+      </div>
+      <div className="export-activity-actions">
+        <button
+          className="btn btn-primary"
+          onClick={handleExportActivityXlsx}
+          disabled={!activeTab}
+        >
+          Export {activeTab || 'Activity'} Excel
+        </button>
       </div>
 
       <div className="group-management-layout">
