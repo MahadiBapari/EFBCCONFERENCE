@@ -1120,6 +1120,85 @@ export async function sendCancellationRequestAdminEmail(params: {
   queueEmail({ to, subject, text, html });
 }
 
+const escapeHtml = (s: string) =>
+  String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+export async function sendPairingRequestAdminEmail(params: {
+  requestId: number;
+  registrationId: number;
+  activityLabel: string;
+  userName?: string;
+  userEmail?: string;
+  registrantEmail?: string;
+  eventName?: string;
+  badgeName?: string;
+  partnerNames: string[];
+  boatPreference?: string | null;
+  additionalNotes?: string | null;
+  wednesdayActivity?: string;
+}): Promise<void> {
+  const brand = (process.env.EMAIL_BRAND || 'EFBC Conference').trim();
+  const to =
+    process.env.PAIRING_REQUEST_EMAIL ||
+    process.env.ADMIN_NOTIFY_EMAIL ||
+    process.env.ADMIN_EMAIL ||
+    process.env.SUPPORT_EMAIL ||
+    'event@efbcconference.org';
+  const subject = sanitizeSubjectLine(
+    `Pairing request – ${params.activityLabel} – ${params.eventName || 'EFBC Conference'} (#${params.registrationId})`
+  );
+
+  const partnersList =
+    params.partnerNames && params.partnerNames.length
+      ? `<ul style="margin:8px 0;padding-left:20px;">${params.partnerNames.map((n) => `<li>${escapeHtml(n)}</li>`).join('')}</ul>`
+      : '<p style="margin:8px 0;color:#6b7280;">(no names listed)</p>';
+
+  const html = await renderEmailTemplate({
+    subject,
+    heading: 'New activity pairing request',
+    preheader: 'A registrant submitted a pairing / group request.',
+    contentHtml: `
+      <p style="margin:0 0 8px 0;">A pairing request was submitted through the ${brand} portal.</p>
+      <table role="presentation" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="color:#6b7280;">Request ID</td><td><strong>#${params.requestId}</strong></td></tr>
+        <tr><td style="color:#6b7280;">Registration ID</td><td><strong>#${params.registrationId}</strong></td></tr>
+        ${params.eventName ? `<tr><td style="color:#6b7280;">Event</td><td>${escapeHtml(params.eventName)}</td></tr>` : ''}
+        <tr><td style="color:#6b7280;">Activity (group tab)</td><td><strong>${escapeHtml(params.activityLabel)}</strong></td></tr>
+        ${params.wednesdayActivity ? `<tr><td style="color:#6b7280;">Wednesday activity</td><td>${escapeHtml(String(params.wednesdayActivity))}</td></tr>` : ''}
+        ${params.userName ? `<tr><td style="color:#6b7280;">Account name</td><td>${escapeHtml(params.userName)}</td></tr>` : ''}
+        ${params.userEmail ? `<tr><td style="color:#6b7280;">Account email</td><td>${escapeHtml(params.userEmail)}</td></tr>` : ''}
+        ${params.registrantEmail ? `<tr><td style="color:#6b7280;">Registration email</td><td>${escapeHtml(params.registrantEmail)}</td></tr>` : ''}
+        ${params.badgeName ? `<tr><td style="color:#6b7280;">Badge name</td><td>${escapeHtml(params.badgeName)}</td></tr>` : ''}
+        ${params.boatPreference ? `<tr><td style="color:#6b7280;">Boat preference</td><td>${escapeHtml(params.boatPreference)}</td></tr>` : ''}
+      </table>
+      <p style="margin:12px 0 4px 0;"><strong>Names to pair with</strong></p>
+      ${partnersList}
+      ${
+        params.additionalNotes
+          ? `<p style="margin:12px 0 4px 0;"><strong>Additional notes</strong></p><p style="margin:0;white-space:pre-wrap;">${escapeHtml(params.additionalNotes)}</p>`
+          : ''
+      }
+      <p style="margin:12px 0 0 0;">Assign groups from the admin <strong>Groups</strong> page when ready.</p>
+    `,
+  });
+
+  const lines: string[] = [];
+  lines.push(`Pairing request in ${brand}.`);
+  lines.push(`Request #${params.requestId}, Registration #${params.registrationId}.`);
+  if (params.eventName) lines.push(`Event: ${params.eventName}.`);
+  lines.push(`Activity: ${params.activityLabel}.`);
+  if (params.partnerNames.length) lines.push(`Names: ${params.partnerNames.join('; ')}.`);
+  if (params.boatPreference) lines.push(`Boat: ${params.boatPreference}.`);
+  if (params.additionalNotes) lines.push(`Notes: ${params.additionalNotes}.`);
+  const text = lines.join(' ');
+
+  queueEmail({ to, subject, text, html });
+}
+
 // Email to user confirming their cancellation request was submitted
 export async function sendCancellationRequestConfirmationEmail(params: {
   to: string;

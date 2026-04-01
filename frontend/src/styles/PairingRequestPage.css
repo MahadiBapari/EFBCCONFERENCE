@@ -1,0 +1,68 @@
+.pairing-request-page {
+  min-height: 100vh;
+  padding: 2rem 1rem 3rem;
+  background-color: var(--background-color, #f4f6f8);
+}
+
+.pairing-request-inner {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.pairing-request-header {
+  margin-bottom: 1.5rem;
+}
+
+.pairing-request-header h1 {
+  margin: 0.75rem 0 0.5rem;
+  font-size: 1.75rem;
+  color: var(--text-primary, #111);
+}
+
+.pairing-request-lead {
+  margin: 0;
+  color: var(--text-secondary, #555);
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.pairing-back-btn {
+  margin-bottom: 0.5rem;
+}
+
+.pairing-request-card {
+  padding: 1.5rem;
+}
+
+.pairing-request-status {
+  color: var(--text-secondary, #555);
+}
+
+.pairing-activity-banner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface-color, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: var(--border-radius, 8px);
+  font-size: 0.95rem;
+}
+
+.pairing-activity-sub {
+  color: var(--text-secondary, #666);
+  font-weight: 400;
+}
+
+.pairing-hint {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #555);
+  line-height: 1.45;
+}
+
+.pairing-success {
+  margin-bottom: 1rem;
+}
+
+.pairing-actions {
+  margin-top: 1.25rem;
+}

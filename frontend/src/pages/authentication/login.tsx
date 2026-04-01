@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import '../../styles/LoginPage.css';
 import { authApi } from '../../services/apiClient';
 
 interface LoginPageProps {
-  onLogin: (role: 'admin' | 'user') => void;
+  onLogin: (role: 'admin' | 'user', redirectAfterLogin?: string) => void;
   onShowRegistration: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onShowRegistration }) => {
+  const [searchParams] = useSearchParams();
+  const nextAfterLogin = (searchParams.get('next') || '').trim();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -31,7 +34,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onShowRegistratio
       const user = data.user || (data.data && data.data.user);
       if (!token || !user) throw new Error('Invalid response');
       localStorage.setItem('token', token);
-      onLogin(user.role);
+      onLogin(user.role, nextAfterLogin || undefined);
     } catch (err: any) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.error || '';

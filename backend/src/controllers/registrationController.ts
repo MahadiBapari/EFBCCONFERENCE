@@ -235,6 +235,32 @@ export class RegistrationController {
     }
   }
 
+  /** Active registrations for the authenticated user (for pairing requests, dashboard, etc.) */
+  async getMyRegistrations(req: Request, res: Response): Promise<void> {
+    try {
+      const auth = this.getAuth(req);
+      if (!auth.id) {
+        res.status(401).json({ success: false, error: 'Unauthorized' } satisfies ApiResponse);
+        return;
+      }
+      const limit = Math.min(Math.max(Number((req.query as any).limit) || 50, 1), 200);
+      const rows = await this.db.query(
+        `SELECT * FROM registrations
+         WHERE user_id = ?
+           AND (status IS NULL OR status != 'cancelled')
+           AND cancellation_at IS NULL
+         ORDER BY updated_at DESC
+         LIMIT ?`,
+        [auth.id, limit]
+      );
+      const data = (rows as any[]).map((row: any) => Registration.fromDatabase(row).toJSON());
+      res.status(200).json({ success: true, data } satisfies ApiResponse);
+    } catch (error) {
+      console.error('Error fetching my registrations:', error);
+      res.status(500).json({ success: false, error: 'Failed to load your registrations' } satisfies ApiResponse);
+    }
+  }
+
   // Get registration by ID
   async getRegistrationById(req: Request, res: Response): Promise<void> {
     try {

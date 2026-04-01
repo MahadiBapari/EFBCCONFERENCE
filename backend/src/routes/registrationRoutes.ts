@@ -39,6 +39,11 @@ router.get('/', async (req: any, res: any) => {
   await req.registrationController.getRegistrations(req, res);
 });
 
+// Current user's registrations (auth required) — must be before /:id
+router.get('/mine', async (req: any, res: any) => {
+  await req.registrationController.getMyRegistrations(req, res);
+});
+
 // Get registrations by event ID (public endpoint, no authentication required)
 // This route must come before /:id to avoid route conflicts
 router.get('/event/:eventId', async (req: any, res: any) => {

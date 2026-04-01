@@ -24,6 +24,7 @@ import { Event, Registration, Group, User, RegisterForm } from './types';
 import apiClient, { authApi } from './services/apiClient';
 import { cancelApi, groupsApi } from './services/apiClient';
 import { AdminCancellations } from './pages/admin/adminCancellations';
+import { PairingRequestPage } from './pages/user/pairingRequest';
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -342,7 +343,7 @@ useEffect(() => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  const handleLogin = async (selectedRole: 'admin' | 'user') => {
+  const handleLogin = async (selectedRole: 'admin' | 'user', redirectAfterLogin?: string) => {
     try {
       const res = await authApi.me();
       const me = (res as any).data || {};
@@ -358,6 +359,11 @@ useEffect(() => {
     // Ensure we load fresh data right after login
     await loadEventsFromApi();
     await loadRegistrationsFromApi();
+    const next = (redirectAfterLogin || '').trim();
+    if (next.startsWith('/') && !next.startsWith('//')) {
+      navigate(next);
+      return;
+    }
     setView(selectedRole === 'admin' ? 'events' : 'dashboard');
     navigate('/dashboard');
   };
@@ -925,6 +931,20 @@ useEffect(() => {
       <Route path="/signup" element={role ? <Navigate to="/dashboard" replace /> : <RegistrationPage onRegister={handleRegister} onBackToLogin={handleBackToLogin} />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/resend-verification" element={<ResendVerificationPage />} />
+      <Route
+        path="/pairingrequest"
+        element={
+          authInitializing ? (
+            <div className="app-loading-screen">
+              <div className="app-loading-spinner" />
+            </div>
+          ) : role ? (
+            <PairingRequestPage user={user} />
+          ) : (
+            <Navigate to="/login?next=/pairingrequest" replace />
+          )
+        }
+      />
       <Route
         path="/dashboard"
         element={

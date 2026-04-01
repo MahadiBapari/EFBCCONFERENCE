@@ -41,9 +41,11 @@ class ApiClient {
         const url = (error?.config?.url || '') as string;
         const isAuthFlow = url.includes('/auth/login') || url.includes('/users/register');
         const isResetPassword = window.location.pathname === '/reset-password';
-        if (status === 401 && !isAuthFlow && window.location.pathname !== '/login' && !isResetPassword) {
+        const isResend = window.location.pathname === '/resend-verification';
+        if (status === 401 && !isAuthFlow && window.location.pathname !== '/login' && !isResetPassword && !isResend) {
           localStorage.removeItem('token');
-          window.location.href = '/login';
+          const next = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.href = `/login?next=${next}`;
         }
         return Promise.reject(error);
       }
@@ -105,6 +107,9 @@ export const authApi = {
 
 // Registration helpers
 export const registrationsApi = {
+  async getMine(limit = 50): Promise<any> {
+    return apiClient.get(`/registrations/mine?limit=${limit}`);
+  },
   async getById(id: number): Promise<any> {
     return apiClient.get(`/registrations/${id}`);
   },
@@ -123,6 +128,18 @@ export const registrationsApi = {
 export const usersApi = {
   async createByAdmin(payload: { firstName: string; lastName: string; email: string; role: 'admin' | 'user' }): Promise<any> {
     return apiClient.post('/users/admin-create', payload);
+  },
+};
+
+// Pairing / group requests (registrant → admin email + DB record)
+export const pairingApi = {
+  async submit(payload: {
+    registrationId: number;
+    partnerNames: string[];
+    boatPreference?: string;
+    additionalNotes?: string;
+  }): Promise<any> {
+    return apiClient.post('/pairing-requests', payload);
   },
 };
 

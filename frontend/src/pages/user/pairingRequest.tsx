@@ -1,0 +1,288 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import apiClient, { pairingApi } from '../../services/apiClient';
+import { Event, Registration, User } from '../../types';
+import {
+  maxPartnerNameFields,
+  needsBoatPreference,
+  resolvePairingActivityLabel,
+} from '../../utils/pairingActivityUtils';
+import '../../styles/PairingRequestPage.css';
+
+interface PairingRequestPageProps {
+  user: User;
+}
+
+export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) => {
+  const navigate = useNavigate();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [registrationId, setRegistrationId] = useState<number | ''>('');
+  const [partnerNames, setPartnerNames] = useState<string[]>(['', '', '', '']);
+  const [boatPreference, setBoatPreference] = useState('');
+  const [additionalNotes, setAdditionalNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const [evRes, regRes] = await Promise.all([
+        apiClient.get<Event[]>('/events'),
+        apiClient.get<Registration[]>('/registrations/mine'),
+      ]);
+      const evData = (evRes as any).data || [];
+      const regData = (regRes as any).data || [];
+      const normalizeEvent = (e: any): Event => {
+        let acts = e?.activities;
+        if (typeof acts === 'string') {
+          try {
+            acts = JSON.parse(acts);
+          } catch {
+            acts = [];
+          }
+        }
+        return { ...e, activities: Array.isArray(acts) ? acts : [] } as Event;
+      };
+      setEvents(Array.isArray(evData) ? evData.map(normalizeEvent) : []);
+      setRegistrations(Array.isArray(regData) ? regData : []);
+    } catch (e: any) {
+      setLoadError(e?.response?.data?.error || 'Failed to load your registrations.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    loadData();
+  }, [loadData]);
+
+  const selectedReg = useMemo(
+    () => registrations.find((r) => r.id === registrationId),
+    [registrations, registrationId]
+  );
+
+  const selectedEvent = useMemo(
+    () => events.find((e) => e.id === selectedReg?.eventId),
+    [events, selectedReg?.eventId]
+  );
+
+  const activityLabel = useMemo(() => {
+    if (!selectedReg) return null;
+    return resolvePairingActivityLabel(selectedReg, selectedEvent);
+  }, [selectedReg, selectedEvent]);
+
+  const maxPartners = activityLabel ? maxPartnerNameFields(activityLabel) : 0;
+  const showBoat = activityLabel ? needsBoatPreference(activityLabel) : false;
+
+  useEffect(() => {
+    if (maxPartners <= 0) return;
+    setPartnerNames((prev) =>
+      Array.from({ length: maxPartners }, (_, i) => (i < prev.length ? prev[i] : '') ?? '')
+    );
+  }, [maxPartners]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitError(null);
+    if (!registrationId || !selectedReg || !activityLabel) {
+      setSubmitError('Please select a registration.');
+      return;
+    }
+
+    const names = partnerNames.slice(0, maxPartners).map((s) => s.trim()).filter(Boolean);
+    if (names.length === 0 && !additionalNotes.trim() && !boatPreference.trim()) {
+      setSubmitError('Please enter at least one name, a boat preference, or notes.');
+      return;
+    }
+
+    if (showBoat && !boatPreference.trim()) {
+      setSubmitError('Boat preference or boat number is required for fishing.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res: any = await pairingApi.submit({
+        registrationId: Number(registrationId),
+        partnerNames: names,
+        boatPreference: showBoat ? boatPreference.trim() : undefined,
+        additionalNotes: additionalNotes.trim() || undefined,
+      });
+      if (res.success === false) {
+        setSubmitError(res.error || 'Submission failed.');
+        return;
+      }
+      setSubmitSuccess(true);
+      setPartnerNames(Array(maxPartners).fill(''));
+      setBoatPreference('');
+      setAdditionalNotes('');
+    } catch (err: any) {
+      setSubmitError(err?.response?.data?.error || 'Submission failed.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const eligibleRegs = useMemo(() => {
+    return registrations.filter((r) => {
+      const ev = events.find((e) => e.id === r.eventId);
+      return resolvePairingActivityLabel(r, ev) !== null;
+    });
+  }, [registrations, events]);
+
+  return (
+    <div className="pairing-request-page">
+      <div className="pairing-request-inner">
+        <header className="pairing-request-header">
+          <button type="button" className="btn btn-secondary pairing-back-btn" onClick={() => navigate('/dashboard')}>
+            Back to dashboard
+          </button>
+          <h1>Activity pairing request</h1>
+          <p className="pairing-request-lead">
+            Signed in as <strong>{user.name}</strong> ({user.email}). Submit who you would like to be grouped with for
+            the Wednesday activity on your registration. The conference team will confirm assignments.
+          </p>
+        </header>
+
+        {loading && <p className="pairing-request-status">Loading…</p>}
+        {loadError && <div className="error-message">{loadError}</div>}
+
+        {!loading && !loadError && eligibleRegs.length === 0 && (
+          <div className="card pairing-request-card">
+            <p>
+              You have no active registrations with a Wednesday activity that uses group pairings, or your event data
+              is still loading. If you already registered, make sure you selected an activity other than &quot;None&quot;.
+            </p>
+          </div>
+        )}
+
+        {!loading && !loadError && eligibleRegs.length > 0 && (
+          <form className="card pairing-request-card" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="pairingRegistration" className="form-label">
+                Registration / event
+              </label>
+              <select
+                id="pairingRegistration"
+                className="form-control"
+                value={registrationId === '' ? '' : String(registrationId)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setRegistrationId(v ? Number(v) : '');
+                  setSubmitSuccess(false);
+                  setSubmitError(null);
+                }}
+                required
+              >
+                <option value="">Select your registration…</option>
+                {eligibleRegs.map((r) => {
+                  const ev = events.find((e) => e.id === r.eventId);
+                  const label = resolvePairingActivityLabel(r, ev);
+                  return (
+                    <option key={r.id} value={r.id}>
+                      {ev?.name || `Event #${r.eventId}`} — {label || r.wednesdayActivity}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {selectedReg && activityLabel && (
+              <>
+                <p className="pairing-activity-banner">
+                  Activity for this request: <strong>{activityLabel}</strong>
+                  {selectedReg.wednesdayActivity && selectedReg.wednesdayActivity !== activityLabel && (
+                    <span className="pairing-activity-sub"> ({selectedReg.wednesdayActivity})</span>
+                  )}
+                </p>
+
+                {activityLabel.toLowerCase().includes('golf') && (
+                  <p className="pairing-hint">Who would you like to play with? (Up to 3 names; your foursome is 4 including you.)</p>
+                )}
+                {activityLabel.toLowerCase().includes('fish') && (
+                  <p className="pairing-hint">
+                    Groups are up to 5 per boat. Specify a boat number if you have one, and add up to 4 additional names
+                    if you are organizing a partial group.
+                  </p>
+                )}
+                {!activityLabel.toLowerCase().includes('golf') &&
+                  !activityLabel.toLowerCase().includes('fish') && (
+                    <p className="pairing-hint">List people you would like to be grouped with (names as they should appear).</p>
+                  )}
+
+                {showBoat && (
+                  <div className="form-group">
+                    <label htmlFor="boatPreference" className="form-label">
+                      Boat preference / boat number
+                    </label>
+                    <input
+                      id="boatPreference"
+                      type="text"
+                      className="form-control"
+                      value={boatPreference}
+                      onChange={(e) => setBoatPreference(e.target.value)}
+                      placeholder='e.g. "Boat 2" or "Put me on boat 5"'
+                    />
+                  </div>
+                )}
+
+                {partnerNames.slice(0, maxPartners).map((val, idx) => (
+                  <div className="form-group" key={idx}>
+                    <label htmlFor={`partner-${idx}`} className="form-label">
+                      Name {idx + 1} {maxPartners > 1 ? '(optional)' : ''}
+                    </label>
+                    <input
+                      id={`partner-${idx}`}
+                      type="text"
+                      className="form-control"
+                      value={val}
+                      onChange={(e) => {
+                        const next = [...partnerNames];
+                        next[idx] = e.target.value;
+                        setPartnerNames(next);
+                      }}
+                      placeholder="Full name"
+                    />
+                  </div>
+                ))}
+
+                <div className="form-group">
+                  <label htmlFor="pairingNotes" className="form-label">
+                    Additional notes (optional)
+                  </label>
+                  <textarea
+                    id="pairingNotes"
+                    className="form-control"
+                    rows={4}
+                    value={additionalNotes}
+                    onChange={(e) => setAdditionalNotes(e.target.value)}
+                    placeholder="Anything else we should know for grouping…"
+                  />
+                </div>
+
+                {submitError && <div className="error-message">{submitError}</div>}
+                {submitSuccess && (
+                  <div className="info-message pairing-success">
+                    Your request was submitted. The organizers have been notified by email.
+                  </div>
+                )}
+
+                <div className="pairing-actions">
+                  <button type="submit" className="btn btn-primary" disabled={submitting}>
+                    {submitting ? 'Sending…' : 'Submit pairing request'}
+                  </button>
+                </div>
+              </>
+            )}
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};

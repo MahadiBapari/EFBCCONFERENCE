@@ -15,6 +15,7 @@ import cancellationRoutes from './routes/cancellationRoutes';
 import paymentsRoutes from './routes/paymentsRoutes';
 import customizationRoutes from './routes/customizationRoutes';
 import discountCodeRoutes from './routes/discountCodeRoutes';
+import pairingRequestRoutes from './routes/pairingRequestRoutes';
 
 // Load environment variables (only from .env in non-production)
 if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
@@ -39,6 +40,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/registrations', registrationRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api', cancellationRoutes);
+app.use('/api', pairingRequestRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/customization', customizationRoutes);
 app.use('/api/discount-codes', discountCodeRoutes);
@@ -160,6 +162,7 @@ const createTables = async () => {
 
     // Add cancellation requests feature
     await migrateCancellationFeature();
+    await migratePairingRequests();
     await migrateEventDescriptionToArray();
     await migrateEventStartDate();
     await migrateEmailCustomizations();
@@ -995,6 +998,33 @@ const migratePendingPaymentFields = async (): Promise<void> => {
     }
   } catch (error: any) {
     console.error('Error migrating pending payment fields:', error?.message || error);
+  }
+};
+
+// Pairing / group requests from registrants
+const migratePairingRequests = async () => {
+  try {
+    await databaseService.query(`
+      CREATE TABLE IF NOT EXISTS pairing_requests (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        registration_id INT NOT NULL,
+        user_id INT NOT NULL,
+        event_id INT NOT NULL,
+        activity_label VARCHAR(255) NOT NULL,
+        partner_names JSON NULL,
+        boat_preference VARCHAR(255) NULL,
+        additional_notes TEXT NULL,
+        status ENUM('pending','acknowledged') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (registration_id) REFERENCES registrations(id) ON DELETE CASCADE,
+        INDEX idx_pairing_reg (registration_id),
+        INDEX idx_pairing_status (status)
+      )
+    `);
+    console.log('🛠️ pairing_requests table created/verified');
+  } catch (e) {
+    console.warn('⚠️ pairing_requests migration skipped:', e);
   }
 };
 
