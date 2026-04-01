@@ -83,6 +83,12 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     setIsCreatingGroup(false);
   };
 
+  const handleDeleteGroupWithConfirm = (groupId: number, groupName: string) => {
+    const shouldDelete = window.confirm(`Delete group "${groupName}"? This cannot be undone.`);
+    if (!shouldDelete) return;
+    handleDeleteGroup(groupId);
+  };
+
   const handleStartRename = (group: Group) => {
     setEditingGroup({ id: group.id, name: group.name });
   };
@@ -152,7 +158,11 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     }
   };
   
-  const handleRemoveMember = (groupId: number, memberId: number) => {
+  const handleRemoveMember = (groupId: number, memberId: number, memberName?: string) => {
+    const label = memberName || 'this member';
+    const shouldRemove = window.confirm(`Remove ${label} from this group?`);
+    if (!shouldRemove) return;
+
     const updated = groups.map(group => {
       if (group.id === groupId) {
         return { ...group, members: group.members.filter(m => m !== memberId) };
@@ -423,7 +433,13 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
                     </h5>
                     <div className="group-actions">
                       <button className="icon-btn" aria-label={`Rename ${group.name}`} onClick={() => handleStartRename(group)}>✏️</button>
-                      <button className="icon-btn" aria-label={`Delete ${group.name}`} onClick={() => handleDeleteGroup(group.id)}>🗑️</button>
+                      <button
+                        className="icon-btn"
+                        aria-label={`Delete ${group.name}`}
+                        onClick={() => handleDeleteGroupWithConfirm(group.id, group.name)}
+                      >
+                        🗑️
+                      </button>
                     </div>
                   </div>
                 )}
@@ -462,7 +478,7 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
                           <button 
                             className="icon-btn remove-member-btn" 
                             aria-label={`Remove ${reg?.name} from ${group.name}`}
-                            onClick={() => handleRemoveMember(group.id, memberId)}
+                            onClick={() => handleRemoveMember(group.id, memberId, reg?.name)}
                           >&times;</button>
                         </div>
                       </li>
