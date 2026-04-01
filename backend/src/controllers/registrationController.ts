@@ -239,21 +239,30 @@ export class RegistrationController {
   async getMyRegistrations(req: Request, res: Response): Promise<void> {
     try {
       const auth = this.getAuth(req);
-      if (!auth.id) {
+      const uid = auth.id != null ? Number(auth.id) : NaN;
+      if (!auth.id || Number.isNaN(uid)) {
         res.status(401).json({ success: false, error: 'Unauthorized' } satisfies ApiResponse);
         return;
       }
       const limit = Math.min(Math.max(Number((req.query as any).limit) || 50, 1), 200);
+      // mysql2 prepared statements with LIMIT ? raise ER_WRONG_ARGUMENTS on many MySQL builds; inline a clamped int.
       const rows = await this.db.query(
         `SELECT * FROM registrations
          WHERE user_id = ?
            AND (status IS NULL OR status != 'cancelled')
            AND cancellation_at IS NULL
          ORDER BY updated_at DESC
-         LIMIT ?`,
-        [auth.id, limit]
+         LIMIT ${limit}`,
+        [uid]
       );
-      const data = (rows as any[]).map((row: any) => Registration.fromDatabase(row).toJSON());
+      const data: any[] = [];
+      for (const row of rows as any[]) {
+        try {
+          data.push(Registration.fromDatabase(row).toJSON());
+        } catch (rowErr) {
+          console.error('getMyRegistrations: skipping registration row', row?.id, rowErr);
+        }
+      }
       res.status(200).json({ success: true, data } satisfies ApiResponse);
     } catch (error) {
       console.error('Error fetching my registrations:', error);
