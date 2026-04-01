@@ -62,9 +62,37 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
     loadData();
   }, [loadData]);
 
+  const activeEvent = useMemo(() => {
+    if (!events.length) return null;
+    return events.reduce((latest, current) =>
+      new Date(current.date) > new Date(latest.date) ? current : latest
+    );
+  }, [events]);
+
+  const eligibleRegs = useMemo(() => {
+    return registrations.filter((r) => {
+      const ev = events.find((e) => e.id === r.eventId);
+      return resolvePairingActivityLabel(r, ev) !== null;
+    });
+  }, [registrations, events]);
+
+  const activeEventEligibleRegs = useMemo(() => {
+    if (!activeEvent) return [];
+    return eligibleRegs.filter((r) => r.eventId === activeEvent.id);
+  }, [eligibleRegs, activeEvent]);
+
+  useEffect(() => {
+    if (activeEventEligibleRegs.length === 0) {
+      setRegistrationId('');
+      return;
+    }
+    // Auto-select latest registration for the active event; backend returns newest first.
+    setRegistrationId(activeEventEligibleRegs[0].id);
+  }, [activeEventEligibleRegs]);
+
   const selectedReg = useMemo(
-    () => registrations.find((r) => r.id === registrationId),
-    [registrations, registrationId]
+    () => activeEventEligibleRegs.find((r) => r.id === registrationId) || activeEventEligibleRegs[0],
+    [activeEventEligibleRegs, registrationId]
   );
 
   const selectedEvent = useMemo(
@@ -129,13 +157,6 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
     }
   };
 
-  const eligibleRegs = useMemo(() => {
-    return registrations.filter((r) => {
-      const ev = events.find((e) => e.id === r.eventId);
-      return resolvePairingActivityLabel(r, ev) !== null;
-    });
-  }, [registrations, events]);
-
   return (
     <div className="pairing-request-page">
       <div className="pairing-request-inner">
@@ -148,51 +169,28 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
             Signed in as <strong>{user.name}</strong> ({user.email}). Submit who you would like to be grouped with for
             the Wednesday activity on your registration. The conference team will confirm assignments.
           </p>
+          {activeEvent && (
+            <p className="pairing-event-header">
+              Current event: <strong>{activeEvent.name}</strong>
+            </p>
+          )}
         </header>
 
         {loading && <p className="pairing-request-status">Loading…</p>}
         {loadError && <div className="error-message">{loadError}</div>}
 
-        {!loading && !loadError && eligibleRegs.length === 0 && (
+        {!loading && !loadError && activeEventEligibleRegs.length === 0 && (
           <div className="card pairing-request-card">
             <p>
-              You have no active registrations with a Wednesday activity that uses group pairings, or your event data
-              is still loading. If you already registered, make sure you selected an activity other than &quot;None&quot;.
+              {activeEvent
+                ? `You have no active registration with a groupable Wednesday activity for ${activeEvent.name}.`
+                : 'No active event is available right now.'}
             </p>
           </div>
         )}
 
-        {!loading && !loadError && eligibleRegs.length > 0 && (
+        {!loading && !loadError && activeEventEligibleRegs.length > 0 && (
           <form className="card pairing-request-card" onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="pairingRegistration" className="form-label">
-                Registration / event
-              </label>
-              <select
-                id="pairingRegistration"
-                className="form-control"
-                value={registrationId === '' ? '' : String(registrationId)}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setRegistrationId(v ? Number(v) : '');
-                  setSubmitSuccess(false);
-                  setSubmitError(null);
-                }}
-                required
-              >
-                <option value="">Select your registration…</option>
-                {eligibleRegs.map((r) => {
-                  const ev = events.find((e) => e.id === r.eventId);
-                  const label = resolvePairingActivityLabel(r, ev);
-                  return (
-                    <option key={r.id} value={r.id}>
-                      {ev?.name || `Event #${r.eventId}`} — {label || r.wednesdayActivity}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
             {selectedReg && activityLabel && (
               <>
                 <p className="pairing-activity-banner">
