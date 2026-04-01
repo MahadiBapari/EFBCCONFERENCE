@@ -277,16 +277,19 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     const isGolfActivity = normalizedActivity.includes('golf');
     const isMassageActivity = normalizedActivity.includes('massage');
     const isPickleballActivity = normalizedActivity.includes('pickleball');
+    const exportedAt = new Date();
+    const downloadedAt = exportedAt.toLocaleString();
 
     const rows = categoryGroups.flatMap(group =>
       group.members
-        .map(memberId => registrations.find(r => r.id === memberId))
-        .filter((reg): reg is Registration => !!reg)
-        .map(reg => {
+        .map((memberId, index) => ({ reg: registrations.find(r => r.id === memberId), index }))
+        .filter((entry): entry is { reg: Registration; index: number } => !!entry.reg)
+        .map(({ reg, index }) => {
+          const groupLabel = group.name || '';
           const baseRow: Record<string, string> = {
             'Last Name': reg.lastName || '',
             'First Name (=Badge name)': reg.badgeName || reg.firstName || '',
-            'GRP': group.name || '',
+            'GRP': isGolfActivity ? `${groupLabel}-${index + 1}` : groupLabel,
             'Mobile': reg.mobile || '',
             'Email': reg.email || '',
             '2nd Email': reg.secondaryEmail || '',
@@ -310,15 +313,11 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
         })
     );
 
-    rows.sort((a, b) => {
-      const groupCompare = a['GRP'].localeCompare(b['GRP'], undefined, { sensitivity: 'base' });
-      if (groupCompare !== 0) return groupCompare;
-      const lastNameCompare = a['Last Name'].localeCompare(b['Last Name'], undefined, { sensitivity: 'base' });
-      if (lastNameCompare !== 0) return lastNameCompare;
-      return a['First Name (=Badge name)'].localeCompare(b['First Name (=Badge name)'], undefined, { sensitivity: 'base' });
-    });
-
-    const ws = XLSX.utils.json_to_sheet(rows);
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['Downloaded At', downloadedAt],
+      [],
+    ]);
+    XLSX.utils.sheet_add_json(ws, rows, { origin: 'A3' });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, (activeTab || 'Activity').slice(0, 31));
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
@@ -329,7 +328,8 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     const url = URL.createObjectURL(blob);
     link.href = url;
     const safeActivity = (activeTab || 'activity').replace(/[^a-z0-9-_]/gi, '_');
-    link.download = `${safeActivity}_groups.xlsx`;
+    const timestamp = exportedAt.toISOString().replace(/[:.]/g, '-');
+    link.download = `${safeActivity}_groups_${timestamp}.xlsx`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
