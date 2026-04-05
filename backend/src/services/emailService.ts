@@ -1150,9 +1150,13 @@ export async function sendPairingRequestAdminEmail(params: {
     `Pairing request for ${params.activityLabel}  ${params.eventName || 'EFBC Conference'})`
   );
 
+  const groupMemberNames = [
+    ...(params.registrantName?.trim() ? [params.registrantName.trim()] : []),
+    ...params.partnerNames.map((n) => String(n).trim()).filter(Boolean),
+  ];
   const partnersList =
-    params.partnerNames && params.partnerNames.length
-      ? `<ul style="margin:8px 0;padding-left:20px;">${params.partnerNames.map((n) => `<li>${escapeHtml(n)}</li>`).join('')}</ul>`
+    groupMemberNames.length > 0
+      ? `<ul style="margin:8px 0;padding-left:20px;">${groupMemberNames.map((n) => `<li>${escapeHtml(n)}</li>`).join('')}</ul>`
       : '<p style="margin:8px 0;color:#6b7280;">(no names listed)</p>';
 
   const html = await renderEmailTemplate({
@@ -1183,13 +1187,8 @@ export async function sendPairingRequestAdminEmail(params: {
   lines.push(`Request #${params.requestId}, Registration #${params.registrationId}.`);
   if (params.eventName) lines.push(`Event: ${params.eventName}.`);
   lines.push(`Activity: ${params.activityLabel}.`);
-  if (params.registrantName) lines.push(`Registrant: ${params.registrantName}.`);
   if (params.registrantEmail) lines.push(`Email: ${params.registrantEmail}.`);
-  const groupPlainNames = [
-    ...(params.registrantName?.trim() ? [params.registrantName.trim()] : []),
-    ...params.partnerNames.map((n) => String(n).trim()).filter(Boolean),
-  ];
-  if (groupPlainNames.length) lines.push(`Names: ${groupPlainNames.join('; ')}.`);
+  if (groupMemberNames.length) lines.push(`Names: ${groupMemberNames.join('; ')}.`);
   if (params.boatPreference) lines.push(`Boat: ${params.boatPreference}.`);
   if (params.additionalNotes) lines.push(`Notes: ${params.additionalNotes}.`);
   const text = lines.join(' ');
