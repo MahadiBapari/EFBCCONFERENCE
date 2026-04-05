@@ -214,7 +214,7 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
                 {selectedReg && (
                   <div className="form-group pairing-requester-row">
                     <label className="form-label" htmlFor="pairing-requester-name">
-                      1 — You (requesting)
+                      You (requesting)
                     </label>
                     <input
                       id="pairing-requester-name"
@@ -230,7 +230,7 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
                 {partnerNames.slice(0, maxPartners).map((val, idx) => (
                   <div className="form-group" key={idx}>
                     <label htmlFor={`partner-${idx}`} className="form-label">
-                      {idx + 2} — {maxPartners > 1 ? 'Person to group with' : 'Person to group with'}{' '}
+                      {maxPartners > 1 ? 'Group Partner' : 'Group Partner'}{' '} {idx + 1} {' '}
                       {maxPartners > 1 ? '(optional)' : ''}
                     </label>
                     <input
@@ -243,7 +243,7 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
                         next[idx] = e.target.value;
                         setPartnerNames(next);
                       }}
-                      placeholder="Full name"
+          
                     />
                   </div>
                 ))}
