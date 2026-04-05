@@ -121,15 +121,6 @@ router.post('/pairing-requests', async (req: Request, res: Response) => {
       });
     }
 
-    const lowerAct = activityLabel.toLowerCase();
-    const needsBoat = lowerAct.includes('fish');
-    if (needsBoat && !boatPreference) {
-      return res.status(400).json({
-        success: false,
-        error: 'Please specify a boat preference or boat number for fishing.',
-      });
-    }
-
     const dup = await db.query(
       'SELECT id FROM pairing_requests WHERE registration_id = ? AND status = ?',
       [registrationId, 'pending']
@@ -155,17 +146,16 @@ router.post('/pairing-requests', async (req: Request, res: Response) => {
     const requestId = Number((insertResult as any)?.insertId) || 0;
 
     try {
-      const userRows = await db.query('SELECT name, email FROM users WHERE id = ? LIMIT 1', [reg.user_id]);
-      const user = userRows[0] || {};
+      const badge = String(reg.badge_name || '').trim();
+      const last = String(reg.last_name || '').trim();
+      const registrantName = [badge, last].filter(Boolean).join(' ') || undefined;
       await sendPairingRequestAdminEmail({
         requestId: Number(requestId) || 0,
         registrationId,
         activityLabel,
-        userName: user.name,
-        userEmail: user.email,
-        registrantEmail: reg.email,
+        registrantName,
+        registrantEmail: reg.email ? String(reg.email).trim() : undefined,
         eventName: reg.event_name,
-        badgeName: reg.badge_name,
         partnerNames,
         boatPreference: boatPreference || null,
         additionalNotes: additionalNotes || null,

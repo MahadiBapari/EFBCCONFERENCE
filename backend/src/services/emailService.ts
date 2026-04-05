@@ -1131,11 +1131,9 @@ export async function sendPairingRequestAdminEmail(params: {
   requestId: number;
   registrationId: number;
   activityLabel: string;
-  userName?: string;
-  userEmail?: string;
+  registrantName?: string;
   registrantEmail?: string;
   eventName?: string;
-  badgeName?: string;
   partnerNames: string[];
   boatPreference?: string | null;
   additionalNotes?: string | null;
@@ -1159,7 +1157,7 @@ export async function sendPairingRequestAdminEmail(params: {
 
   const html = await renderEmailTemplate({
     subject,
-    heading: 'New activity pairing request',
+    heading: 'Activity pairing request',
     preheader: 'A registrant submitted a pairing / group request.',
     contentHtml: `
       <p style="margin:0 0 8px 0;">A pairing request was submitted through the ${brand} portal.</p>
@@ -1169,13 +1167,10 @@ export async function sendPairingRequestAdminEmail(params: {
         ${params.eventName ? `<tr><td style="color:#6b7280;">Event</td><td>${escapeHtml(params.eventName)}</td></tr>` : ''}
         <tr><td style="color:#6b7280;">Activity (group tab)</td><td><strong>${escapeHtml(params.activityLabel)}</strong></td></tr>
         ${params.wednesdayActivity ? `<tr><td style="color:#6b7280;">Wednesday activity</td><td>${escapeHtml(String(params.wednesdayActivity))}</td></tr>` : ''}
-        ${params.userName ? `<tr><td style="color:#6b7280;">Account name</td><td>${escapeHtml(params.userName)}</td></tr>` : ''}
-        ${params.userEmail ? `<tr><td style="color:#6b7280;">Account email</td><td>${escapeHtml(params.userEmail)}</td></tr>` : ''}
-        ${params.registrantEmail ? `<tr><td style="color:#6b7280;">Registration email</td><td>${escapeHtml(params.registrantEmail)}</td></tr>` : ''}
-        ${params.badgeName ? `<tr><td style="color:#6b7280;">Badge name</td><td>${escapeHtml(params.badgeName)}</td></tr>` : ''}
-        ${params.boatPreference ? `<tr><td style="color:#6b7280;">Boat preference</td><td>${escapeHtml(params.boatPreference)}</td></tr>` : ''}
+        ${params.registrantName ? `<tr><td style="color:#6b7280;">Registrant</td><td><strong>${escapeHtml(params.registrantName)}</strong></td></tr>` : ''}
+        ${params.registrantEmail ? `<tr><td style="color:#6b7280;">Email</td><td>${escapeHtml(params.registrantEmail)}</td></tr>` : ''}
       </table>
-      <p style="margin:12px 0 4px 0;"><strong>Names to pair with</strong></p>
+      <p style="margin:12px 0 4px 0;"><strong>Requested Group Members</strong></p>
       ${partnersList}
       ${
         params.additionalNotes
@@ -1191,6 +1186,8 @@ export async function sendPairingRequestAdminEmail(params: {
   lines.push(`Request #${params.requestId}, Registration #${params.registrationId}.`);
   if (params.eventName) lines.push(`Event: ${params.eventName}.`);
   lines.push(`Activity: ${params.activityLabel}.`);
+  if (params.registrantName) lines.push(`Registrant: ${params.registrantName}.`);
+  if (params.registrantEmail) lines.push(`Email: ${params.registrantEmail}.`);
   if (params.partnerNames.length) lines.push(`Names: ${params.partnerNames.join('; ')}.`);
   if (params.boatPreference) lines.push(`Boat: ${params.boatPreference}.`);
   if (params.additionalNotes) lines.push(`Notes: ${params.additionalNotes}.`);

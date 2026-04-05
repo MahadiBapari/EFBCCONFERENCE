@@ -34,6 +34,3 @@ export function maxPartnerNameFields(activityLabel: string): number {
   return 4;
 }
 
-export function needsBoatPreference(activityLabel: string): boolean {
-  return activityLabel.toLowerCase().includes('fish');
-}

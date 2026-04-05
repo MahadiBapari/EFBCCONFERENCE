@@ -2,11 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient, { pairingApi } from '../../services/apiClient';
 import { Event, Registration, User } from '../../types';
-import {
-  maxPartnerNameFields,
-  needsBoatPreference,
-  resolvePairingActivityLabel,
-} from '../../utils/pairingActivityUtils';
+import { maxPartnerNameFields, resolvePairingActivityLabel } from '../../utils/pairingActivityUtils';
 import '../../styles/PairingRequestPage.css';
 
 interface PairingRequestPageProps {
@@ -21,7 +17,6 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
   const [loadError, setLoadError] = useState<string | null>(null);
   const [registrationId, setRegistrationId] = useState<number | ''>('');
   const [partnerNames, setPartnerNames] = useState<string[]>(['', '', '', '']);
-  const [boatPreference, setBoatPreference] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -106,7 +101,16 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
   }, [selectedReg, selectedEvent]);
 
   const maxPartners = activityLabel ? maxPartnerNameFields(activityLabel) : 0;
-  const showBoat = activityLabel ? needsBoatPreference(activityLabel) : false;
+
+  /** Registrant submitting the request — badge name + last name (read-only), matches common roster display. */
+  const requesterBadgeLastName = useMemo(() => {
+    if (!selectedReg) return '';
+    const badge = String(selectedReg.badgeName || '').trim();
+    const last = String(selectedReg.lastName || '').trim();
+    const parts = [badge, last].filter(Boolean);
+    if (parts.length) return parts.join(' ');
+    return String(user.name || '').trim();
+  }, [selectedReg, user.name]);
 
   useEffect(() => {
     if (maxPartners <= 0) return;
@@ -124,13 +128,8 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
     }
 
     const names = partnerNames.slice(0, maxPartners).map((s) => s.trim()).filter(Boolean);
-    if (names.length === 0 && !additionalNotes.trim() && !boatPreference.trim()) {
-      setSubmitError('Please enter at least one name, a boat preference, or notes.');
-      return;
-    }
-
-    if (showBoat && !boatPreference.trim()) {
-      setSubmitError('Boat preference or boat number is required for fishing.');
+    if (names.length === 0 && !additionalNotes.trim()) {
+      setSubmitError('Please enter at least one name or notes.');
       return;
     }
 
@@ -139,7 +138,6 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
       const res: any = await pairingApi.submit({
         registrationId: Number(registrationId),
         partnerNames: names,
-        boatPreference: showBoat ? boatPreference.trim() : undefined,
         additionalNotes: additionalNotes.trim() || undefined,
       });
       if (res.success === false) {
@@ -148,7 +146,6 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
       }
       setSubmitSuccess(true);
       setPartnerNames(Array(maxPartners).fill(''));
-      setBoatPreference('');
       setAdditionalNotes('');
     } catch (err: any) {
       setSubmitError(err?.response?.data?.error || 'Submission failed.');
@@ -167,7 +164,7 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
           <h1>Activity pairing request</h1>
           <p className="pairing-request-lead">
             Signed in as <strong>{user.name}</strong> ({user.email}). Submit who you would like to be grouped with for
-            the Wednesday activity on your registration. The conference team will confirm assignments.
+            the Wednesday activity you signed up for. The conference team will confirm assignments.
           </p>
           {activeEvent && (
             <p className="pairing-event-header">
@@ -205,7 +202,7 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
                 )}
                 {activityLabel.toLowerCase().includes('fish') && (
                   <p className="pairing-hint">
-                    Groups are up to 5 per boat. Specify a boat number if you have one, and add up to 4 additional names
+                    Groups are up to 5 per boat. Add up to 4 additional names
                     if you are organizing a partial group.
                   </p>
                 )}
@@ -214,18 +211,18 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
                     <p className="pairing-hint">List people you would like to be grouped with (names as they should appear).</p>
                   )}
 
-                {showBoat && (
-                  <div className="form-group">
-                    <label htmlFor="boatPreference" className="form-label">
-                      Boat preference / boat number
+                {selectedReg && (
+                  <div className="form-group pairing-requester-row">
+                    <label className="form-label" htmlFor="pairing-requester-name">
+                      1 — You (requesting)
                     </label>
                     <input
-                      id="boatPreference"
+                      id="pairing-requester-name"
                       type="text"
-                      className="form-control"
-                      value={boatPreference}
-                      onChange={(e) => setBoatPreference(e.target.value)}
-                      placeholder='e.g. "Boat 2" or "Put me on boat 5"'
+                      className="form-control pairing-requester-input"
+                      readOnly
+                      value={requesterBadgeLastName}
+                      title={requesterBadgeLastName}
                     />
                   </div>
                 )}
@@ -233,7 +230,8 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
                 {partnerNames.slice(0, maxPartners).map((val, idx) => (
                   <div className="form-group" key={idx}>
                     <label htmlFor={`partner-${idx}`} className="form-label">
-                      Name {idx + 1} {maxPartners > 1 ? '(optional)' : ''}
+                      {idx + 2} — {maxPartners > 1 ? 'Person to group with' : 'Person to group with'}{' '}
+                      {maxPartners > 1 ? '(optional)' : ''}
                     </label>
                     <input
                       id={`partner-${idx}`}
@@ -273,7 +271,7 @@ export const PairingRequestPage: React.FC<PairingRequestPageProps> = ({ user }) 
 
                 <div className="pairing-actions">
                   <button type="submit" className="btn btn-primary" disabled={submitting}>
-                    {submitting ? 'Sending…' : 'Submit pairing request'}
+                    {submitting ? 'Sending…' : 'Submit group request'}
                   </button>
                 </div>
               </>
