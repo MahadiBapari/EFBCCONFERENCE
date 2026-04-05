@@ -1185,7 +1185,11 @@ export async function sendPairingRequestAdminEmail(params: {
   lines.push(`Activity: ${params.activityLabel}.`);
   if (params.registrantName) lines.push(`Registrant: ${params.registrantName}.`);
   if (params.registrantEmail) lines.push(`Email: ${params.registrantEmail}.`);
-  if (params.partnerNames.length) lines.push(`Names: ${params.partnerNames.join('; ')}.`);
+  const groupPlainNames = [
+    ...(params.registrantName?.trim() ? [params.registrantName.trim()] : []),
+    ...params.partnerNames.map((n) => String(n).trim()).filter(Boolean),
+  ];
+  if (groupPlainNames.length) lines.push(`Names: ${groupPlainNames.join('; ')}.`);
   if (params.boatPreference) lines.push(`Boat: ${params.boatPreference}.`);
   if (params.additionalNotes) lines.push(`Notes: ${params.additionalNotes}.`);
   const text = lines.join(' ');
