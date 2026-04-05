@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { MOCK_REGISTRATIONS } from './data/mockData';
 import { LoginPage } from './pages/authentication/login';
 import { RegistrationPage } from './pages/authentication/registration';
@@ -25,6 +25,16 @@ import apiClient, { authApi } from './services/apiClient';
 import { cancelApi, groupsApi } from './services/apiClient';
 import { AdminCancellations } from './pages/admin/adminCancellations';
 import { PairingRequestPage } from './pages/user/pairingRequest';
+
+
+const AuthedLoginRedirect: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const next = (searchParams.get('next') || '').trim();
+  if (next.startsWith('/') && !next.startsWith('//')) {
+    return <Navigate to={next} replace />;
+  }
+  return <Navigate to="/dashboard" replace />;
+};
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -344,6 +354,9 @@ useEffect(() => {
   };
 
   const handleLogin = async (selectedRole: 'admin' | 'user', redirectAfterLogin?: string) => {
+    const next = (redirectAfterLogin || '').trim();
+    const useNext = next.startsWith('/') && !next.startsWith('//');
+
     try {
       const res = await authApi.me();
       const me = (res as any).data || {};
@@ -356,12 +369,16 @@ useEffect(() => {
     } catch {
       setRole(selectedRole);
     }
-    // Ensure we load fresh data right after login
+
+
+    if (useNext) {
+      navigate(next, { replace: true });
+    }
+
     await loadEventsFromApi();
     await loadRegistrationsFromApi();
-    const next = (redirectAfterLogin || '').trim();
-    if (next.startsWith('/') && !next.startsWith('//')) {
-      navigate(next);
+
+    if (useNext) {
       return;
     }
     setView(selectedRole === 'admin' ? 'events' : 'dashboard');
@@ -927,7 +944,7 @@ useEffect(() => {
 
   return (
     <Routes>
-      <Route path="/login" element={role ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={handleLogin} onShowRegistration={handleShowRegistration} />} />
+      <Route path="/login" element={role ? <AuthedLoginRedirect /> : <LoginPage onLogin={handleLogin} onShowRegistration={handleShowRegistration} />} />
       <Route path="/signup" element={role ? <Navigate to="/dashboard" replace /> : <RegistrationPage onRegister={handleRegister} onBackToLogin={handleBackToLogin} />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/resend-verification" element={<ResendVerificationPage />} />
