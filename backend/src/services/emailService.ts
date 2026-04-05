@@ -1147,7 +1147,7 @@ export async function sendPairingRequestAdminEmail(params: {
     process.env.SUPPORT_EMAIL ||
     'event@efbcconference.org';
   const subject = sanitizeSubjectLine(
-    `Pairing request – ${params.activityLabel} – ${params.eventName || 'EFBC Conference'} (#${params.registrationId})`
+    `Pairing request for ${params.activityLabel}  ${params.eventName || 'EFBC Conference'})`
   );
 
   const partnersList =
@@ -1162,12 +1162,9 @@ export async function sendPairingRequestAdminEmail(params: {
     contentHtml: `
       <p style="margin:0 0 8px 0;">A pairing request was submitted through the ${brand} portal.</p>
       <table role="presentation" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:14px;">
-        <tr><td style="color:#6b7280;">Request ID</td><td><strong>#${params.requestId}</strong></td></tr>
-        <tr><td style="color:#6b7280;">Registration ID</td><td><strong>#${params.registrationId}</strong></td></tr>
         ${params.eventName ? `<tr><td style="color:#6b7280;">Event</td><td>${escapeHtml(params.eventName)}</td></tr>` : ''}
-        <tr><td style="color:#6b7280;">Activity (group tab)</td><td><strong>${escapeHtml(params.activityLabel)}</strong></td></tr>
         ${params.wednesdayActivity ? `<tr><td style="color:#6b7280;">Wednesday activity</td><td>${escapeHtml(String(params.wednesdayActivity))}</td></tr>` : ''}
-        ${params.registrantName ? `<tr><td style="color:#6b7280;">Registrant</td><td><strong>${escapeHtml(params.registrantName)}</strong></td></tr>` : ''}
+        ${params.registrantName ? `<tr><td style="color:#6b7280;">Requestor</td><td><strong>${escapeHtml(params.registrantName)}</strong></td></tr>` : ''}
         ${params.registrantEmail ? `<tr><td style="color:#6b7280;">Email</td><td>${escapeHtml(params.registrantEmail)}</td></tr>` : ''}
       </table>
       <p style="margin:12px 0 4px 0;"><strong>Requested Group Members</strong></p>
