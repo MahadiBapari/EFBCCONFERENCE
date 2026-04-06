@@ -141,6 +141,12 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
 
   const handleAssignMember = (groupId: number, regId: number) => {
     if (!groupId) return;
+    const idsToPersist = new Set<number>([groupId]);
+    groups.forEach((g) => {
+      if (g.category === activeTab && g.id !== groupId && g.members.includes(regId) && g.id != null) {
+        idsToPersist.add(g.id);
+      }
+    });
     const updated = groups.map(group => {
       if (group.id === groupId) {
         if (group.members.includes(regId)) return group;
@@ -152,10 +158,12 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
       return group;
     });
     setGroups(updated);
-    const changed = updated.find(g => g.id === groupId);
-    if (changed) {
-      persistMembers(changed.id, changed.members);
-    }
+    void Promise.all(
+      Array.from(idsToPersist).map((gid) => {
+        const g = updated.find((x) => x.id === gid);
+        return g ? persistMembers(g.id!, g.members) : Promise.resolve();
+      })
+    );
   };
   
   const handleRemoveMember = (groupId: number, memberId: number, memberName?: string) => {
@@ -188,10 +196,11 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
       return group;
     });
     setGroups(updated);
-    const target = updated.find(g => g.id === targetGroupId);
-    if (target) {
-      persistMembers(target.id, target.members);
-    }
+    const source = updated.find((g) => g.id === sourceGroupId);
+    const target = updated.find((g) => g.id === targetGroupId);
+    void Promise.all(
+      [source, target].filter(Boolean).map((g) => persistMembers(g!.id!, g!.members))
+    );
   };
 
   // Drag and Drop Handlers for reordering members

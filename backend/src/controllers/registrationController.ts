@@ -1,17 +1,13 @@
 import { Request, Response } from 'express';
 import { Registration } from '../models/Registration';
+import { Group } from '../models/Group';
 import { ApiResponse, CreateRegistrationRequest, UpdateRegistrationRequest, RegistrationQuery } from '../types';
 import { DatabaseService } from '../services/databaseService';
 import { sendRegistrationConfirmationEmail, sendRegistrationUpdateEmail } from '../services/emailService';
 import jwt from 'jsonwebtoken';
 
-/**
- * Helper function to convert a date string (YYYY-MM-DD) to Eastern Time midnight
- * Florida uses Eastern Time (America/New_York timezone)
- * Returns the UTC timestamp that represents midnight Eastern Time on the given date
- * 
- * This function handles DST automatically by using Intl.DateTimeFormat
- */
+
+
 function getEasternTimeMidnight(dateString: string): number {
   if (!dateString) return -Infinity;
   
@@ -23,10 +19,6 @@ function getEasternTimeMidnight(dateString: string): number {
       return new Date(dateString + 'T00:00:00Z').getTime();
     }
     
-    // Strategy: Find the UTC timestamp that, when converted to Eastern Time, equals midnight
-    // We'll use a binary search approach: start with a guess and adjust
-    
-    // Start with UTC midnight on that date
     let guessUtc = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
     
     // Check what Eastern time this UTC time represents
@@ -40,9 +32,6 @@ function getEasternTimeMidnight(dateString: string): number {
     let easternTime = formatter.format(guessUtc);
     let [easternHour, easternMinute] = easternTime.split(':').map(Number);
     
-    // Adjust until we get midnight Eastern (00:00)
-    // Eastern is typically UTC-5 (EST) or UTC-4 (EDT)
-    // So midnight Eastern is around 4-5 AM UTC
     let iterations = 0;
     while ((easternHour !== 0 || easternMinute !== 0) && iterations < 10) {
       // Calculate adjustment needed
@@ -85,8 +74,6 @@ function getEasternTimeEndOfDay(dateString: string): number {
       return getEasternTimeMidnight(`${fallbackDate.getUTCFullYear()}-${String(fallbackDate.getUTCMonth() + 1).padStart(2, '0')}-${String(fallbackDate.getUTCDate()).padStart(2, '0')}`);
     }
     
-    // Get midnight of next day in Eastern Time
-    // This makes the end date exclusive, so Dec 11 includes all of Dec 11 up to (but not including) Dec 12
     const nextDay = new Date(year, month - 1, day + 1);
     const nextDayStr = `${nextDay.getFullYear()}-${String(nextDay.getMonth() + 1).padStart(2, '0')}-${String(nextDay.getDate()).padStart(2, '0')}`;
     return getEasternTimeMidnight(nextDayStr);
@@ -98,11 +85,6 @@ function getEasternTimeEndOfDay(dateString: string): number {
   }
 }
 
-/**
- * Get current time converted to Eastern Time for comparison
- * Returns a UTC timestamp that represents the current Eastern Time
- * This can be directly compared with Eastern Time midnight timestamps
- */
 function getCurrentEasternTime(): number {
   const now = new Date();
   
@@ -153,6 +135,40 @@ function getCurrentEasternTime(): number {
   }
   
   return guessUtc.getTime();
+}
+
+/** Whether an activity_groups.category matches the registration's wednesday_activity (tab / roster labels). */
+function groupCategoryMatchesWednesdayActivity(groupCategory: string, wednesdayActivity: string): boolean {
+  const c = String(groupCategory || '').trim().toLowerCase();
+  const w = String(wednesdayActivity || '').trim().toLowerCase();
+  if (!w || w === 'none') return false;
+  if (c === w) return true;
+  const firstToken = w.split(/\s+/)[0] || w;
+  return w.includes(c) || c.includes(w) || c.includes(firstToken) || firstToken.includes(c);
+}
+
+async function removeRegistrantFromStaleActivityGroups(
+  db: DatabaseService,
+  eventId: number,
+  registrationId: number,
+  newWednesdayActivity: string
+): Promise<void> {
+  const rows: any[] = await db.query('SELECT * FROM `activity_groups` WHERE eventId = ?', [eventId]);
+  for (const row of rows) {
+    let memberIds: number[] = [];
+    try {
+      memberIds = row.members ? (typeof row.members === 'string' ? JSON.parse(row.members) : row.members) : [];
+      if (!Array.isArray(memberIds)) memberIds = [];
+    } catch {
+      memberIds = [];
+    }
+    if (!memberIds.includes(registrationId)) continue;
+    if (groupCategoryMatchesWednesdayActivity(String(row.category || ''), newWednesdayActivity)) continue;
+
+    const groupModel = Group.fromDatabase(row);
+    groupModel.removeMember(registrationId);
+    await db.update('activity_groups', Number(row.id), groupModel.toDatabase());
+  }
 }
 
 export class RegistrationController {
@@ -1053,7 +1069,30 @@ export class RegistrationController {
         wednesday_activity: dbPayload.wednesday_activity,
         pending_payment_amount: dbPayload.pending_payment_amount
       });
-      
+
+      if (updateDataObj.wednesdayActivity !== undefined) {
+        const oldWa = String(existingRow.wednesday_activity || '').trim();
+        const newWa =
+          dbPayload.wednesday_activity !== undefined
+            ? String(dbPayload.wednesday_activity ?? '').trim()
+            : oldWa;
+        if (newWa !== oldWa) {
+          await removeRegistrantFromStaleActivityGroups(
+            this.db,
+            Number(existingRow.event_id),
+            Number(id),
+            newWa
+          );
+          const ga = existingRow.group_assigned;
+          if (ga) {
+            const ag: any = await this.db.findById('activity_groups', Number(ga));
+            if (!ag || !groupCategoryMatchesWednesdayActivity(String(ag.category || ''), newWa)) {
+              dbPayload.group_assigned = null;
+            }
+          }
+        }
+      }
+
       const updateResult = await this.db.update('registrations', Number(id), dbPayload);
       console.log(`[UPDATE] Database update result:`, updateResult);
       
