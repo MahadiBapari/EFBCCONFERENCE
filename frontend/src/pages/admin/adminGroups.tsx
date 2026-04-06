@@ -441,13 +441,21 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
                       <span className="member-count">{group.members.length}</span>
                     </h5>
                     <div className="group-actions">
-                      <button className="icon-btn" aria-label={`Rename ${group.name}`} onClick={() => handleStartRename(group)}>✏️</button>
                       <button
+                        type="button"
+                        className="icon-btn"
+                        aria-label={`Rename ${group.name}`}
+                        onClick={() => handleStartRename(group)}
+                      >
+                        <img src="/edit.png" alt="" className="admin-groups-action-img" width={20} height={20} />
+                      </button>
+                      <button
+                        type="button"
                         className="icon-btn"
                         aria-label={`Delete ${group.name}`}
                         onClick={() => handleDeleteGroupWithConfirm(group.id, group.name)}
                       >
-                        🗑️
+                        <img src="/bin.png" alt="" className="admin-groups-action-img" width={20} height={20} />
                       </button>
                     </div>
                   </div>

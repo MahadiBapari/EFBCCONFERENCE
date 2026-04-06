@@ -116,6 +116,21 @@
 .group-actions {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
+}
+
+.group-actions .icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+}
+
+.group-actions .admin-groups-action-img {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
 }
 
 .group-header-editing {
