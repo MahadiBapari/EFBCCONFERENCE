@@ -390,17 +390,25 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
                             (Limit: {activity.seatLimit})
                           </span>
                         )}
-                        <button 
-                          type="button" 
-                          className="activity-edit" 
+                        <button
+                          type="button"
+                          className="activity-edit"
                           onClick={() => startEditActivity(i)}
                           disabled={isSubmitting}
-                          style={{ marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9em' }}
                           title="Edit activity"
+                          aria-label={`Edit activity ${activity.name}`}
                         >
-                          ✏️
+                          <img src="/edit.png" alt="" className="activity-action-img" width={18} height={18} />
                         </button>
-                        <button type="button" className="activity-remove" onClick={() => handleRemoveActivityClick(activity.name)} disabled={isSubmitting}>×</button>
+                        <button
+                          type="button"
+                          className="activity-remove"
+                          onClick={() => handleRemoveActivityClick(activity.name)}
+                          disabled={isSubmitting}
+                          aria-label={`Remove activity ${activity.name}`}
+                        >
+                          <img src="/bin.png" alt="" className="activity-action-img" width={18} height={18} />
+                        </button>
                       </span>
                     ))}
                   </div>

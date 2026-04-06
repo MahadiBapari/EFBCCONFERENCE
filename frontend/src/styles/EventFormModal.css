@@ -446,17 +446,48 @@ select {
   min-height: 44px;
 }
 
+.activity-edit {
+  margin-left: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.125rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.activity-edit:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.activity-edit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Black PNGs read as white on primary-colored tags */
+.activity-tag .activity-action-img {
+  display: block;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
 .activity-remove {
   background: none;
   border: none;
   color: white;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  padding: 0;
-  width: 16px;
-  height: 16px;
-  display: flex;
+  padding: 0.125rem;
+  width: auto;
+  height: auto;
+  min-width: 28px;
+  min-height: 28px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
