@@ -578,9 +578,10 @@ useEffect(() => {
     try {
       await groupsApi.remove(groupId);
       setGroups(prev => prev.filter(g => g.id !== groupId));
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to delete group', e);
-      alert('Failed to delete group. Please try again.');
+      const msg = e?.response?.data?.error || 'Failed to delete group. Please try again.';
+      alert(msg);
     }
   };
 

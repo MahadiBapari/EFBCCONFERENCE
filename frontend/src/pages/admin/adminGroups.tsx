@@ -32,6 +32,30 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
   const [draggedUnassignedId, setDraggedUnassignedId] = useState<number | null>(null);
   const [unassignedSearchQuery, setUnassignedSearchQuery] = useState("");
 
+  const normalizeMembers = (members: unknown): number[] => {
+    if (Array.isArray(members)) {
+      return members
+        .map((id) => Number(id))
+        .filter((id) => Number.isFinite(id));
+    }
+    if (typeof members === 'string' && members.trim()) {
+      try {
+        const parsed = JSON.parse(members);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((id) => Number(id))
+            .filter((id) => Number.isFinite(id));
+        }
+      } catch {
+        // no-op: fall through to empty array
+      }
+    }
+    return [];
+  };
+
+  const membersOf = (group: Pick<Group, 'members'> | undefined | null): number[] =>
+    normalizeMembers(group?.members);
+
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -143,19 +167,20 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     if (!groupId) return;
     const idsToPersist = new Set<number>([groupId]);
     groups.forEach((g) => {
-      if (g.category === activeTab && g.id !== groupId && g.members.includes(regId) && g.id != null) {
+      if (g.category === activeTab && g.id !== groupId && membersOf(g).includes(regId) && g.id != null) {
         idsToPersist.add(g.id);
       }
     });
     const updated = groups.map(group => {
+      const currentMembers = membersOf(group);
       if (group.id === groupId) {
-        if (group.members.includes(regId)) return group;
-        return { ...group, members: [...group.members, regId] };
+        if (currentMembers.includes(regId)) return { ...group, members: currentMembers };
+        return { ...group, members: [...currentMembers, regId] };
       }
       if (group.category === activeTab) {
-        return { ...group, members: group.members.filter(m => m !== regId) };
+        return { ...group, members: currentMembers.filter(m => m !== regId) };
       }
-      return group;
+      return { ...group, members: currentMembers };
     });
     setGroups(updated);
     void Promise.all(
@@ -173,9 +198,9 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
 
     const updated = groups.map(group => {
       if (group.id === groupId) {
-        return { ...group, members: group.members.filter(m => m !== memberId) };
+        return { ...group, members: membersOf(group).filter(m => m !== memberId) };
       }
-      return group;
+      return { ...group, members: membersOf(group) };
     });
     setGroups(updated);
     const changed = updated.find(g => g.id === groupId);
@@ -187,13 +212,14 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
   const handleMoveMember = (memberId: number, sourceGroupId: number, targetGroupId: number) => {
     if (!targetGroupId || sourceGroupId === targetGroupId) return;
     const updated = groups.map(group => {
+      const currentMembers = membersOf(group);
       if (group.id === sourceGroupId) {
-        return { ...group, members: group.members.filter(m => m !== memberId) };
+        return { ...group, members: currentMembers.filter(m => m !== memberId) };
       }
       if (group.id === targetGroupId) {
-        return { ...group, members: [...group.members, memberId] };
+        return { ...group, members: [...currentMembers, memberId] };
       }
-      return group;
+      return { ...group, members: currentMembers };
     });
     setGroups(updated);
     const source = updated.find((g) => g.id === sourceGroupId);
@@ -217,12 +243,12 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
 
     const updated = groups.map(group => {
       if (group.id === targetGroupId) {
-        const membersCopy = [...group.members];
+        const membersCopy = [...membersOf(group)];
         const [removedItem] = membersCopy.splice(sourceIndex, 1);
         membersCopy.splice(targetIndex, 0, removedItem);
         return { ...group, members: membersCopy };
       }
-      return group;
+      return { ...group, members: membersOf(group) };
     });
     setGroups(updated);
     const changed = updated.find(g => g.id === targetGroupId);
@@ -281,14 +307,18 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     : groups;
   
   const categoryRegistrations = activeTab ? eventFilteredRegistrations.filter(r => r.category === activeTab) : [];
-  const categoryGroups = activeTab ? eventFilteredGroups.filter(g => g.category === activeTab) : [];
-  const unassigned = categoryRegistrations.filter(r => !categoryGroups.some(g => g.members.includes(r.id)));
+  const categoryGroups = activeTab
+    ? eventFilteredGroups
+        .filter(g => g.category === activeTab)
+        .map(g => ({ ...g, members: membersOf(g) }))
+    : [];
+  const unassigned = categoryRegistrations.filter(r => !categoryGroups.some(g => membersOf(g).includes(r.id)));
   
   // Filter unassigned based on search query
   const filteredUnassigned = unassigned.filter(reg => {
     if (!unassignedSearchQuery.trim()) return true;
     const query = unassignedSearchQuery.toLowerCase();
-    return reg.name.toLowerCase().includes(query);
+    return String(reg.name || '').toLowerCase().includes(query);
   });
 
   const handleExportActivityXlsx = () => {
@@ -300,7 +330,7 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     const downloadedAt = exportedAt.toLocaleString();
 
     const rows = categoryGroups.flatMap(group =>
-      group.members
+      membersOf(group)
         .map((memberId, index) => ({ reg: registrations.find(r => r.id === memberId), index }))
         .filter((entry): entry is { reg: Registration; index: number } => !!entry.reg)
         .map(({ reg, index }) => {
@@ -461,7 +491,7 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
                   </div>
                 )}
                 <ul className="group-member-list">
-                  {group.members.map((memberId, index) => {
+                  {membersOf(group).map((memberId, index) => {
                     const reg = registrations.find(r => r.id === memberId);
                     const isDragging = draggedItem?.groupId === group.id && draggedItem?.index === index;
                     const otherGroups = categoryGroups.filter(g => g.id !== group.id);
@@ -502,7 +532,7 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
                     );
                   })}
                 </ul>
-                {group.members.length === 0 && <p className="empty-group-text">This group is empty.</p>}
+                {membersOf(group).length === 0 && <p className="empty-group-text">This group is empty.</p>}
               </div>
             ))}
           </div>
