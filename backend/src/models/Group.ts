@@ -9,6 +9,27 @@ export class Group {
   public createdAt?: string;
   public updatedAt?: string;
 
+  static normalizeMembersInput(raw: unknown): number[] {
+    let source: unknown = raw;
+    for (let i = 0; i < 5; i++) {
+      if (typeof source === 'string') {
+        const text = source.trim();
+        if (!text) return [];
+        try {
+          source = JSON.parse(text);
+        } catch {
+          return [];
+        }
+      } else {
+        break;
+      }
+    }
+    if (!Array.isArray(source)) return [];
+    return source
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id));
+  }
+
   private formatDateForDB(dateValue: string | Date | undefined): string {
     if (!dateValue) {
       return new Date().toISOString().slice(0, 19).replace('T', ' ');
@@ -25,7 +46,7 @@ export class Group {
     this.eventId = data.eventId || 1;
     this.category = data.category || 'Networking';
     this.name = data.name || '';
-    this.members = data.members || [];
+    this.members = Group.normalizeMembersInput(data.members ?? []);
     this.createdAt = data.createdAt || new Date().toISOString();
     this.updatedAt = data.updatedAt || new Date().toISOString();
   }
@@ -57,29 +78,12 @@ export class Group {
 
   // Create from database row
   static fromDatabase(row: any): Group {
-    const parseMembers = (raw: unknown): number[] => {
-      let source: unknown = raw;
-      if (typeof source === 'string') {
-        const text = source.trim();
-        if (!text) return [];
-        try {
-          source = JSON.parse(text);
-        } catch {
-          return [];
-        }
-      }
-      if (!Array.isArray(source)) return [];
-      return source
-        .map((id) => Number(id))
-        .filter((id) => Number.isFinite(id));
-    };
-
     return new Group({
       id: row.id,
       eventId: row.eventId,
       category: row.category,
       name: row.name,
-      members: parseMembers(row.members),
+      members: Group.normalizeMembersInput(row.members),
       createdAt: row.created_at,
       updatedAt: row.updated_at
     });

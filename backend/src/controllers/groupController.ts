@@ -173,8 +173,17 @@ export class GroupController {
       }
 
       const oldMemberIds = oldGroup.members || [];
-      const group = new Group({ ...existingGroup, ...updateData });
-      group.updatedAt = new Date().toISOString();
+      const base = oldGroup.toJSON();
+      const group = new Group({
+        ...base,
+        ...(updateData.eventId !== undefined ? { eventId: updateData.eventId } : {}),
+        ...(updateData.category !== undefined ? { category: updateData.category } : {}),
+        ...(updateData.name !== undefined && updateData.name !== null
+          ? { name: String(updateData.name).trim() }
+          : {}),
+        ...(updateData.members !== undefined ? { members: updateData.members } : {}),
+        updatedAt: new Date().toISOString(),
+      });
       const newMemberIds = group.members || [];
       
       await this.db.update('activity_groups', Number(id), group.toDatabase());
