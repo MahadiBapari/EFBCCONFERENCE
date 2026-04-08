@@ -714,7 +714,10 @@ export class RegistrationController {
         paid: 'paid',
         squarePaymentId: 'square_payment_id',
         paidAt: 'paid_at',
+        spousePaymentId: 'spouse_payment_id',
         spousePaidAt: 'spouse_paid_at',
+        kidsPaymentId: 'kids_payment_id',
+        kidsPaidAt: 'kids_paid_at',
         discountCode: 'discount_code',
         discountAmount: 'discount_amount',
         kids: 'kids_data',
@@ -761,6 +764,14 @@ export class RegistrationController {
             } else {
               value = null;
             }
+          } else if (camelKey === 'kidsPaymentId') {
+            if (Array.isArray(value)) {
+              value = value.length > 0 ? JSON.stringify(value) : null;
+            } else if (value !== null && value !== undefined && String(value).trim() !== '') {
+              value = JSON.stringify([String(value).trim()]);
+            } else {
+              value = null;
+            }
           } else if (camelKey === 'kidsTotalPrice') {
             value = value !== null && value !== undefined ? Number(value) : null;
           } else if (camelKey === 'paidAmount') {
@@ -769,7 +780,7 @@ export class RegistrationController {
             value = value === true || value === 'Yes' || value === 'yes' || value === 1 ? 1 : 0;
           } else if (camelKey === 'isFirstTimeAttending' || camelKey === 'spouseBreakfast' || camelKey === 'paid') {
             value = value === true || value === 1 ? 1 : 0;
-          } else if (camelKey === 'paidAt' || camelKey === 'spousePaidAt') {
+          } else if (camelKey === 'paidAt' || camelKey === 'spousePaidAt' || camelKey === 'kidsPaidAt') {
             // Convert ISO date string to MySQL DATETIME format
             value = value ? new Date(value).toISOString().slice(0, 19).replace('T', ' ') : null;
           } else if (value === null || value === undefined) {
