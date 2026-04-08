@@ -1119,6 +1119,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       if (payload?.status && payload.status !== 'COMPLETED') {
         throw new Error(`Payment status is ${payload.status}. Payment may not have been completed successfully.`);
       }
+      const chargedAmountCents = Number(payload?.chargedAmountCents ?? Math.round(baseAmountCents * 1.035));
+      const chargedAmount = Number.isFinite(chargedAmountCents) ? chargedAmountCents / 100 : spousePrice * 1.035;
+      const existingPaidAmount = Number((registration as any)?.paidAmount || 0);
       
       // Update registration with spouse payment ID
       const composedAddress = [
@@ -1165,6 +1168,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         category: formData.wednesdayActivity || 'Networking',
         // Preserve existing payment info
         paid: (registration as any)?.paid,
+        paidAmount: existingPaidAmount + chargedAmount,
         squarePaymentId: (registration as any)?.squarePaymentId,
         // Add spouse payment ID and timestamp
         spousePaymentId: payload.paymentId,
@@ -1332,6 +1336,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       if (payload?.status && payload.status !== 'COMPLETED') {
         throw new Error(`Payment status is ${payload.status}. Payment may not have been completed successfully.`);
       }
+      const chargedAmountCents = Number(payload?.chargedAmountCents ?? Math.round(baseAmountCents * 1.035));
+      const chargedAmount = Number.isFinite(chargedAmountCents) ? chargedAmountCents / 100 : kidsPrice * 1.035;
+      const existingPaidAmount = Number((registration as any)?.paidAmount || 0);
       
       // Update registration with kids payment ID
       const composedAddress = [
@@ -1378,6 +1385,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         category: formData.wednesdayActivity || 'Networking',
         // Preserve existing payment info
         paid: (registration as any)?.paid,
+        paidAmount: existingPaidAmount + chargedAmount,
         squarePaymentId: (registration as any)?.squarePaymentId,
         spousePaymentId: (registration as any)?.spousePaymentId,
         spousePaidAt: (registration as any)?.spousePaidAt,
@@ -1581,6 +1589,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       if (payload?.status && payload.status !== 'COMPLETED') {
         throw new Error(`Payment status is ${payload.status}. Payment may not have been completed successfully.`);
       }
+      const chargedAmountCents = Number(payload?.chargedAmountCents ?? Math.round(baseAmountCents * 1.035));
+      const chargedAmount = Number.isFinite(chargedAmountCents) ? chargedAmountCents / 100 : combinedPrice * 1.035;
+      const existingPaidAmount = Number((registration as any)?.paidAmount || 0);
       
       // Update registration with combined payment ID (same ID for both spouse and kids)
       const composedAddress = [
@@ -1629,6 +1640,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         category: formData.wednesdayActivity || 'Networking',
         // Preserve existing payment info
         paid: (registration as any)?.paid,
+        paidAmount: existingPaidAmount + chargedAmount,
         squarePaymentId: (registration as any)?.squarePaymentId,
         // Append new payment ID to existing ones for combined payment (handle both string and array)
         spousePaymentId: (() => {
@@ -1916,6 +1928,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       if (payload?.status && payload.status !== 'COMPLETED') {
         throw new Error(`Payment status is ${payload.status}. Payment may not have been completed successfully.`);
       }
+      const chargedAmountCents = Number(payload?.chargedAmountCents ?? Math.round(baseAmountCents * 1.035));
+      const chargedAmount = Number.isFinite(chargedAmountCents) ? chargedAmountCents / 100 : finalTotal * 1.035;
       
       // Determine clubRentals value based on user selection
       const isGolf = (formData.wednesdayActivity || '').toLowerCase().includes('golf');
@@ -1954,6 +1968,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         massageTimeSlot: massageTimeSlotValue,
         pickleballEquipment: pickleballEquipmentValue,
         paid: true,
+        paidAmount: chargedAmount,
         squarePaymentId: payload.paymentId,
         address: composedAddress, // Legacy field for backward compatibility
         addressStreet: addrStreet.trim(),

@@ -709,6 +709,7 @@ export class RegistrationController {
         childLastName: 'child_last_name',
         childLunchTicket: 'child_lunch_ticket',
         totalPrice: 'total_price',
+        paidAmount: 'paid_amount',
         paymentMethod: 'payment_method',
         paid: 'paid',
         squarePaymentId: 'square_payment_id',
@@ -761,6 +762,8 @@ export class RegistrationController {
               value = null;
             }
           } else if (camelKey === 'kidsTotalPrice') {
+            value = value !== null && value !== undefined ? Number(value) : null;
+          } else if (camelKey === 'paidAmount') {
             value = value !== null && value !== undefined ? Number(value) : null;
           } else if (camelKey === 'spouseDinnerTicket') {
             value = value === true || value === 'Yes' || value === 'yes' || value === 1 ? 1 : 0;
@@ -1033,7 +1036,9 @@ export class RegistrationController {
         const totalPrice = Number(existingRow.total_price || 0);
         const previousPaidAmount = Number(existingRow.paid_amount || 0);
         const pending = Number(existingRow.pending_payment_amount || 0);
-        const newPaidAmount = previousPaidAmount + pending;
+        const clientPaidAmount = Number(updateDataObj.paidAmount);
+        const hasClientPaidAmount = Number.isFinite(clientPaidAmount) && clientPaidAmount >= 0;
+        const newPaidAmount = hasClientPaidAmount ? clientPaidAmount : (previousPaidAmount + pending);
 
         // Preserve the existing total_price (don't let frontend overwrite it with pending amount)
         // Remove total_price from dbPayload if it was set, to preserve the correct full amount
