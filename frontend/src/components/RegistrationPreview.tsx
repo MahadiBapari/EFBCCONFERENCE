@@ -56,6 +56,15 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
     return res;
   };
 
+  const getFrontendPaymentAmount = (reg: Registration): number => {
+    const baseAmount = Number((reg as any).totalPrice ?? (reg as any).total_price ?? 0);
+    const paymentMethod = String((reg as any).paymentMethod ?? (reg as any).payment_method ?? '');
+    if (paymentMethod === 'Card' && baseAmount > 0) {
+      return baseAmount + (baseAmount * 0.035);
+    }
+    return baseAmount;
+  };
+
   const downloadPDF = async () => {
     if (!registration || !event) return;
 
@@ -399,9 +408,9 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setFont('helvetica', 'bold');
-    doc.text('Total Price:', margin, yPos);
+    doc.text('Total Payment Amount:', margin, yPos);
     doc.setFont('helvetica', 'normal');
-    doc.text(`$${registration.totalPrice || '0.00'}`, margin + 60, yPos);
+    doc.text(`$${getFrontendPaymentAmount(registration).toFixed(2)}`, margin + 60, yPos);
     yPos += 6;
     doc.setFont('helvetica', 'bold');
     doc.text('Payment Method:', margin, yPos);
@@ -688,7 +697,10 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
 
         <div className="preview-section">
           <h3 className="section-title">Payment</h3>
-          <Line label="Total Price" value={`$${registration.totalPrice || '0.00'}`} />
+          <Line
+            label="Total Payment Amount"
+            value={`$${getFrontendPaymentAmount(registration).toFixed(2)}`}
+          />
           <Line label="Payment Method" value={registration.paymentMethod} />
           {typeof (registration as any).paid !== 'undefined' && (
             <Line label="Paid" value={(registration as any).paid ? 'Yes' : 'No'} />

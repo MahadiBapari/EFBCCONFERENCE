@@ -3752,7 +3752,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                         </div>
                       )}
                       <div className="payment-total">
-                        <span>Total Payment Amount:</span>
+                        <span>Total {isCard ? 'Charged' : 'Due'}:</span>
                         <span>${totalWithFee.toFixed(2)} USD</span>
                       </div>
                       {isCard && (
@@ -3771,7 +3771,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                         </div>
                       )}
                       <div className="payment-total">
-                        <span>Total Payment Amount:</span>
+                        <span>Total {isCard ? 'Charged' : 'Due'}:</span>
                         <span>${totalWithFee.toFixed(2)} USD</span>
                       </div>
                       {isCard && (
