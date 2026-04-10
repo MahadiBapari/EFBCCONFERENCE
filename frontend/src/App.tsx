@@ -189,6 +189,7 @@ useEffect(() => {
   };
 
   init();
+// eslint-disable-next-line react-hooks/exhaustive-deps
 }, []);
 
   // Load registrations from backend (persistence)
