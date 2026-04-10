@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { DiscountCodeController } from '../controllers/discountCodeController';
 import { DatabaseService } from '../services/databaseService';
+import { requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -13,7 +14,7 @@ const getController = (): DiscountCodeController => {
   return new DiscountCodeController(db);
 };
 
-router.get('/events/:eventId', (req: Request, res: Response) => {
+router.get('/events/:eventId', requireAdmin, (req: Request, res: Response) => {
   try {
     getController().getDiscountCodesByEvent(req, res);
   } catch (error: any) {
@@ -21,7 +22,7 @@ router.get('/events/:eventId', (req: Request, res: Response) => {
   }
 });
 
-router.post('/', (req: Request, res: Response) => {
+router.post('/', requireAdmin, (req: Request, res: Response) => {
   try {
     getController().createDiscountCode(req, res);
   } catch (error: any) {
@@ -29,7 +30,7 @@ router.post('/', (req: Request, res: Response) => {
   }
 });
 
-router.put('/:id', (req: Request, res: Response) => {
+router.put('/:id', requireAdmin, (req: Request, res: Response) => {
   try {
     getController().updateDiscountCode(req, res);
   } catch (error: any) {
@@ -37,7 +38,7 @@ router.put('/:id', (req: Request, res: Response) => {
   }
 });
 
-router.delete('/:id', (req: Request, res: Response) => {
+router.delete('/:id', requireAdmin, (req: Request, res: Response) => {
   try {
     getController().deleteDiscountCode(req, res);
   } catch (error: any) {

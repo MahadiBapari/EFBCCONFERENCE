@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { RegistrationController } from '../controllers/registrationController';
 import { DatabaseService } from '../services/databaseService';
+import { requireAuth, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -35,12 +36,12 @@ const ensureController = async (req: any, res: any, next: any) => {
 router.use(ensureController);
 
 // Routes
-router.get('/', async (req: any, res: any) => {
+router.get('/', requireAdmin, async (req: any, res: any) => {
   await req.registrationController.getRegistrations(req, res);
 });
 
 // Current user's registrations (auth required) — must be before /:id
-router.get('/mine', async (req: any, res: any) => {
+router.get('/mine', requireAuth, async (req: any, res: any) => {
   await req.registrationController.getMyRegistrations(req, res);
 });
 
@@ -53,16 +54,16 @@ router.get('/event/:eventId', async (req: any, res: any) => {
 });
 
 // Resend confirmation email route (must come before /:id to avoid route conflicts)
-router.post('/:id/resend-confirmation', async (req: any, res: any) => {
+router.post('/:id/resend-confirmation', requireAdmin, async (req: any, res: any) => {
   await req.registrationController.resendConfirmationEmail(req, res);
 });
 
 // Admin: promote a waitlisted registration to confirmed
-router.post('/:id/promote-waitlist', async (req: any, res: any) => {
+router.post('/:id/promote-waitlist', requireAdmin, async (req: any, res: any) => {
   await req.registrationController.promoteWaitlistedRegistration(req, res);
 });
 
-router.get('/:id', async (req: any, res: any) => {
+router.get('/:id', requireAdmin, async (req: any, res: any) => {
   await req.registrationController.getRegistrationById(req, res);
 });
 
@@ -70,16 +71,16 @@ router.post('/', async (req: any, res: any) => {
   await req.registrationController.createRegistration(req, res);
 });
 
-router.put('/:id', async (req: any, res: any) => {
+router.put('/:id', requireAdmin, async (req: any, res: any) => {
   await req.registrationController.updateRegistration(req, res);
 });
 
 // Bulk delete route
-router.post('/bulk-delete', async (req: any, res: any) => {
+router.post('/bulk-delete', requireAdmin, async (req: any, res: any) => {
   await req.registrationController.bulkDeleteRegistrations(req, res);
 });
 
-router.delete('/:id', async (req: any, res: any) => {
+router.delete('/:id', requireAdmin, async (req: any, res: any) => {
   await req.registrationController.deleteRegistration(req, res);
 });
 

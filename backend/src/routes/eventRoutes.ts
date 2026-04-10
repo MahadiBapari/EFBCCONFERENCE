@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { EventController } from '../controllers/eventController';
 import { DatabaseService } from '../services/databaseService';
+import { requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -43,15 +44,15 @@ router.get('/:id', async (req: any, res: any) => {
   await req.eventController.getEventById(req, res);
 });
 
-router.post('/', async (req: any, res: any) => {
+router.post('/', requireAdmin, async (req: any, res: any) => {
   await req.eventController.createEvent(req, res);
 });
 
-router.put('/:id', async (req: any, res: any) => {
+router.put('/:id', requireAdmin, async (req: any, res: any) => {
   await req.eventController.updateEvent(req, res);
 });
 
-router.delete('/:id', async (req: any, res: any) => {
+router.delete('/:id', requireAdmin, async (req: any, res: any) => {
   await req.eventController.deleteEvent(req, res);
 });
 

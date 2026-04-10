@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { GroupController } from '../controllers/groupController';
 import { DatabaseService } from '../services/databaseService';
+import { requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -43,23 +44,23 @@ router.get('/:id', async (req: any, res: any) => {
   await req.groupController.getGroupById(req, res);
 });
 
-router.post('/', async (req: any, res: any) => {
+router.post('/', requireAdmin, async (req: any, res: any) => {
   await req.groupController.createGroup(req, res);
 });
 
-router.put('/:id', async (req: any, res: any) => {
+router.put('/:id', requireAdmin, async (req: any, res: any) => {
   await req.groupController.updateGroup(req, res);
 });
 
-router.delete('/:id', async (req: any, res: any) => {
+router.delete('/:id', requireAdmin, async (req: any, res: any) => {
   await req.groupController.deleteGroup(req, res);
 });
 
-router.post('/:id/members', async (req: any, res: any) => {
+router.post('/:id/members', requireAdmin, async (req: any, res: any) => {
   await req.groupController.addMemberToGroup(req, res);
 });
 
-router.delete('/:id/members', async (req: any, res: any) => {
+router.delete('/:id/members', requireAdmin, async (req: any, res: any) => {
   await req.groupController.removeMemberFromGroup(req, res);
 });
 

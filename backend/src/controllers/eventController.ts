@@ -18,14 +18,16 @@ export class EventController {
 
       let conditions: Record<string, any> = {};
       if (search) {
-        // For search, we'll use LIKE in the query
-        const searchCondition = `name LIKE '%${search}%' OR location LIKE '%${search}%'`;
+        const searchCondition = `(name LIKE ? OR location LIKE ?)`;
+        const searchValue = `%${search}%`;
+        const searchParams = [searchValue, searchValue];
         const events = await this.db.query(
           `SELECT * FROM events WHERE ${searchCondition} LIMIT ? OFFSET ?`,
-          [Number(limit), offset]
+          [...searchParams, Number(limit), offset]
         );
         const total = await this.db.query(
-          `SELECT COUNT(*) as count FROM events WHERE ${searchCondition}`
+          `SELECT COUNT(*) as count FROM events WHERE ${searchCondition}`,
+          searchParams
         );
 
         const response: ApiResponse = {

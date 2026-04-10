@@ -207,8 +207,10 @@ export class RegistrationController {
       let total;
 
       if (search) {
-        const searchCondition = `first_name LIKE '%${search}%' OR last_name LIKE '%${search}%' OR email LIKE '%${search}%' OR organization LIKE '%${search}%'`;
+        const searchCondition = `(first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR organization LIKE ?)`;
+        const searchValue = `%${search}%`;
         let whereClause = searchCondition;
+        const searchParams = [searchValue, searchValue, searchValue, searchValue];
         
         if (Object.keys(conditions).length > 0) {
           const conditionClause = Object.keys(conditions).map(key => `${key} = ?`).join(' AND ');
@@ -217,12 +219,12 @@ export class RegistrationController {
 
         registrations = await this.db.query(
           `SELECT * FROM registrations WHERE ${whereClause} LIMIT ? OFFSET ?`,
-          [...Object.values(conditions), Number(limit), offset]
+          [...Object.values(conditions), ...searchParams, Number(limit), offset]
         );
         
         total = await this.db.query(
           `SELECT COUNT(*) as count FROM registrations WHERE ${whereClause}`,
-          Object.values(conditions)
+          [...Object.values(conditions), ...searchParams]
         );
       } else {
         registrations = await this.db.findAll('registrations', conditions, Number(limit), offset);

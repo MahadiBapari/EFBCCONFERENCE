@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/userController';
 import { DatabaseService } from '../services/databaseService';
+import { requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -43,35 +44,32 @@ router.post('/register', async (req: any, res: any) => {
   await req.userController.register(req, res);
 });
 
-// User management routes
-router.get('/', async (req: any, res: any) => {
+// User management routes (admin-only)
+router.get('/', requireAdmin, async (req: any, res: any) => {
   await req.userController.getUsers(req, res);
 });
 
-router.get('/:id', async (req: any, res: any) => {
+router.get('/:id', requireAdmin, async (req: any, res: any) => {
   await req.userController.getUserById(req, res);
 });
 
-// Create user (generic)
-router.post('/', async (req: any, res: any) => {
+router.post('/', requireAdmin, async (req: any, res: any) => {
   await req.userController.createUser(req, res);
 });
 
-// Admin creates user on behalf of someone (no verification required)
-router.post('/admin-create', async (req: any, res: any) => {
+router.post('/admin-create', requireAdmin, async (req: any, res: any) => {
   await req.userController.createUserByAdmin(req, res);
 });
 
-router.put('/:id', async (req: any, res: any) => {
+router.put('/:id', requireAdmin, async (req: any, res: any) => {
   await req.userController.updateUser(req, res);
 });
 
-router.delete('/:id', async (req: any, res: any) => {
+router.delete('/:id', requireAdmin, async (req: any, res: any) => {
   await req.userController.deleteUser(req, res);
 });
 
-// Verify user email (admin action)
-router.put('/:id/verify', async (req: any, res: any) => {
+router.put('/:id/verify', requireAdmin, async (req: any, res: any) => {
   await req.userController.verifyUser(req, res);
 });
 

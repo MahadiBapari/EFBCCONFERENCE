@@ -24,7 +24,9 @@ export class GroupController {
       let total;
 
       if (search) {
-        const searchCondition = `name LIKE '%${search}%'`;
+        const searchCondition = `(name LIKE ?)`;
+        const searchValue = `%${search}%`;
+        const searchParams = [searchValue];
         let whereClause = searchCondition;
         
         if (Object.keys(conditions).length > 0) {
@@ -34,12 +36,12 @@ export class GroupController {
 
         groups = await this.db.query(
           `SELECT * FROM \`activity_groups\` WHERE ${whereClause} LIMIT ? OFFSET ?`,
-          [...Object.values(conditions), Number(limit), offset]
+          [...Object.values(conditions), ...searchParams, Number(limit), offset]
         );
         
         total = await this.db.query(
           `SELECT COUNT(*) as count FROM \`activity_groups\` WHERE ${whereClause}`,
-          Object.values(conditions)
+          [...Object.values(conditions), ...searchParams]
         );
       } else {
         groups = await this.db.findAll('activity_groups', conditions, Number(limit), offset);

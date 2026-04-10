@@ -56,10 +56,22 @@ POST   /api/auth/resend-verification
        Response: { success: boolean, message: string }
        Auth: None (public)
 
+GET    /api/auth/resend-verification
+       Description: Check verification status for resend page
+       Query: ?email=string
+       Response: { success: boolean, email: string | null, verified?: boolean, canResend?: boolean }
+       Auth: None (public)
+
 
 ================================================================================
 USER MANAGEMENT ENDPOINTS (/api/users)
 ================================================================================
+
+POST   /api/users/login
+       Description: User login (legacy; prefer /api/auth/login which returns JWT)
+       Body: { email: string, password: string }
+       Response: { success: boolean, data: User }
+       Auth: None (public)
 
 POST   /api/users/register
        Description: Register a new user account
@@ -101,6 +113,11 @@ DELETE /api/users/:id
        Response: { success: boolean, message: string }
        Auth: Required (Admin only)
 
+PUT    /api/users/:id/verify
+       Description: Manually verify a user's email (admin action)
+       Response: { success: boolean, data: User }
+       Auth: Required (Admin only)
+
 
 ================================================================================
 EVENT MANAGEMENT ENDPOINTS (/api/events)
@@ -108,7 +125,8 @@ EVENT MANAGEMENT ENDPOINTS (/api/events)
 
 GET    /api/events
        Description: Get list of all events
-       Response: { success: boolean, data: Event[] }
+       Query: ?page=number&limit=number&search=string
+       Response: { success: boolean, data: Event[], pagination: PaginationInfo }
        Auth: Required
 
 GET    /api/events/:id
@@ -118,13 +136,13 @@ GET    /api/events/:id
 
 POST   /api/events
        Description: Create a new event
-       Body: { name: string, date: string, startDate?: string, activities?: JSON, location?: string, description?: string[], pricingTiers?: PricingTier[] }
+       Body: { name: string, date: string, startDate?: string, activities?: JSON, location?: string, description?: string[], registrationPricing?: PricingTier[], spousePricing?: PricingTier[], kidsPricing?: PricingTier[], breakfastPrice?: number, breakfastEndDate?: string, childLunchPrice?: number }
        Response: { success: boolean, data: Event }
        Auth: Required (Admin only)
 
 PUT    /api/events/:id
        Description: Update an existing event
-       Body: { name?: string, date?: string, startDate?: string, activities?: JSON, location?: string, description?: string[], pricingTiers?: PricingTier[] }
+       Body: { name?: string, date?: string, startDate?: string, activities?: JSON, location?: string, description?: string[], registrationPricing?: PricingTier[], spousePricing?: PricingTier[], kidsPricing?: PricingTier[], breakfastPrice?: number, breakfastEndDate?: string, childLunchPrice?: number }
        Response: { success: boolean, data: Event }
        Auth: Required (Admin only)
 
@@ -140,12 +158,17 @@ REGISTRATION ENDPOINTS (/api/registrations)
 
 GET    /api/registrations
        Description: Get list of registrations (filtered by user if not admin)
-       Query: ?eventId=number&userId=number&page=number&limit=number&search=string
+       Query: ?eventId=number&userId=number&page=number&limit=number&search=string&category=string
        Response: { success: boolean, data: Registration[], pagination?: PaginationInfo }
        Auth: Required
 
+GET    /api/registrations/mine
+       Description: Get current authenticated user's active (non-cancelled) registrations
+       Response: { success: boolean, data: Registration[] }
+       Auth: Required
+
 GET    /api/registrations/event/:eventId
-       Description: Get all registrations for a specific event by event ID (public endpoint)
+       Description: Get all registrations for a specific event by event ID
        Query: ?page=number&limit=number&search=string
        Response: { success: boolean, data: Registration[], pagination?: PaginationInfo }
        Auth: None (public)
@@ -173,9 +196,19 @@ DELETE /api/registrations/:id
        Response: { success: boolean, message: string }
        Auth: Required (Admin only)
 
-DELETE /api/registrations/bulk
+POST   /api/registrations/bulk-delete
        Description: Delete multiple registrations
        Body: { ids: number[] }
+       Response: { success: boolean, message: string }
+       Auth: Required (Admin only)
+
+POST   /api/registrations/:id/resend-confirmation
+       Description: Resend registration confirmation email to primary and secondary email
+       Response: { success: boolean, message: string }
+       Auth: Required
+
+POST   /api/registrations/:id/promote-waitlist
+       Description: Promote a waitlisted registration to confirmed (if seats available)
        Response: { success: boolean, message: string }
        Auth: Required (Admin only)
 
@@ -186,7 +219,7 @@ GROUP MANAGEMENT ENDPOINTS (/api/groups)
 
 GET    /api/groups
        Description: Get list of groups
-       Query: ?eventId=number&category=string&page=number&limit=number
+       Query: ?eventId=number&category=string&page=number&limit=number&search=string
        Response: { success: boolean, data: Group[] }
        Auth: Required
 
@@ -254,7 +287,7 @@ PUT    /api/cancel-requests/:id/reject
        Auth: Required (Admin only)
 
 PUT    /api/cancel-requests/:id/restore
-       Description: Restore a cancelled registration
+       Description: Restore a cancelled registration (only approved cancellations)
        Response: { success: boolean, message: string }
        Auth: Required (Admin only)
 
@@ -262,6 +295,11 @@ GET    /api/my-cancel-requests
        Description: Get current user's pending cancellation requests
        Response: { success: boolean, data: CancellationRequest[] }
        Auth: Required
+
+DELETE /api/cancel-requests/:id
+       Description: Delete a cancellation request record
+       Response: { success: boolean, message: string }
+       Auth: Required (Admin only)
 
 
 ================================================================================
@@ -276,16 +314,62 @@ POST   /api/payments/charge
          applyCardFee: boolean, 
          currency: string (default: 'USD'),
          nonce: string,
-         billingAddress?: Address,
-         buyerEmail?: string
+         billingAddress: {
+           addressLine1: string,
+           addressLine2?: string,
+           locality?: string,
+           administrativeDistrictLevel1?: string,
+           postalCode: string,
+           country?: string (default: 'US'),
+           firstName: string,
+           lastName: string
+         },
+         buyerEmail?: string,
+         buyerPhone?: string,
+         eventName?: string
        }
        Response: { success: boolean, paymentId: string, status: string, chargedAmountCents: number }
        Auth: Required
 
 
 ================================================================================
-EMAIL CUSTOMIZATION ENDPOINTS (/api/customization)
+DISCOUNT CODE ENDPOINTS (/api/discount-codes)
 ================================================================================
+
+GET    /api/discount-codes/events/:eventId
+       Description: Get all discount codes for a specific event
+       Response: { success: boolean, data: DiscountCode[] }
+       Auth: Required
+
+POST   /api/discount-codes
+       Description: Create a new discount code
+       Body: { code: string, eventId: number, discountType: 'percentage' | 'fixed', discountValue: number, expiryDate?: string, usageLimit?: number }
+       Response: { success: boolean, data: DiscountCode }
+       Auth: Required (Admin only)
+
+PUT    /api/discount-codes/:id
+       Description: Update a discount code
+       Body: { code?: string, eventId?: number, discountType?: 'percentage' | 'fixed', discountValue?: number, expiryDate?: string, usageLimit?: number }
+       Response: { success: boolean, data: DiscountCode }
+       Auth: Required (Admin only)
+
+DELETE /api/discount-codes/:id
+       Description: Delete a discount code
+       Response: { success: boolean, message: string }
+       Auth: Required (Admin only)
+
+POST   /api/discount-codes/validate
+       Description: Validate a discount code for an event
+       Body: { code: string, eventId: number }
+       Response: { success: boolean, data: { valid: boolean, discountCode?: DiscountCode } }
+       Auth: Required
+
+
+================================================================================
+CUSTOMIZATION ENDPOINTS (/api/customization)
+================================================================================
+
+--- Email Customization ---
 
 GET    /api/customization/email
        Description: Get email customization settings (header and footer text)
@@ -297,6 +381,88 @@ PUT    /api/customization/email
        Body: { headerText?: string, footerText?: string }
        Response: { success: boolean, data: { headerText: string, footerText: string } }
        Auth: Required (Admin only)
+
+--- Contact Customization ---
+
+GET    /api/customization/contact
+       Description: Get contact customization settings (admin view)
+       Response: { success: boolean, data: { contactEmail: string, contactPhone: string } }
+       Auth: Required (Admin only)
+
+PUT    /api/customization/contact
+       Description: Update contact customization settings
+       Body: { contactEmail?: string, contactPhone?: string }
+       Response: { success: boolean, data: { contactEmail: string, contactPhone: string } }
+       Auth: Required (Admin only)
+
+GET    /api/customization/contact/public
+       Description: Get contact info for public-facing support page
+       Response: { success: boolean, data: { contactEmail: string, contactPhone: string } }
+       Auth: None (public)
+
+--- FAQ Management ---
+
+GET    /api/customization/faq/public
+       Description: Get published FAQ list (ordered by display_order)
+       Response: { success: boolean, data: Faq[] }
+       Auth: None (public)
+
+GET    /api/customization/faq
+       Description: Get all FAQs (admin view, full rows)
+       Response: { success: boolean, data: Faq[] }
+       Auth: Required (Admin only)
+
+POST   /api/customization/faq
+       Description: Create a new FAQ entry
+       Body: { question: string, answer: string, displayOrder?: number }
+       Response: { success: boolean, data: Faq }
+       Auth: Required (Admin only)
+
+PUT    /api/customization/faq/:id
+       Description: Update a FAQ entry
+       Body: { question?: string, answer?: string, displayOrder?: number }
+       Response: { success: boolean, data: Faq }
+       Auth: Required (Admin only)
+
+DELETE /api/customization/faq/:id
+       Description: Delete a FAQ entry
+       Response: { success: boolean, message: string }
+       Auth: Required (Admin only)
+
+
+================================================================================
+PAIRING REQUEST ENDPOINTS (/api)
+================================================================================
+
+POST   /api/pairing-requests
+       Description: Submit a pairing/group request for a Wednesday activity
+       Body: { 
+         registrationId: number, 
+         partnerNames: string[] | string, 
+         boatPreference?: string, 
+         additionalNotes?: string 
+       }
+       Response: { success: boolean, message: string, data: { id: number } }
+       Auth: Required
+       Notes: Max partner names varies by activity (Golf: 3, Fishing: 4, default: 4).
+              Duplicate pending requests for the same registration are rejected.
+              An admin notification email is sent on submission.
+
+
+================================================================================
+UTILITY ENDPOINTS
+================================================================================
+
+GET    /api/health
+       Description: Health check (server status and database connectivity)
+       Response: { status: 'OK', message: string, timestamp: string, database: 'Connected' | 'Disconnected' }
+       Auth: None (public)
+
+GET    /api/demo/setup
+       Description: Seed demo data (admin user, regular user, demo event, demo groups)
+       Response: { success: boolean, message: string, data: { event: string, groups: number } }
+       Auth: None (public)
+       Warning: Should be disabled or guarded in production
 
 
 ================================================================================
@@ -312,7 +478,14 @@ AUTHENTICATION NOTES
   - POST /api/auth/reset-password
   - GET  /api/auth/verify-email
   - POST /api/auth/resend-verification
+  - GET  /api/auth/resend-verification
   - POST /api/users/register
+  - POST /api/users/login
+  - GET  /api/registrations/event/:eventId
+  - GET  /api/customization/contact/public
+  - GET  /api/customization/faq/public
+  - GET  /api/health
+  - GET  /api/demo/setup
 
 - Admin-only endpoints require role: 'admin' in the JWT token
 
@@ -349,6 +522,5 @@ COMMON QUERY PARAMETERS
 - status: Filter by status (for cancellations: 'pending', 'approved', 'rejected')
 - eventId: Filter by event ID
 - userId: Filter by user ID
-- category: Filter by category (for groups)
-
+- category: Filter by category (for groups and registrations)
 

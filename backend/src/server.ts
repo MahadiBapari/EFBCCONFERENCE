@@ -1,5 +1,7 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import connectDB from './config/database';
@@ -22,16 +24,40 @@ if ((process.env.NODE_ENV || '').toLowerCase() !== 'production') {
 dotenv.config();
 }
 
+// Fail fast if critical secrets are missing in production
+if ((process.env.NODE_ENV || '').toLowerCase() === 'production' && !process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is required in production');
+  process.exit(1);
+}
+
 // Express app
 const app: Application = express();
 
-// Middleware
+// Security headers
+app.use(helmet());
+
+// CORS
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
 }));
-app.use((express as any).json());
-app.use((express as any).urlencoded({ extended: true }));
+
+// Body parsers with size limits
+app.use((express as any).json({ limit: '1mb' }));
+app.use((express as any).urlencoded({ extended: true, limit: '1mb' }));
+
+// Rate limiting for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests, please try again later' },
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
+app.use('/api/users/login', authLimiter);
 
 // Routes
 app.use('/api/users', userRoutes);
@@ -1081,8 +1107,12 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// Demo data endpoint
+// Demo data endpoint — disabled in production
 app.get('/api/demo/setup', async (req: Request, res: Response): Promise<void> => {
+  if ((process.env.NODE_ENV || '').toLowerCase() === 'production') {
+    res.status(404).json({ success: false, error: 'Not found' });
+    return;
+  }
   try {
     if (!databaseService) {
       res.status(500).json({
