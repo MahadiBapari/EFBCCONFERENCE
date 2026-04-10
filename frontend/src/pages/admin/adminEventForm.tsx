@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Event, DiscountCode } from '../../types';
 import { normalizeActivities } from '../../utils/eventUtils';
 import { Modal } from '../../components/Modal';
+import apiClient from '../../services/apiClient';
 import '../../styles/EventFormModal.css';
 
 interface AdminEventFormProps {
@@ -86,10 +87,9 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
   
   const loadDiscountCodes = async (eventId: number) => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/discount-codes/events/${eventId}`);
-      const data = await res.json();
+      const data = await apiClient.get<DiscountCode[]>(`/discount-codes/events/${eventId}`);
       if (data.success) {
-        setDiscountCodes(data.data || []);
+        setDiscountCodes((data.data as DiscountCode[]) || []);
       }
     } catch (error) {
       console.error('Error loading discount codes:', error);
@@ -119,15 +119,9 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
         ? newDiscountCode.expiryDate
         : null;
       
-      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/discount-codes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      const data = await res.json();
+      const data = await apiClient.post<DiscountCode>('/discount-codes', payload);
       if (data.success) {
-        setDiscountCodes([...discountCodes, data.data]);
+        setDiscountCodes([...discountCodes, data.data as DiscountCode]);
         setNewDiscountCode({
           code: '',
           discountType: 'percentage',
@@ -148,11 +142,7 @@ export const AdminEventForm: React.FC<AdminEventFormProps> = ({ event, onCancel,
     if (!window.confirm('Are you sure you want to delete this discount code?')) return;
     
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/discount-codes/${id}`, {
-        method: 'DELETE'
-      });
-      
-      const data = await res.json();
+      const data = await apiClient.delete(`/discount-codes/${id}`);
       if (data.success) {
         setDiscountCodes(discountCodes.filter(dc => dc.id !== id));
       } else {

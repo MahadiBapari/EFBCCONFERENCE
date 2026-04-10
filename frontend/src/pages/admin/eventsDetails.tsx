@@ -96,10 +96,9 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
 
   const loadDiscountCodes = async (eventId: number) => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/discount-codes/events/${eventId}`);
-      const data = await res.json();
+      const data = await apiClient.get<DiscountCode[]>(`/discount-codes/events/${eventId}`);
       if (data.success) {
-        setDiscountCodes(data.data || []);
+        setDiscountCodes((data.data as DiscountCode[]) || []);
       } else {
         console.error('Failed to load discount codes:', data.error);
         setDiscountCodes([]);

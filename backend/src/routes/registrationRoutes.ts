@@ -71,7 +71,7 @@ router.post('/', async (req: any, res: any) => {
   await req.registrationController.createRegistration(req, res);
 });
 
-router.put('/:id', requireAdmin, async (req: any, res: any) => {
+router.put('/:id', requireAuth, async (req: any, res: any) => {
   await req.registrationController.updateRegistration(req, res);
 });
 

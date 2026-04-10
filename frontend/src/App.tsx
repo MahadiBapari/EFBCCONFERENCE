@@ -157,12 +157,14 @@ useEffect(() => {
     }
 
     const token = localStorage.getItem('token');
+    let detectedRole: string | null = null;
 
     try {
       if (token) {
         const res = await authApi.me();
         const me = (res as any).data || {};
         if (me.role) {
+          detectedRole = me.role;
           setRole(me.role);
           setUser({
             id: me.id || 999,
@@ -174,12 +176,9 @@ useEffect(() => {
         } else {
           localStorage.removeItem('token');
         }
-      } else {
-        // no token, stay on auth screens
       }
 
-      // Load shared data regardless of auth so admin/user see latest lists after login
-      await Promise.all([loadEventsFromApi(), loadRegistrationsFromApi(), loadGroupsFromApi()]);
+      await Promise.all([loadEventsFromApi(), loadRegistrationsFromApi(detectedRole || undefined), loadGroupsFromApi()]);
     } catch (e) {
       if (token) {
         localStorage.removeItem('token');
@@ -193,12 +192,13 @@ useEffect(() => {
 }, []);
 
   // Load registrations from backend (persistence)
-  const loadRegistrationsFromApi = async () => {
+  const loadRegistrationsFromApi = async (roleOverride?: string) => {
     try {
-      // Fetch a large page of registrations so the admin Attendees view
-      // can handle its own client-side pagination without being limited
-      // by the backend default of 10 per page.
-      const response = await apiClient.get<Registration[]>(`/registrations?page=1&limit=1500`);
+      const effectiveRole = roleOverride || role;
+      const endpoint = effectiveRole === 'admin'
+        ? `/registrations?page=1&limit=1500`
+        : `/registrations/mine`;
+      const response = await apiClient.get<Registration[]>(endpoint);
       const apiRegs = (response as any).data || [];
       const normalized: Registration[] = apiRegs.map((r: any) => ({
         // Required
@@ -356,13 +356,15 @@ useEffect(() => {
   const handleLogin = async (selectedRole: 'admin' | 'user', redirectAfterLogin?: string) => {
     const next = (redirectAfterLogin || '').trim();
     const useNext = next.startsWith('/') && !next.startsWith('//');
+    let loginRole: string = selectedRole;
 
     try {
       const res = await authApi.me();
       const me = (res as any).data || {};
       if (me && (me.id || me.email)) {
-        setUser({ id: me.id || 0, name: me.name || 'Current User', email: me.email || '', role: me.role || selectedRole });
-        setRole((me.role as any) || selectedRole);
+        loginRole = me.role || selectedRole;
+        setUser({ id: me.id || 0, name: me.name || 'Current User', email: me.email || '', role: loginRole as any });
+        setRole(loginRole as any);
       } else {
         setRole(selectedRole);
       }
@@ -370,13 +372,12 @@ useEffect(() => {
       setRole(selectedRole);
     }
 
-
     if (useNext) {
       navigate(next, { replace: true });
     }
 
     await loadEventsFromApi();
-    await loadRegistrationsFromApi();
+    await loadRegistrationsFromApi(loginRole);
 
     if (useNext) {
       return;

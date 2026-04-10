@@ -604,6 +604,11 @@ export class RegistrationController {
 
       const authForActivity = this.getAuth(req);
       const isAdminForActivity = authForActivity.role === 'admin';
+
+      if (!isAdminForActivity && authForActivity.id && Number(existingRow.user_id) !== Number(authForActivity.id)) {
+        res.status(403).json({ success: false, error: 'You can only update your own registration' } satisfies ApiResponse);
+        return;
+      }
       const existingActivity = String(existingRow.wednesday_activity ?? '').trim();
       const incomingActivity = updateData.wednesdayActivity !== undefined
         ? String(updateData.wednesdayActivity ?? '').trim()
