@@ -79,6 +79,8 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
   const [tierUsersSearch, setTierUsersSearch] = useState('');
   const [waitlistActivity, setWaitlistActivity] = useState<string | null>(null);
   const [waitlistSearch, setWaitlistSearch] = useState('');
+  const [confirmedActivity, setConfirmedActivity] = useState<string | null>(null);
+  const [confirmedSearch, setConfirmedSearch] = useState('');
   const [promoteLoadingId, setPromoteLoadingId] = useState<number | null>(null);
   const [promoteError, setPromoteError] = useState<string | null>(null);
 
@@ -404,6 +406,42 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
     }
   };
 
+  const selectedConfirmedActivityDetails = useMemo(() => {
+    if (!confirmedActivity) return null;
+    return activityDetails.find(a => a.name === confirmedActivity) || null;
+  }, [confirmedActivity, activityDetails]);
+
+  const confirmedRegistrations = useMemo(() => {
+    if (!confirmedActivity) return [];
+    const q = confirmedSearch.trim().toLowerCase();
+
+    const filtered = activeRegistrations.filter(r => {
+      if (r.wednesdayActivity !== confirmedActivity) return false;
+      if ((r as any).wednesdayActivityWaitlisted) return false;
+
+      if (!q) return true;
+      const hay = [
+        r.badgeName,
+        r.firstName,
+        r.lastName,
+        r.email,
+        r.organization,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+
+    const getMs = (r: Registration) => {
+      const raw = r.createdAt || (r as any).created_at;
+      const d = raw ? new Date(raw) : null;
+      return d && !isNaN(d.getTime()) ? d.getTime() : 0;
+    };
+
+    return filtered.sort((a, b) => getMs(a) - getMs(b));
+  }, [confirmedActivity, confirmedSearch, activeRegistrations]);
+
   const waitlistedRegistrations = useMemo(() => {
     if (!waitlistActivity) return [];
     const q = waitlistSearch.trim().toLowerCase();
@@ -534,7 +572,20 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
                     <tr key={idx}>
                       <td><strong>{activity.name}</strong></td>
                       <td>{activity.seatLimit !== undefined ? activity.seatLimit : 'Unlimited'}</td>
-                      <td>{activity.confirmedCount}</td>
+                      <td>
+                        <button
+                          className="btn btn-secondary"
+                          style={{ padding: '6px 10px', fontSize: '12px' }}
+                          disabled={!activity.confirmedCount}
+                          onClick={() => {
+                            setConfirmedSearch('');
+                            setConfirmedActivity(activity.name);
+                          }}
+                          title={activity.confirmedCount ? 'View confirmed attendees' : 'No confirmed registrations'}
+                        >
+                          Registered ({activity.confirmedCount})
+                        </button>
+                      </td>
                       <td>
                         <button
                           className="btn btn-secondary"
@@ -688,6 +739,88 @@ export const EventDetailsPage: React.FC<EventDetailsPageProps> = ({
                         </tr>
                       );
                     })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Modal>
+        )}
+
+        {/* Confirmed registrations modal */}
+        {confirmedActivity && (
+          <Modal
+            title={
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 700 }}>Registered — {confirmedActivity}</div>
+                {selectedConfirmedActivityDetails?.seatLimit !== undefined ? (
+                  <div style={{ marginTop: '4px', fontSize: '13px', color: '#6b7280' }}>
+                    Confirmed: {selectedConfirmedActivityDetails.confirmedCount}/{selectedConfirmedActivityDetails.seatLimit} • Remaining:{' '}
+                    {selectedConfirmedActivityDetails.remaining ?? 0} • Waitlisted: {selectedConfirmedActivityDetails.waitlistedCount}
+                  </div>
+                ) : (
+                  <div style={{ marginTop: '4px', fontSize: '13px', color: '#6b7280' }}>
+                    Unlimited seats • Confirmed: {selectedConfirmedActivityDetails?.confirmedCount ?? confirmedRegistrations.length}
+                  </div>
+                )}
+              </div>
+            }
+            onClose={() => {
+              setConfirmedActivity(null);
+              setConfirmedSearch('');
+            }}
+            size="xl"
+            footer={
+              <button className="btn btn-secondary" onClick={() => setConfirmedActivity(null)}>
+                Close
+              </button>
+            }
+          >
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '12px' }}>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search confirmed (name, email, organization)..."
+                value={confirmedSearch}
+                onChange={(e) => setConfirmedSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="table-wrapper">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Badge Name</th>
+                    <th>First</th>
+                    <th>Last</th>
+                    <th>Email</th>
+                    <th>Organization</th>
+                    <th>Mobile</th>
+                    <th>Registered At (EST)</th>
+                    <th>Paid?</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {confirmedRegistrations.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} style={{ padding: '16px', color: '#6b7280' }}>
+                        No confirmed registrations found for this activity.
+                      </td>
+                    </tr>
+                  ) : (
+                    confirmedRegistrations.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.id}</td>
+                        <td><strong>{r.badgeName || `${r.firstName} ${r.lastName}`.trim()}</strong></td>
+                        <td>{r.firstName}</td>
+                        <td>{r.lastName}</td>
+                        <td>{r.email}</td>
+                        <td>{r.organization}</td>
+                        <td>{r.mobile}</td>
+                        <td>{formatDateTimeEST(r.createdAt)}</td>
+                        <td>{(r as any).paid ? 'Yes' : 'No'}</td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
