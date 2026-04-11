@@ -291,16 +291,18 @@ export const AdminGroups: React.FC<AdminGroupsProps> = ({
     setDraggedUnassignedId(null);
   };
 
+  const isExcluded = (r: Registration) => {
+    const cancelled = (r as any).status === 'cancelled' || !!(r as any).cancellationAt || !!(r as any).cancellationReason;
+    const waitlisted = (r as any).wednesdayActivityWaitlisted === true
+      || (r as any).wednesdayActivityWaitlisted === 1
+      || (r as any).wednesdayActivityWaitlisted === '1';
+    return cancelled || waitlisted;
+  };
+
   // Filter by selected event first, then by category
   const eventFilteredRegistrations = selectedEventId !== null 
-    ? registrations.filter(r => {
-        const cancelled = (r as any).status === 'cancelled' || !!(r as any).cancellationAt || !!(r as any).cancellationReason;
-        return r.eventId === selectedEventId && !cancelled;
-      })
-    : registrations.filter(r => {
-        const cancelled = (r as any).status === 'cancelled' || !!(r as any).cancellationAt || !!(r as any).cancellationReason;
-        return !cancelled;
-      });
+    ? registrations.filter(r => r.eventId === selectedEventId && !isExcluded(r))
+    : registrations.filter(r => !isExcluded(r));
   
   const eventFilteredGroups = selectedEventId !== null 
     ? groups.filter(g => g.eventId === selectedEventId)
