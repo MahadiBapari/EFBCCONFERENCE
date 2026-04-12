@@ -691,6 +691,7 @@ export async function sendRegistrationConfirmationEmail(params: {
     ? registration.specialPhysicalNeeds 
     : (registration?.special_physical_needs !== undefined ? !!registration.special_physical_needs : undefined);
   const specialPhysicalNeedsDetails = registration?.specialPhysicalNeedsDetails || registration?.special_physical_needs_details || '';
+  const updateNotes = registration?.updateNotes || registration?.update_notes || '';
 
   const detailsHtml = registration
     ? `
@@ -752,6 +753,8 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${paymentMethod === 'Card' && registration?.spousePaymentId ? `<tr><td style="color:#6b7280;">Spouse Payment ID</td><td><code>${escapeHtml(registration.spousePaymentId)}</code></td></tr>` : ''}
         ${paymentMethod === 'Card' && registration?.paid && (registration?.paidAt || registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Payment Date/Time (EST)</td><td>${formatDateInEST(registration.paidAt || registration.createdAt || registration.created_at)}</td></tr>` : ''}
         ${registration?.spousePaymentId && (registration?.spousePaidAt || registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Spouse Payment Date/Time (EST)</td><td>${formatDateInEST(registration.spousePaidAt || registration.createdAt || registration.created_at)}</td></tr>` : ''}
+        ${updateNotes ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Update Notes</strong></td></tr>
+        <tr><td colspan="2"><pre style="white-space:pre-wrap;font-family:monospace;font-size:12px;margin:0;padding:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;color:#374151;">${escapeHtml(updateNotes)}</pre></td></tr>` : ''}
       </table>
     `
     : '';
@@ -898,6 +901,7 @@ export async function sendRegistrationUpdateEmail(params: {
     ? registration.specialPhysicalNeeds 
     : (registration?.special_physical_needs !== undefined ? !!registration.special_physical_needs : undefined);
   const specialPhysicalNeedsDetails = registration?.specialPhysicalNeedsDetails || registration?.special_physical_needs_details || '';
+  const updateNotes = registration?.updateNotes || registration?.update_notes || '';
 
   const detailsHtml = registration
     ? `
@@ -959,6 +963,8 @@ export async function sendRegistrationUpdateEmail(params: {
         ${paymentMethod === 'Card' && registration?.spousePaymentId ? `<tr><td style="color:#6b7280;">Spouse Payment ID</td><td><code>${escapeHtml(registration.spousePaymentId)}</code></td></tr>` : ''}
         ${paymentMethod === 'Card' && registration?.paid && (registration?.paidAt || registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Payment Date/Time (EST)</td><td>${formatDateInEST(registration.paidAt || registration.createdAt || registration.created_at)}</td></tr>` : ''}
         ${registration?.spousePaymentId && (registration?.spousePaidAt || registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Spouse Payment Date/Time (EST)</td><td>${formatDateInEST(registration.spousePaidAt || registration.createdAt || registration.created_at)}</td></tr>` : ''}
+        ${updateNotes ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Update Notes</strong></td></tr>
+        <tr><td colspan="2"><pre style="white-space:pre-wrap;font-family:monospace;font-size:12px;margin:0;padding:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;color:#374151;">${escapeHtml(updateNotes)}</pre></td></tr>` : ''}
       </table>
     `
     : '';

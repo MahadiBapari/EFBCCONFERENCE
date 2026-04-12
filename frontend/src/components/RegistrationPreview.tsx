@@ -481,6 +481,30 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       }
     }
 
+    // Update Notes
+    if ((registration as any).updateNotes) {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = margin;
+      }
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Update Notes', margin, yPos);
+      yPos += 8;
+
+      doc.setFontSize(9);
+      doc.setFont('courier', 'normal');
+      const notesLines = doc.splitTextToSize(String((registration as any).updateNotes), pageWidth - margin * 2);
+      notesLines.forEach((line: string) => {
+        if (yPos > 275) {
+          doc.addPage();
+          yPos = margin;
+        }
+        doc.text(line, margin, yPos);
+        yPos += 4.5;
+      });
+    }
+
     // Save PDF
     const fileName = `Registration_${registration.firstName}_${registration.lastName}_${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
@@ -757,6 +781,27 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
             />
           )}
         </div>
+
+        {(registration as any).updateNotes && (
+          <div className="preview-section">
+            <h3 className="section-title">Update Notes</h3>
+            <div style={{
+              whiteSpace: 'pre-wrap',
+              fontFamily: 'monospace',
+              fontSize: '13px',
+              padding: '12px',
+              backgroundColor: '#f9fafb',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              maxHeight: '300px',
+              overflowY: 'auto',
+              color: '#374151',
+              lineHeight: '1.6'
+            }}>
+              {(registration as any).updateNotes}
+            </div>
+          </div>
+        )}
       </div>
     </Modal>
   );

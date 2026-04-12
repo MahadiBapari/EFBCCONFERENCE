@@ -267,8 +267,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     // childFirstName: (registration as any)?.childFirstName || '',
     // childLastName: (registration as any)?.childLastName || '',
 
-    // Update Notes
-    updateNotes: registration?.updateNotes || '',
+    // Update Notes — always start empty; new entries are appended server-side
+    updateNotes: '',
 
     // Payment Information
     // Backend stores the discounted price in totalPrice, so use it directly
@@ -3328,7 +3328,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               <h3 className="section-title">Update Notes</h3>
               <div className="form-group">
                 <label htmlFor="updateNotes" className="form-label">
-                  Note any changes made to this registration
+                  Add a note about changes being made
                 </label>
                 <textarea
                   id="updateNotes"
@@ -3336,9 +3336,29 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   placeholder="e.g., Changed personal information, Updated spouse information..."
                   value={(formData as any).updateNotes || ''}
                   onChange={(e) => handleInputChange('updateNotes', e.target.value)}
-                  rows={4}
+                  rows={3}
                 />
               </div>
+              {registration?.updateNotes && (
+                <div className="form-group">
+                  <label className="form-label">Previous Notes</label>
+                  <div style={{
+                    whiteSpace: 'pre-wrap',
+                    fontFamily: 'monospace',
+                    fontSize: '13px',
+                    padding: '12px',
+                    backgroundColor: '#f9fafb',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '6px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    color: '#374151',
+                    lineHeight: '1.6'
+                  }}>
+                    {registration.updateNotes}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

@@ -729,7 +729,6 @@ export class RegistrationController {
         discountAmount: 'discount_amount',
         kids: 'kids_data',
         kidsTotalPrice: 'kids_total_price',
-        updateNotes: 'update_notes',
       };
       
       // Build update payload by mapping fields and converting values
@@ -797,6 +796,18 @@ export class RegistrationController {
           
           dbPayload[dbKey] = value;
         }
+      }
+
+      // Cumulative update notes — append new note with timestamp instead of overwriting
+      if (updateDataObj.updateNotes && String(updateDataObj.updateNotes).trim()) {
+        const timestamp = new Date().toLocaleString('en-US', {
+          timeZone: 'America/New_York',
+          year: 'numeric', month: 'short', day: 'numeric',
+          hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short'
+        });
+        const newEntry = `[${timestamp}] ${String(updateDataObj.updateNotes).trim()}`;
+        const existing = existingRow.update_notes ? String(existingRow.update_notes) : '';
+        dbPayload.update_notes = existing ? `${newEntry}\n${existing}` : newEntry;
       }
 
       // Pricing tier tracking for spouse/kids (do NOT rely on paid_at; use "first added" timestamps)
