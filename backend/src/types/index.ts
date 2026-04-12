@@ -143,7 +143,8 @@ export interface Registration {
   pendingPaymentAmount?: number;
   pendingPaymentReason?: string;
   pendingPaymentCreatedAt?: string;
-  
+  updateNotes?: string;
+
   // Legacy fields for backward compatibility
   name: string;
   category: string;

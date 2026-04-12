@@ -87,6 +87,7 @@ export class Registration {
   public pendingPaymentAmount?: number;
   public pendingPaymentReason?: string;
   public pendingPaymentCreatedAt?: string;
+  public updateNotes?: string;
 
   // --- Normalization helpers ---
   private normalizeEmail(value?: string): string | undefined {
@@ -269,6 +270,7 @@ export class Registration {
     this.pendingPaymentAmount = (data as any).pendingPaymentAmount ?? (data as any).pending_payment_amount ?? undefined;
     this.pendingPaymentReason = (data as any).pendingPaymentReason ?? (data as any).pending_payment_reason ?? undefined;
     this.pendingPaymentCreatedAt = (data as any).pendingPaymentCreatedAt ?? (data as any).pending_payment_created_at ?? undefined;
+    this.updateNotes = (data as any).updateNotes ?? (data as any).update_notes ?? undefined;
   }
 
   // Convert to JSON
@@ -362,6 +364,7 @@ export class Registration {
     if (this.pendingPaymentAmount !== undefined) (base as any).pendingPaymentAmount = this.pendingPaymentAmount;
     if (this.pendingPaymentReason) (base as any).pendingPaymentReason = this.pendingPaymentReason;
     if (this.pendingPaymentCreatedAt) (base as any).pendingPaymentCreatedAt = this.pendingPaymentCreatedAt;
+    if (this.updateNotes) (base as any).updateNotes = this.updateNotes;
     return base as any;
   }
 
@@ -585,6 +588,7 @@ export class Registration {
       pendingPaymentAmount: row.pending_payment_amount ?? undefined,
       pendingPaymentReason: row.pending_payment_reason ?? undefined,
       pendingPaymentCreatedAt: row.pending_payment_created_at ?? undefined,
+      updateNotes: row.update_notes ?? undefined,
       // Legacy fields are not mapped from DB in this version
       name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
       category: row.wednesday_activity || 'Networking',
