@@ -267,6 +267,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     // childFirstName: (registration as any)?.childFirstName || '',
     // childLastName: (registration as any)?.childLastName || '',
 
+    // Update Notes
+    updateNotes: registration?.updateNotes || '',
+
     // Payment Information
     // Backend stores the discounted price in totalPrice, so use it directly
     totalPrice: registration?.totalPrice || 675,
@@ -3318,6 +3321,26 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               )}
             </div>
           )} */}
+
+          {/* Update Notes section — only visible when editing an existing registration */}
+          {isEditing && (
+            <div className="form-section">
+              <h3 className="section-title">Update Notes</h3>
+              <div className="form-group">
+                <label htmlFor="updateNotes" className="form-label">
+                  Note any changes made to this registration
+                </label>
+                <textarea
+                  id="updateNotes"
+                  className="form-control"
+                  placeholder="e.g., Changed personal information, Updated spouse information..."
+                  value={(formData as any).updateNotes || ''}
+                  onChange={(e) => handleInputChange('updateNotes', e.target.value)}
+                  rows={4}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Payment section for admins */}
           {isAdminEdit && (

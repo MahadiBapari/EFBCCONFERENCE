@@ -285,6 +285,8 @@ useEffect(() => {
         kidsTierLabel: r.kidsTierLabel ?? r.kids_tier_label ?? undefined,
         kidsAddedAt: r.kidsAddedAt ?? r.kids_added_at ?? undefined,
         groupAssigned: r.groupAssigned ?? r.group_assigned ?? undefined,
+        // Update Notes
+        updateNotes: r.updateNotes ?? r.update_notes ?? '',
         // Pending Payment
         originalTotalPrice: r.originalTotalPrice ?? r.original_total_price ?? undefined,
         paidAmount: r.paidAmount ?? r.paid_amount ?? undefined,

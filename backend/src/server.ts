@@ -206,6 +206,7 @@ const createTables = async () => {
     await migrateActivityWaitlist();
     await migrateTierTracking();
     await migrateTierTracking();
+    await migrateUpdateNotes();
 
     // Activity Groups table (basic definition; columns may be extended by migrations)
     await databaseService.query(`
@@ -600,6 +601,26 @@ const migrateTierTracking = async (): Promise<void> => {
     }
   } catch (error: any) {
     console.error('Error migrating tier tracking columns:', error?.message || error);
+  }
+};
+
+// Migration helper to add update_notes field to registrations
+const migrateUpdateNotes = async (): Promise<void> => {
+  try {
+    const dbNameRows: any[] = await databaseService.query('SELECT DATABASE() as db');
+    const dbName = dbNameRows[0]?.db;
+    if (!dbName) return;
+
+    const regCols: any[] = await databaseService.query(
+      'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+      [dbName, 'registrations']
+    );
+    if (!regCols.some((c: any) => c.COLUMN_NAME === 'update_notes')) {
+      await databaseService.query('ALTER TABLE `registrations` ADD COLUMN `update_notes` TEXT NULL');
+      console.log('🛠️ Added registrations.update_notes column');
+    }
+  } catch (error: any) {
+    console.error('Error migrating update_notes column:', error?.message || error);
   }
 };
 

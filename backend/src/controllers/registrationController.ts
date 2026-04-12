@@ -729,6 +729,7 @@ export class RegistrationController {
         discountAmount: 'discount_amount',
         kids: 'kids_data',
         kidsTotalPrice: 'kids_total_price',
+        updateNotes: 'update_notes',
       };
       
       // Build update payload by mapping fields and converting values

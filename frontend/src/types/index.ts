@@ -148,6 +148,9 @@ export interface Registration {
   // Group Assignment
   groupAssigned?: number;
   
+  // Update Notes
+  updateNotes?: string;
+
   // Pending Payment Information
   originalTotalPrice?: number;
   paidAmount?: number;
