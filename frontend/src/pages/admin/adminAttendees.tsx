@@ -135,6 +135,7 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
   // State for confirmation modals
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageModalContent, setMessageModalContent] = useState<{ title: string; message: string; type: 'success' | 'error' } | null>(null);
   const [singleDeleteTarget, setSingleDeleteTarget] = useState<{ id: number; name: string } | null>(null);
@@ -542,6 +543,7 @@ const confirmSingleDelete = async () => {
 
   const handleCancelSelected = () => {
     if (selectedRegIds.length === 0) return;
+    setCancelReason('');
     setShowCancelConfirm(true);
   };
 
@@ -552,8 +554,7 @@ const confirmSingleDelete = async () => {
     let failCount = 0;
 
     try {
-      // Create cancellation requests and immediately approve them for admin-initiated cancellations
-      const reason = 'Admin-initiated bulk cancellation';
+      const reason = cancelReason.trim() || 'Admin-initiated bulk cancellation';
       
       for (const regId of selectedRegIds) {
         try {
@@ -2195,6 +2196,16 @@ const confirmSingleDelete = async () => {
           <p className="modal-helper-text">
             This will cancel these registrations and they will appear in the cancellation list.
           </p>
+          <div className="form-group" style={{ marginTop: '16px' }}>
+            <label className="form-label">Cancellation Reason</label>
+            <textarea
+              className="form-control"
+              placeholder="Admin-initiated bulk cancellation"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              rows={3}
+            />
+          </div>
         </Modal>
       )}
 
