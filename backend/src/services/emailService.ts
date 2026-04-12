@@ -754,7 +754,7 @@ export async function sendRegistrationConfirmationEmail(params: {
         ${paymentMethod === 'Card' && registration?.paid && (registration?.paidAt || registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Payment Date/Time (EST)</td><td>${formatDateInEST(registration.paidAt || registration.createdAt || registration.created_at)}</td></tr>` : ''}
         ${registration?.spousePaymentId && (registration?.spousePaidAt || registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Spouse Payment Date/Time (EST)</td><td>${formatDateInEST(registration.spousePaidAt || registration.createdAt || registration.created_at)}</td></tr>` : ''}
         ${updateNotes ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Update Notes</strong></td></tr>
-        <tr><td colspan="2"><pre style="white-space:pre-wrap;font-family:monospace;font-size:12px;margin:0;padding:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;color:#374151;">${escapeHtml(updateNotes)}</pre></td></tr>` : ''}
+        <tr><td colspan="2"><div style="white-space:pre-wrap;font-size:14px;margin:0;padding:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;color:#374151;">${escapeHtml(updateNotes)}</div></td></tr>` : ''}
       </table>
     `
     : '';
@@ -964,7 +964,7 @@ export async function sendRegistrationUpdateEmail(params: {
         ${paymentMethod === 'Card' && registration?.paid && (registration?.paidAt || registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Payment Date/Time (EST)</td><td>${formatDateInEST(registration.paidAt || registration.createdAt || registration.created_at)}</td></tr>` : ''}
         ${registration?.spousePaymentId && (registration?.spousePaidAt || registration?.createdAt || registration?.created_at) ? `<tr><td style="color:#6b7280;">Spouse Payment Date/Time (EST)</td><td>${formatDateInEST(registration.spousePaidAt || registration.createdAt || registration.created_at)}</td></tr>` : ''}
         ${updateNotes ? `<tr><td style="color:#6b7280;padding-top:12px;" colspan="2"><strong>Update Notes</strong></td></tr>
-        <tr><td colspan="2"><pre style="white-space:pre-wrap;font-family:monospace;font-size:12px;margin:0;padding:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;color:#374151;">${escapeHtml(updateNotes)}</pre></td></tr>` : ''}
+        <tr><td colspan="2"><div style="white-space:pre-wrap;font-size:14px;margin:0;padding:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;color:#374151;">${escapeHtml(updateNotes)}</div></td></tr>` : ''}
       </table>
     `
     : '';

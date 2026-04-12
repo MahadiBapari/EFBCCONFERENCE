@@ -3344,8 +3344,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   <label className="form-label">Previous Notes</label>
                   <div style={{
                     whiteSpace: 'pre-wrap',
-                    fontFamily: 'monospace',
-                    fontSize: '13px',
+                    fontSize: '14px',
                     padding: '12px',
                     backgroundColor: '#f9fafb',
                     border: '1px solid #e5e7eb',

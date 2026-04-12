@@ -492,8 +492,8 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       doc.text('Update Notes', margin, yPos);
       yPos += 8;
 
-      doc.setFontSize(9);
-      doc.setFont('courier', 'normal');
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
       const notesLines = doc.splitTextToSize(String((registration as any).updateNotes), pageWidth - margin * 2);
       notesLines.forEach((line: string) => {
         if (yPos > 275) {
@@ -501,7 +501,7 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
           yPos = margin;
         }
         doc.text(line, margin, yPos);
-        yPos += 4.5;
+        yPos += 5;
       });
     }
 
@@ -787,8 +787,7 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
             <h3 className="section-title">Update Notes</h3>
             <div style={{
               whiteSpace: 'pre-wrap',
-              fontFamily: 'monospace',
-              fontSize: '13px',
+              fontSize: '14px',
               padding: '12px',
               backgroundColor: '#f9fafb',
               border: '1px solid #e5e7eb',

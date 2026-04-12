@@ -798,14 +798,9 @@ export class RegistrationController {
         }
       }
 
-      // Cumulative update notes — append new note with timestamp instead of overwriting
+      // Cumulative update notes — append new note to existing notes
       if (updateDataObj.updateNotes && String(updateDataObj.updateNotes).trim()) {
-        const timestamp = new Date().toLocaleString('en-US', {
-          timeZone: 'America/New_York',
-          year: 'numeric', month: 'short', day: 'numeric',
-          hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short'
-        });
-        const newEntry = `[${timestamp}] ${String(updateDataObj.updateNotes).trim()}`;
+        const newEntry = String(updateDataObj.updateNotes).trim();
         const existing = existingRow.update_notes ? String(existingRow.update_notes) : '';
         dbPayload.update_notes = existing ? `${newEntry}\n${existing}` : newEntry;
       }
