@@ -169,11 +169,6 @@ const createTables = async () => {
         spouse_last_name VARCHAR(255),
         total_price DECIMAL(10, 2),
         payment_method VARCHAR(50),
-        registration_tier_label VARCHAR(255) NULL,
-        spouse_tier_label VARCHAR(255) NULL,
-        spouse_added_at TIMESTAMP NULL,
-        kids_tier_label VARCHAR(255) NULL,
-        kids_added_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
