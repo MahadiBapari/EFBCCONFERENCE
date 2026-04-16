@@ -407,11 +407,26 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
+    const pdfPendingAmt = Number((registration as any).pendingPaymentAmount || 0);
+    const pdfHasPending = pdfPendingAmt > 0;
+    const pdfPaidAmt = Number((registration as any).paidAmount || 0);
     doc.setFont('helvetica', 'bold');
     doc.text('Total Payment Amount:', margin, yPos);
     doc.setFont('helvetica', 'normal');
     doc.text(`$${getFrontendPaymentAmount(registration).toFixed(2)}`, margin + 60, yPos);
     yPos += 6;
+    if (pdfHasPending) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Paid Amount:', margin, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`$${pdfPaidAmt.toFixed(2)}`, margin + 60, yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Pending Amount:', margin, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`$${pdfPendingAmt.toFixed(2)}`, margin + 60, yPos);
+      yPos += 6;
+    }
     doc.setFont('helvetica', 'bold');
     doc.text('Payment Method:', margin, yPos);
     doc.setFont('helvetica', 'normal');
@@ -421,7 +436,14 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       doc.setFont('helvetica', 'bold');
       doc.text('Paid:', margin, yPos);
       doc.setFont('helvetica', 'normal');
-      doc.text((registration as any).paid ? 'Yes' : 'No', margin + 60, yPos);
+      doc.text(pdfHasPending ? 'Due' : ((registration as any).paid ? 'Yes' : 'No'), margin + 60, yPos);
+      yPos += 6;
+    }
+    if (pdfHasPending && (registration as any).pendingPaymentReason) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Reason:', margin, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(String((registration as any).pendingPaymentReason), margin + 60, yPos);
       yPos += 6;
     }
     if (registration.paymentMethod === 'Card' && (registration as any).squarePaymentId) {
@@ -721,14 +743,32 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
 
         <div className="preview-section">
           <h3 className="section-title">Payment</h3>
-          <Line
-            label="Total Payment Amount"
-            value={`$${getFrontendPaymentAmount(registration).toFixed(2)}`}
-          />
-          <Line label="Payment Method" value={registration.paymentMethod} />
-          {typeof (registration as any).paid !== 'undefined' && (
-            <Line label="Paid" value={(registration as any).paid ? 'Yes' : 'No'} />
-          )}
+          {(() => {
+            const pendingAmt = Number((registration as any).pendingPaymentAmount || 0);
+            const hasPending = pendingAmt > 0;
+            const paidAmt = Number((registration as any).paidAmount || 0);
+            return (
+              <>
+                <Line
+                  label="Total Payment Amount"
+                  value={`$${getFrontendPaymentAmount(registration).toFixed(2)}`}
+                />
+                {hasPending && (
+                  <>
+                    <Line label="Paid Amount" value={`$${paidAmt.toFixed(2)}`} />
+                    <Line label="Pending Amount" value={`$${pendingAmt.toFixed(2)}`} />
+                  </>
+                )}
+                <Line label="Payment Method" value={registration.paymentMethod} />
+                {typeof (registration as any).paid !== 'undefined' && (
+                  <Line label="Paid" value={hasPending ? 'Due' : ((registration as any).paid ? 'Yes' : 'No')} />
+                )}
+                {hasPending && (registration as any).pendingPaymentReason && (
+                  <Line label="Reason" value={(registration as any).pendingPaymentReason} />
+                )}
+              </>
+            );
+          })()}
           {registration.paymentMethod === 'Card' && (registration as any).squarePaymentId && (
             <Line label="Square Payment ID" value={(registration as any).squarePaymentId} />
           )}
