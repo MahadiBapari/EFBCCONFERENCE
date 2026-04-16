@@ -1038,14 +1038,17 @@ export class RegistrationController {
           dbPayload.pending_payment_created_at = null;
         }
 
-        // If admin manually marks as paid, update paid_amount to match total_price
-        if ((updateData as any).paid === true || (updateData as any).paid === 1) {
+        // If admin manually marks as paid AND there is no new pending balance,
+        // update paid_amount to match total_price.
+        // Skip when pendingAmount > 0: the block above already set paid=0 and
+        // created a pending payment — don't clobber it just because the frontend
+        // forwarded the existing paid flag.
+        if (pendingAmount <= 0 && ((updateData as any).paid === true || (updateData as any).paid === 1)) {
           dbPayload.paid = 1;
           dbPayload.paid_amount = newTotalPrice;
           dbPayload.pending_payment_amount = 0;
           dbPayload.pending_payment_reason = null;
           dbPayload.pending_payment_created_at = null;
-          // Set paid_at if not set
           const paidAtStr = existingRow.paid_at ? String(existingRow.paid_at) : '';
           const isMissingPaidAt = !paidAtStr || paidAtStr.startsWith('0000-00-00');
           if (isMissingPaidAt) {
