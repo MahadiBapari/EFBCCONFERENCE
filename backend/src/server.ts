@@ -1109,7 +1109,7 @@ const migrateCancellationFeature = async () => {
         FOREIGN KEY (registration_id) REFERENCES registrations(id) ON DELETE CASCADE
       )`);
   } catch(e) {
-    console.warn('⚠️ Cancellation feature migration skipped:', e);
+    console.warn('Cancellation feature migration skipped:', e);
   }
 };
 
