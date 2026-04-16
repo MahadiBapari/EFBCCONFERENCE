@@ -462,7 +462,7 @@ GET    /api/demo/setup
        Description: Seed demo data (admin user, regular user, demo event, demo groups)
        Response: { success: boolean, message: string, data: { event: string, groups: number } }
        Auth: None (public)
-       Warning: Should be disabled or guarded in production
+       Warning: Disabled when NODE_ENV=production unless ALLOW_DEMO_SETUP=true
 
 
 ================================================================================

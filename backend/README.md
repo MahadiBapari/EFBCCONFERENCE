@@ -48,7 +48,7 @@ npm start
 - `GET /api/health` - Server health status
 
 ### Demo Setup
-- `GET /api/demo/setup` - Create demo data (events, groups)
+- `GET /api/demo/setup` - Create demo data (events, groups). In production-like environments, set `ALLOW_DEMO_SETUP=true` to enable it.
 
 ### Authentication
 - `POST /api/users/login` - User login
@@ -159,6 +159,7 @@ src/
 
 - The API automatically creates database tables on startup
 - Demo data can be created by calling `/api/demo/setup`
+- In environments with `NODE_ENV=production`, the demo endpoint is disabled unless `ALLOW_DEMO_SETUP=true`
 - All endpoints return JSON responses with consistent format
 - Database connections are managed through the DatabaseService class
 - Controllers are initialized after database connection is established

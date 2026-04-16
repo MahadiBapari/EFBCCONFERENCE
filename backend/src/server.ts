@@ -1123,9 +1123,11 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// Demo data endpoint — disabled in production
+// Demo data endpoint — disabled in production unless explicitly enabled
 app.get('/api/demo/setup', async (req: Request, res: Response): Promise<void> => {
-  if ((process.env.NODE_ENV || '').toLowerCase() === 'production') {
+  const isProduction = (process.env.NODE_ENV || '').toLowerCase() === 'production';
+  const allowDemoSetup = /^(1|true|yes)$/i.test(process.env.ALLOW_DEMO_SETUP || '');
+  if (isProduction && !allowDemoSetup) {
     res.status(404).json({ success: false, error: 'Not found' });
     return;
   }
