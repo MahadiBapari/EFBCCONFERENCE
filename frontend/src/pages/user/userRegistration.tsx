@@ -944,6 +944,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       // Only set pickleballEquipment if pickleball is selected, otherwise explicitly set to null
       const pickleballEquipmentValue = isPickleball ? ((formData as any).pickleballEquipment !== undefined ? (formData as any).pickleballEquipment : null) : null;
 
+      const isCompPayment = paymentMethod === 'Comp';
       const registrationData: Registration = {
         ...(registration?.id ? { id: registration.id } : {} as any),
         userId: user.id,
@@ -994,6 +995,16 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         ...(isAdminEdit && priceOverrideEnabled ? { totalPrice: priceOverride } : {}),
         ...(isAdminEdit && priceOverrideEnabled && priceOverrideReason ? { pendingPaymentReason: priceOverrideReason } : {}),
       } as Registration;
+      if (isCompPayment) {
+        registrationData.totalPrice = 0;
+        (registrationData as any).paid = true;
+        (registrationData as any).paidAt = new Date().toISOString();
+        (registrationData as any).squarePaymentId = undefined;
+        (registrationData as any).spousePaymentId = undefined;
+        (registrationData as any).kidsPaymentId = undefined;
+        (registrationData as any).pendingPaymentAmount = 0;
+        (registrationData as any).pendingPaymentReason = undefined;
+      }
       
       // For card payments, ensure payment was completed (has payment ID) - only check for new registrations
       // Allow admin to save without payment completion
@@ -3515,6 +3526,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     />
                     <span style={{ marginLeft: '8px' }}>Check</span>
                   </label>
+                  <label className="segmented-label">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      checked={formData.paymentMethod === 'Comp'}
+                      onChange={() => handleInputChange('paymentMethod', 'Comp')}
+                    />
+                    <span style={{ marginLeft: '8px' }}>Comp</span>
+                  </label>
                 </div>
               </div>
               {formData.paymentMethod === 'Check' && (
@@ -3542,6 +3562,13 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   </div>
                   <p className="form-hint" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
                     Mark as "Yes" when the check has been received and processed.
+                  </p>
+                </div>
+              )}
+              {formData.paymentMethod === 'Comp' && (
+                <div className="form-group">
+                  <p className="form-hint" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                    Compensation selected. No fee will be charged.
                   </p>
                 </div>
               )}
@@ -3955,7 +3982,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               }
               
               // Show submit button for Check payments, admin edits, or already paid registrations (not adding spouse or kids)
-              if (isAdminEdit || (isAlreadyPaid && !isAddingSpouse && !isAddingKids) || paymentMethod === 'Check') {
+              if (isAdminEdit || (isAlreadyPaid && !isAddingSpouse && !isAddingKids) || paymentMethod === 'Check' || paymentMethod === 'Comp') {
                 return (
                   <button className="btn btn-primary btn-save" type="submit" form="registration-form" disabled={isSubmitting}>
                     {isSubmitting ? 'Saving...' : (registration ? 'Update Registration' : 'Complete Registration')}

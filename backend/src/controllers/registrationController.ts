@@ -507,7 +507,7 @@ export class RegistrationController {
       const auth = this.getAuth(req);
       const isAdmin = auth.role === 'admin';
       
-      if (isAdmin && (registration.paymentMethod === 'Card' || !registration.paid)) {
+      if (isAdmin && registration.paymentMethod !== 'Comp' && (registration.paymentMethod === 'Card' || !registration.paid)) {
         // If not marked as paid, the entire amount is pending
         if (!registration.paid) {
           dbPayload.pending_payment_amount = dbPayload.total_price;
@@ -1145,7 +1145,7 @@ export class RegistrationController {
       
       // Send pending payment email if admin created a pending payment
       // Skip email if payment method is Check (as admin usually handles checks manually)
-      if (isAdminUpdate && verifyRow.pending_payment_amount && Number(verifyRow.pending_payment_amount) > 0 && updatedRegistration.paymentMethod !== 'Check') {
+      if (isAdminUpdate && verifyRow.pending_payment_amount && Number(verifyRow.pending_payment_amount) > 0 && updatedRegistration.paymentMethod === 'Card') {
         try {
           const { sendPendingPaymentEmail } = await import('../services/emailService');
           const eventRow: any = await this.db.findById('events', updatedRegistration.eventId);

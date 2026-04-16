@@ -58,7 +58,7 @@ export class Registration {
   public childLastName?: string;
   public childLunchTicket?: boolean;
   public totalPrice: number;
-  public paymentMethod: 'Card' | 'Check';
+  public paymentMethod: 'Card' | 'Check' | 'Comp';
   public name: string;
   public category: string;
   public createdAt?: string;
@@ -231,7 +231,7 @@ export class Registration {
     const clt: any = (data as any).childLunchTicket;
     this.childLunchTicket = clt === true || clt === 'Yes' || clt === 'yes' || clt === 1 || false;
     this.totalPrice = data.totalPrice || 0;
-    this.paymentMethod = data.paymentMethod || 'Card';
+    this.paymentMethod = (data.paymentMethod as any) || 'Card';
     this.name = data.name || `${this.firstName} ${this.lastName}`;
     this.category = data.category || 'Networking';
     this.createdAt = data.createdAt || new Date().toISOString();
@@ -270,6 +270,17 @@ export class Registration {
     this.pendingPaymentAmount = (data as any).pendingPaymentAmount ?? (data as any).pending_payment_amount ?? undefined;
     this.pendingPaymentReason = (data as any).pendingPaymentReason ?? (data as any).pending_payment_reason ?? undefined;
     this.pendingPaymentCreatedAt = (data as any).pendingPaymentCreatedAt ?? (data as any).pending_payment_created_at ?? undefined;
+    if (this.paymentMethod === 'Comp') {
+      this.totalPrice = 0;
+      this.paid = true;
+      this.paidAt = this.paidAt || new Date().toISOString();
+      this.squarePaymentId = undefined;
+      this.spousePaymentId = undefined;
+      this.kidsPaymentId = undefined;
+      this.pendingPaymentAmount = 0;
+      this.pendingPaymentReason = undefined;
+      this.pendingPaymentCreatedAt = undefined;
+    }
     this.updateNotes = (data as any).updateNotes ?? (data as any).update_notes ?? undefined;
   }
 

@@ -323,9 +323,9 @@ export const AdminAttendees: React.FC<AdminAttendeesProps> = ({
           bValue = b.category?.toLowerCase() || '';
           break;
         case 'paymentMethod':
-          // Sort by payment method: Card, Check, or empty
-          const aMethod = a.paymentMethod === 'Card' ? 'card' : a.paymentMethod === 'Check' ? 'check' : '';
-          const bMethod = b.paymentMethod === 'Card' ? 'card' : b.paymentMethod === 'Check' ? 'check' : '';
+          // Sort by payment method: Card, Check, Comp, or empty
+          const aMethod = a.paymentMethod === 'Card' ? 'card' : a.paymentMethod === 'Check' ? 'check' : a.paymentMethod === 'Comp' ? 'comp' : '';
+          const bMethod = b.paymentMethod === 'Card' ? 'card' : b.paymentMethod === 'Check' ? 'check' : b.paymentMethod === 'Comp' ? 'comp' : '';
           aValue = aMethod;
           bValue = bMethod;
           break;
@@ -1879,7 +1879,7 @@ const confirmSingleDelete = async () => {
                   <td>{reg.category}</td>
                   <td>
                     {(() => {
-                      const method = reg.paymentMethod === 'Card' ? 'Card' : reg.paymentMethod === 'Check' ? 'Check' : '';
+                      const method = reg.paymentMethod === 'Card' ? 'Card' : reg.paymentMethod === 'Check' ? 'Check' : reg.paymentMethod === 'Comp' ? 'Comp' : '';
                       // Main payment is due only if:
                       // - Payment method is Card (Check payments might be paid offline)
                       // - Not paid
