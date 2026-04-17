@@ -2,6 +2,22 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Environment Variables
+
+Configure these values in your deployment platform (for example, Railway):
+
+```env
+REACT_APP_API_URL=https://your-backend-domain/api
+REACT_APP_SQUARE_ENV=sandbox
+REACT_APP_SQUARE_APP_ID=your_square_app_id
+REACT_APP_SQUARE_LOCATION_ID=your_square_location_id
+```
+
+Square environment mapping:
+
+- `REACT_APP_SQUARE_ENV=production` loads `https://web.squarecdn.com/v1/square.js`
+- Any other value (including `sandbox`) loads `https://sandbox.web.squarecdn.com/v1/square.js`
+
 ## Available Scripts
 
 In the project directory, you can run:

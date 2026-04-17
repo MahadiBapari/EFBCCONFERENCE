@@ -2099,8 +2099,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       }, timeoutMs);
 
       const s = document.createElement('script');
+      const squareEnv = (process.env.REACT_APP_SQUARE_ENV || 'sandbox').toLowerCase();
       const squareSdkUrl =
-        process.env.NODE_ENV === 'production'
+        squareEnv === 'production'
           ? 'https://web.squarecdn.com/v1/square.js'          // PRODUCTION
           : 'https://sandbox.web.squarecdn.com/v1/square.js'; // SANDBOX
 
