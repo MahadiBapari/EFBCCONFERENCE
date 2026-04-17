@@ -454,10 +454,14 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       return;
     }
     
-    // Skip price calculation if there is a pending payment amount
-    // This preserves the admin-set total price instead of reverting to current tiers
+    // Skip price calculation if there is a pending payment amount,
+    // UNLESS new kids or spouse are being added on top of the existing pending balance.
     if ((formData.pendingPaymentAmount || 0) > 0) {
-      return;
+      const isAddingSpouseOverPending = formData.spouseDinnerTicket && !hadSpouseTicket;
+      const isAddingKidsOverPending = kids.length > originalKidsCount;
+      if (!isAddingSpouseOverPending && !isAddingKidsOverPending) {
+        return;
+      }
     }
 
     // For existing registrations (paid or unpaid), preserve price unless something is being added
