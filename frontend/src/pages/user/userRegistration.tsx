@@ -1982,7 +1982,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         massageTimeSlot: massageTimeSlotValue,
         pickleballEquipment: pickleballEquipmentValue,
         paid: true,
-        paidAmount: chargedAmount,
+        paidAmount: Number((registration as any)?.paidAmount || 0) + chargedAmount,
         squarePaymentId: payload.paymentId,
         address: composedAddress, // Legacy field for backward compatibility
         addressStreet: addrStreet.trim(),

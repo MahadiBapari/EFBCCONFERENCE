@@ -1060,34 +1060,40 @@ export class RegistrationController {
       }
       
       // If a non-admin user just completed a pending payment,
-      // move the pending amount into paid_amount and clear pending fields
+      // accumulate the charged amount into paid_amount and clear pending fields.
+      // Always compute from DB values so the frontend cannot accidentally replace
+      // the existing paid_amount.
       const isPaidUpdate = updateDataObj.paid === true || updateDataObj.paid === 1 || (updateDataObj as any).paid === 'true';
       if (!isAdminUpdate && isPaidUpdate && existingRow.pending_payment_amount && Number(existingRow.pending_payment_amount) > 0) {
         const totalPrice = Number(existingRow.total_price || 0);
         const previousPaidAmount = Number(existingRow.paid_amount || 0);
         const pending = Number(existingRow.pending_payment_amount || 0);
+
+        // Use the client-sent paidAmount only as the *increment* (amount just charged).
+        // If the client already accumulated (old + charged), take the larger of
+        // client value vs DB-computed value to avoid under-counting.
         const clientPaidAmount = Number(updateDataObj.paidAmount);
-        const hasClientPaidAmount = Number.isFinite(clientPaidAmount) && clientPaidAmount >= 0;
-        const newPaidAmount = hasClientPaidAmount ? clientPaidAmount : (previousPaidAmount + pending);
+        const dbComputedPaidAmount = previousPaidAmount + pending;
+        let newPaidAmount: number;
+        if (Number.isFinite(clientPaidAmount) && clientPaidAmount > 0) {
+          newPaidAmount = Math.max(clientPaidAmount, dbComputedPaidAmount);
+        } else {
+          newPaidAmount = dbComputedPaidAmount;
+        }
 
         // Preserve the existing total_price (don't let frontend overwrite it with pending amount)
-        // Remove total_price from dbPayload if it was set, to preserve the correct full amount
         if (dbPayload.total_price !== undefined) {
           delete dbPayload.total_price;
         }
 
-        // Update paid_amount
         dbPayload.paid_amount = newPaidAmount;
 
-        // Clear pending payment fields
         dbPayload.pending_payment_amount = 0;
         dbPayload.pending_payment_reason = null;
         dbPayload.pending_payment_created_at = null;
 
-        // If now fully paid, ensure paid flag and paid_at are set
         if (newPaidAmount >= totalPrice) {
           dbPayload.paid = 1;
-          // Only set paid_at if not already set
           const paidAtStr = existingRow.paid_at ? String(existingRow.paid_at) : '';
           const isMissingPaidAt = !paidAtStr || paidAtStr.startsWith('0000-00-00');
           if (isMissingPaidAt) {
