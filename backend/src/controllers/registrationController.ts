@@ -1019,20 +1019,22 @@ export class RegistrationController {
         }
         
         // Update database payload if pending amount exists
+        // Use cumulative unpaid balance (newTotalPrice - oldPaidAmount) so that
+        // successive additions (e.g. kids batch 1 then batch 2) accumulate
+        // rather than overwriting the prior pending amount.
+        const cumulativePending = Math.max(0, newTotalPrice - oldPaidAmount);
         if (pendingAmount > 0) {
           dbPayload.total_price = newTotalPrice;
-          dbPayload.paid_amount = oldPaidAmount; // Keep existing paid amount
-          dbPayload.pending_payment_amount = pendingAmount;
+          dbPayload.paid_amount = oldPaidAmount;
+          dbPayload.pending_payment_amount = cumulativePending;
           dbPayload.pending_payment_reason = finalReason;
           dbPayload.pending_payment_created_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
-          dbPayload.paid = 0; // Mark as unpaid since balance exists
+          dbPayload.paid = 0;
           
-          // Store original price if not already stored
           if (!existingRow.original_total_price) {
             dbPayload.original_total_price = oldTotalPrice;
           }
         } else if (pendingAmount === 0 && existingRow.pending_payment_amount) {
-          // Clear pending payment if amount is now 0
           dbPayload.pending_payment_amount = 0;
           dbPayload.pending_payment_reason = null;
           dbPayload.pending_payment_created_at = null;

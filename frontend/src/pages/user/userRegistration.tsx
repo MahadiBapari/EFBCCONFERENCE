@@ -178,10 +178,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const hadSpousePayment = !!(registration as any)?.spousePaymentId;
   const hadKidsBefore = registration?.kids && Array.isArray(registration.kids) && registration.kids.length > 0;
   const originalKidsCount = registration?.kids && Array.isArray(registration.kids) ? registration.kids.length : 0;
-  const hadKidsPayment = !!(registration as any)?.kidsPaymentId && 
-    (Array.isArray((registration as any).kidsPaymentId) 
-      ? (registration as any).kidsPaymentId.length > 0 
-      : true);
 
   // Helper function to count active registrations for an activity
   const getActivityRegistrationCount = (activityName: string): number => {
@@ -3581,7 +3577,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             // Check if spouse is being added (wasn't there before, but now is)
             const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
             // Check if kids are being added (current count > original count)
-            const isAddingKids = isEditing && kids.length > originalKidsCount && !hadKidsPayment;
+            const isAddingKids = isEditing && kids.length > originalKidsCount;
             
             // Show payment section if:
             // 1. New registration (!isEditing)
@@ -3600,7 +3596,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
               {(() => {
                 // Re-check these flags for the payment summary logic
                 const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
-                const isAddingKids = isEditing && kids.length > originalKidsCount && !hadKidsPayment;
+                const isAddingKids = isEditing && kids.length > originalKidsCount;
 
                 if (isAlreadyPaid && !isAddingSpouse && !isAddingKids) {
                   return (
@@ -3638,7 +3634,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   // Check if this is a spouse-only payment (adding spouse to already-paid registration)
                   const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
                   // Check if this is a kids-only payment (adding kids to already-paid registration)
-                  const isAddingKids = isEditing && kids.length > originalKidsCount && !hadKidsPayment;
+                  const isAddingKids = isEditing && kids.length > originalKidsCount;
                   
                   // If adding spouse or kids to paid registration, only calculate the new amount
                   let baseTotal: number;
@@ -3952,7 +3948,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             {(() => {
               const paymentMethod = formData.paymentMethod || 'Card';
               const isAddingSpouse = isEditing && !hadSpouseTicket && formData.spouseDinnerTicket && !hadSpousePayment;
-              const isAddingKids = isEditing && kids.length > originalKidsCount && !hadKidsPayment;
+              const isAddingKids = isEditing && kids.length > originalKidsCount;
               const isAddingBoth = isAddingSpouse && isAddingKids;
               
               // Show combined payment button if both spouse and kids are being added
