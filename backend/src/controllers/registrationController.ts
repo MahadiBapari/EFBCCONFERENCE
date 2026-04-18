@@ -337,9 +337,15 @@ export class RegistrationController {
     }
   }
 
-  // Get registration by ID
+  // Get registration by ID (admin: any; authenticated user: own registration only)
   async getRegistrationById(req: Request, res: Response): Promise<void> {
     try {
+      const auth = this.getAuth(req);
+      if (auth.id == null || Number.isNaN(Number(auth.id))) {
+        res.status(401).json({ success: false, error: 'Authentication required' } satisfies ApiResponse);
+        return;
+      }
+
       const { id } = req.params;
       const registration = await this.db.findById('registrations', Number(id));
 
@@ -349,6 +355,16 @@ export class RegistrationController {
           error: 'Registration not found'
         };
         res.status(404).json(response);
+        return;
+      }
+
+      const ownerId = Number((registration as any).user_id ?? (registration as any).userId ?? NaN);
+      const requesterId = Number(auth.id);
+      const isAdmin = auth.role === 'admin';
+      const isOwner = !Number.isNaN(ownerId) && ownerId === requesterId;
+
+      if (!isAdmin && !isOwner) {
+        res.status(403).json({ success: false, error: 'Forbidden' } satisfies ApiResponse);
         return;
       }
 

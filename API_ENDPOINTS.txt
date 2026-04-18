@@ -180,7 +180,7 @@ GET    /api/registrations/event/:eventId
        Example: GET /api/registrations/event/1?page=1&limit=20
 
 GET    /api/registrations/:id
-       Description: Get registration by ID
+       Description: Get registration by ID (admins: any registration; users: only if registration belongs to them)
        Response: { success: boolean, data: Registration }
        Auth: Required
 

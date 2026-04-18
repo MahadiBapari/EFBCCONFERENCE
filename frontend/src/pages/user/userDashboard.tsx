@@ -153,6 +153,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         <RegistrationPreview
           event={activeEvent}
           registrationId={userRegistration.id}
+          initialRegistration={userRegistration}
           onClose={() => setShowPreview(false)}
         />
       )}

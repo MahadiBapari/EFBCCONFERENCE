@@ -68,7 +68,7 @@ router.post('/:id/promote-waitlist', requireAdmin, async (req: any, res: any) =>
   await req.registrationController.promoteWaitlistedRegistration(req, res);
 });
 
-router.get('/:id', requireAdmin, async (req: any, res: any) => {
+router.get('/:id', requireAuth, async (req: any, res: any) => {
   await req.registrationController.getRegistrationById(req, res);
 });
 

@@ -8,6 +8,8 @@ import '../styles/RegistrationPreview.css';
 interface RegistrationPreviewProps {
   event: Event | undefined;
   registrationId: number | undefined;
+  /** When provided (e.g. from dashboard /mine), avoids an extra fetch and works before GET /:id resolves */
+  initialRegistration?: Registration | null;
   onClose: () => void;
   showResendButton?: boolean;
 }
@@ -15,6 +17,7 @@ interface RegistrationPreviewProps {
 export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
   event,
   registrationId,
+  initialRegistration,
   onClose,
   showResendButton = true
 }) => {
@@ -25,6 +28,11 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
   useEffect(() => {
     const fetchRegistration = async () => {
       if (!registrationId) {
+        setLoading(false);
+        return;
+      }
+      if (initialRegistration != null && initialRegistration.id === registrationId) {
+        setRegistration(initialRegistration);
         setLoading(false);
         return;
       }
@@ -41,7 +49,7 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
       }
     };
     fetchRegistration();
-  }, [registrationId]);
+  }, [registrationId, initialRegistration]);
 
   const parseAddress = (addr?: string) => {
     const res = { street: '', city: '', state: '', zip: '', country: '' } as any;
