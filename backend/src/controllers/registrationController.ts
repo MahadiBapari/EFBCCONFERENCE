@@ -1088,6 +1088,12 @@ export class RegistrationController {
 
         dbPayload.paid_amount = newPaidAmount;
 
+        // If paid_amount exceeds total_price (e.g. card fee included),
+        // bump total_price to match so future pending calculations stay correct.
+        if (newPaidAmount > totalPrice) {
+          dbPayload.total_price = newPaidAmount;
+        }
+
         dbPayload.pending_payment_amount = 0;
         dbPayload.pending_payment_reason = null;
         dbPayload.pending_payment_created_at = null;

@@ -1163,8 +1163,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         userId: user.id,
         eventId: event.id,
         ...formData,
-        // Keep original totalPrice - don't add spouse price to it
-        totalPrice: registration?.totalPrice || formData.totalPrice || '0',
+        totalPrice: formData.totalPrice || registration?.totalPrice || '0',
         badgeName: toTitleCaseName(formData.badgeName || ''),
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
@@ -1380,8 +1379,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         userId: user.id,
         eventId: event.id,
         ...formData,
-        // Keep original totalPrice - don't add kids price to it
-        totalPrice: registration?.totalPrice || formData.totalPrice || '0',
+        totalPrice: formData.totalPrice || registration?.totalPrice || '0',
         badgeName: toTitleCaseName(formData.badgeName || ''),
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
@@ -1635,8 +1633,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         userId: user.id,
         eventId: event.id,
         ...formData,
-        // Keep original totalPrice - don't add combined price to it
-        totalPrice: registration?.totalPrice || formData.totalPrice || '0',
+        totalPrice: formData.totalPrice || registration?.totalPrice || '0',
         badgeName: toTitleCaseName(formData.badgeName || ''),
         specialRequests: (formData as any).specialRequests || '',
         clubRentals: clubRentalsValue,
