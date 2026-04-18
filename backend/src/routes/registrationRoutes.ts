@@ -45,6 +45,11 @@ router.get('/mine', requireAuth, async (req: any, res: any) => {
   await req.registrationController.getMyRegistrations(req, res);
 });
 
+// Per-activity confirmed/waitlisted counts for an event (auth required; aggregate only)
+router.get('/event/:eventId/activity-seat-summary', requireAuth, async (req: any, res: any) => {
+  await req.registrationController.getActivitySeatSummaryForEvent(req, res);
+});
+
 // Get registrations by event ID (public endpoint, no authentication required)
 // This route must come before /:id to avoid route conflicts
 router.get('/event/:eventId', async (req: any, res: any) => {

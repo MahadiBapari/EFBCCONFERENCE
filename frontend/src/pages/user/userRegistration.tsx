@@ -11,6 +11,7 @@ import {
 import { formatDateShort } from '../../utils/dateUtils';
 import { getActivityNames, getActivitySeatLimit } from '../../utils/eventUtils';
 import { COUNTRY_OPTIONS, getRegionOptionsForCountry, normalizeCountryCode } from '../../utils/addressOptions';
+import apiClient from '../../services/apiClient';
 import '../../styles/RegistrationModal.css';
 
 /**
@@ -179,15 +180,49 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const hadKidsBefore = registration?.kids && Array.isArray(registration.kids) && registration.kids.length > 0;
   const originalKidsCount = registration?.kids && Array.isArray(registration.kids) ? registration.kids.length : 0;
 
+  /** Server-aggregated seat counts (required for normal users who only load /registrations/mine) */
+  const [activitySeatSummary, setActivitySeatSummary] = useState<{
+    loaded: boolean;
+    byName: Record<string, { confirmedCount: number; waitlistedCount: number }>;
+  }>({ loaded: false, byName: {} });
+
+  useEffect(() => {
+    if (!event?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiClient.get<{
+          eventId: number;
+          activities: { activityName: string; confirmedCount: number; waitlistedCount: number }[];
+        }>(`/registrations/event/${event.id}/activity-seat-summary`);
+        if (cancelled || !res.success || !res.data) return;
+        const byName: Record<string, { confirmedCount: number; waitlistedCount: number }> = {};
+        for (const row of res.data.activities || []) {
+          byName[row.activityName] = {
+            confirmedCount: row.confirmedCount,
+            waitlistedCount: row.waitlistedCount,
+          };
+        }
+        setActivitySeatSummary({ loaded: true, byName });
+      } catch (e) {
+        console.error('Failed to load activity seat summary', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id, registrations]);
+
   // Helper function to count active registrations for an activity
   const getActivityRegistrationCount = (activityName: string): number => {
     if (!event) return 0;
-    return registrations.filter(reg => 
-      reg.eventId === event.id && 
+    if (activitySeatSummary.loaded) {
+      return activitySeatSummary.byName[activityName]?.confirmedCount ?? 0;
+    }
+    return registrations.filter(reg =>
+      reg.eventId === event.id &&
       reg.wednesdayActivity === activityName &&
-      // Only count CONFIRMED seats (exclude waitlisted)
       !(reg as any).wednesdayActivityWaitlisted &&
-      // Exclude cancelled registrations
       reg.status !== 'cancelled' &&
       !(reg as any).cancellationAt
     ).length;
@@ -196,6 +231,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   // Helper function to count waitlisted registrations for an activity
   const getActivityWaitlistCount = (activityName: string): number => {
     if (!event) return 0;
+    if (activitySeatSummary.loaded) {
+      return activitySeatSummary.byName[activityName]?.waitlistedCount ?? 0;
+    }
     return registrations.filter(reg =>
       reg.eventId === event.id &&
       reg.wednesdayActivity === activityName &&

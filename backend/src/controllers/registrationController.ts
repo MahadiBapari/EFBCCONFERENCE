@@ -288,6 +288,55 @@ export class RegistrationController {
     }
   }
 
+  /**
+   * Aggregate confirmed / waitlisted counts per Wednesday activity for an event.
+   * Used by the registration UI so seat availability is accurate without exposing all registrations.
+   */
+  async getActivitySeatSummaryForEvent(req: Request, res: Response): Promise<void> {
+    try {
+      const auth = this.getAuth(req);
+      const uid = auth.id != null ? Number(auth.id) : NaN;
+      if (!auth.id || Number.isNaN(uid)) {
+        res.status(401).json({ success: false, error: 'Unauthorized' } satisfies ApiResponse);
+        return;
+      }
+
+      const eventId = Number(req.params.eventId);
+      if (!eventId || Number.isNaN(eventId)) {
+        res.status(400).json({ success: false, error: 'Invalid event ID' } satisfies ApiResponse);
+        return;
+      }
+
+      const rows = await this.db.query(
+        `SELECT
+          wednesday_activity AS activityName,
+          SUM(CASE WHEN COALESCE(wednesday_activity_waitlisted, 0) = 0 THEN 1 ELSE 0 END) AS confirmedCount,
+          SUM(CASE WHEN COALESCE(wednesday_activity_waitlisted, 0) != 0 THEN 1 ELSE 0 END) AS waitlistedCount
+        FROM registrations
+        WHERE event_id = ?
+          AND (status IS NULL OR status != 'cancelled')
+          AND cancellation_at IS NULL
+        GROUP BY wednesday_activity`,
+        [eventId]
+      );
+
+      const activities = (rows as any[]).map((r) => ({
+        activityName: String(r.activityName ?? ''),
+        confirmedCount: Number(r.confirmedCount ?? 0),
+        waitlistedCount: Number(r.waitlistedCount ?? 0),
+      }));
+
+      const response: ApiResponse<{ eventId: number; activities: typeof activities }> = {
+        success: true,
+        data: { eventId, activities },
+      };
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Error fetching activity seat summary:', error);
+      res.status(500).json({ success: false, error: 'Failed to load activity seat summary' } satisfies ApiResponse);
+    }
+  }
+
   // Get registration by ID
   async getRegistrationById(req: Request, res: Response): Promise<void> {
     try {

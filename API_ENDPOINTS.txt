@@ -167,6 +167,11 @@ GET    /api/registrations/mine
        Response: { success: boolean, data: Registration[] }
        Auth: Required
 
+GET    /api/registrations/event/:eventId/activity-seat-summary
+       Description: Aggregate Wednesday-activity seat usage (confirmed vs waitlisted counts per activity) for accurate seat display on registration; does not return individual registrations
+       Response: { success: boolean, data: { eventId: number, activities: { activityName: string, confirmedCount: number, waitlistedCount: number }[] } }
+       Auth: Required
+
 GET    /api/registrations/event/:eventId
        Description: Get all registrations for a specific event by event ID
        Query: ?page=number&limit=number&search=string
