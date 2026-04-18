@@ -1021,15 +1021,16 @@ export class RegistrationController {
           finalReason += (finalReason ? '. ' : '') + adminReason;
         }
         
-        // Update database payload if pending amount exists
-        // Use cumulative unpaid balance (newTotalPrice - oldPaidAmount) so that
+        // Update database payload if pending amount exists.
+        // Stack the new increment on top of any existing pending balance so
         // successive additions (e.g. kids batch 1 then batch 2) accumulate
-        // rather than overwriting the prior pending amount.
-        const cumulativePending = Math.max(0, newTotalPrice - oldPaidAmount);
+        // correctly even when paid_amount includes card processing fees.
+        const existingPending = Number(existingRow.pending_payment_amount || 0);
+        const newPending = existingPending + pendingAmount;
         if (pendingAmount > 0) {
           dbPayload.total_price = newTotalPrice;
           dbPayload.paid_amount = oldPaidAmount;
-          dbPayload.pending_payment_amount = cumulativePending;
+          dbPayload.pending_payment_amount = newPending;
           dbPayload.pending_payment_reason = finalReason;
           dbPayload.pending_payment_created_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
           dbPayload.paid = 0;
