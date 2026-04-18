@@ -484,7 +484,6 @@ useEffect(() => {
         // Do not send timestamps on write
         const { createdAt, updatedAt, ...payload } = finalRegistration as any;
 
-        // Decide create vs update based on existing local registration
         const existing = registrations.find(r => r.userId === userId && r.eventId === (payload.eventId as number));
         if (existing || regData.id) {
           const idToUpdate = regData.id || existing?.id;
@@ -508,16 +507,9 @@ useEffect(() => {
           const { id, ...createPayload } = payload as any;
           await apiClient.post(`/registrations`, createPayload);
         }
-      } catch (e) {
-        console.error('Failed to save registration to API, falling back to local:', e);
-        // Fallback local upsert if API fails
-        const localId = regData.id || Date.now();
-        const localFinal = { ...finalRegistration, id: localId } as Registration;
-        setRegistrations(prev => {
-          const exists = prev.some(r => r.id === localId);
-          if (exists) return prev.map(r => (r.id === localId ? localFinal : r));
-          return [...prev, localFinal];
-        });
+      } catch (e: any) {
+        console.error('Failed to save registration to API:', e);
+        alert(`Error saving registration: ${e?.response?.data?.error || e?.message || 'Unknown error'}. Changes may not have been saved.`);
         return;
       }
       await loadRegistrationsFromApi();

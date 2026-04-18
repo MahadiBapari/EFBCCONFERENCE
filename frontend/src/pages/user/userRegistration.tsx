@@ -1015,7 +1015,6 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       }
       
       onSave(registrationData);
-      // Show success popup to the user
       alert('Registration updated successfully');
       onBack();
     } catch (error) {

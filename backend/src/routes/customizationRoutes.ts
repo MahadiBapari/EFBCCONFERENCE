@@ -33,7 +33,8 @@ const getController = (req: Request, res: Response, next: () => void) => {
 router.get('/email', getController, async (req: Request, res: Response) => {
   const auth = getAuth(req);
   if (!auth.id || auth.role !== 'admin') {
-    return res.status(403).json({ success: false, error: 'Admin access required' });
+    res.status(403).json({ success: false, error: 'Admin access required' });
+    return;
   }
   const controller = (req as any).customizationController as CustomizationController;
   await controller.getEmailCustomization(req, res);
@@ -43,7 +44,8 @@ router.get('/email', getController, async (req: Request, res: Response) => {
 router.put('/email', getController, async (req: Request, res: Response) => {
   const auth = getAuth(req);
   if (!auth.id || auth.role !== 'admin') {
-    return res.status(403).json({ success: false, error: 'Admin access required' });
+    res.status(403).json({ success: false, error: 'Admin access required' });
+    return;
   }
   const controller = (req as any).customizationController as CustomizationController;
   await controller.updateEmailCustomization(req, res);
@@ -53,7 +55,8 @@ router.put('/email', getController, async (req: Request, res: Response) => {
 router.get('/contact', getController, async (req: Request, res: Response) => {
   const auth = getAuth(req);
   if (!auth.id || auth.role !== 'admin') {
-    return res.status(403).json({ success: false, error: 'Admin access required' });
+    res.status(403).json({ success: false, error: 'Admin access required' });
+    return;
   }
   const controller = (req as any).customizationController as CustomizationController;
   await controller.getContactCustomization(req, res);
@@ -63,7 +66,8 @@ router.get('/contact', getController, async (req: Request, res: Response) => {
 router.put('/contact', getController, async (req: Request, res: Response) => {
   const auth = getAuth(req);
   if (!auth.id || auth.role !== 'admin') {
-    return res.status(403).json({ success: false, error: 'Admin access required' });
+    res.status(403).json({ success: false, error: 'Admin access required' });
+    return;
   }
   const controller = (req as any).customizationController as CustomizationController;
   await controller.updateContactCustomization(req, res);
@@ -85,7 +89,8 @@ router.get('/faq/public', getController, async (req: Request, res: Response) => 
 router.get('/faq', getController, async (req: Request, res: Response) => {
   const auth = getAuth(req);
   if (!auth.id || auth.role !== 'admin') {
-    return res.status(403).json({ success: false, error: 'Admin access required' });
+    res.status(403).json({ success: false, error: 'Admin access required' });
+    return;
   }
   const controller = (req as any).customizationController as CustomizationController;
   await controller.getFaqsAdmin(req, res);
@@ -95,7 +100,8 @@ router.get('/faq', getController, async (req: Request, res: Response) => {
 router.post('/faq', getController, async (req: Request, res: Response) => {
   const auth = getAuth(req);
   if (!auth.id || auth.role !== 'admin') {
-    return res.status(403).json({ success: false, error: 'Admin access required' });
+    res.status(403).json({ success: false, error: 'Admin access required' });
+    return;
   }
   const controller = (req as any).customizationController as CustomizationController;
   await controller.createFaq(req, res);
@@ -105,7 +111,8 @@ router.post('/faq', getController, async (req: Request, res: Response) => {
 router.put('/faq/:id', getController, async (req: Request, res: Response) => {
   const auth = getAuth(req);
   if (!auth.id || auth.role !== 'admin') {
-    return res.status(403).json({ success: false, error: 'Admin access required' });
+    res.status(403).json({ success: false, error: 'Admin access required' });
+    return;
   }
   const controller = (req as any).customizationController as CustomizationController;
   await controller.updateFaq(req, res);
@@ -115,7 +122,8 @@ router.put('/faq/:id', getController, async (req: Request, res: Response) => {
 router.delete('/faq/:id', getController, async (req: Request, res: Response) => {
   const auth = getAuth(req);
   if (!auth.id || auth.role !== 'admin') {
-    return res.status(403).json({ success: false, error: 'Admin access required' });
+    res.status(403).json({ success: false, error: 'Admin access required' });
+    return;
   }
   const controller = (req as any).customizationController as CustomizationController;
   await controller.deleteFaq(req, res);

@@ -765,7 +765,6 @@ export class RegistrationController {
           
           // Handle special conversions
           if (camelKey === 'kids') {
-            // Store kids array in JSON column
             if (Array.isArray(value) && value.length > 0) {
               value = JSON.stringify(value);
             } else {
@@ -813,7 +812,9 @@ export class RegistrationController {
           ? (newSpouseTicketRaw === true || newSpouseTicketRaw === 'Yes' || newSpouseTicketRaw === 'yes' || newSpouseTicketRaw === 1)
           : oldSpouseTicket;
 
-        const oldKidsData = existingRow.kids_data ? JSON.parse(existingRow.kids_data) : [];
+        const oldKidsData = existingRow.kids_data
+          ? (typeof existingRow.kids_data === 'string' ? JSON.parse(existingRow.kids_data) : existingRow.kids_data)
+          : [];
         const oldKidsCount = Array.isArray(oldKidsData) ? oldKidsData.length : 0;
         const newKids = updateDataObj.kids;
         const newKidsCount = Array.isArray(newKids) ? newKids.length : oldKidsCount;
@@ -880,7 +881,9 @@ export class RegistrationController {
         const oldTotalPrice = Number(existingRow.total_price || 0);
         const oldPaidAmount = Number(existingRow.paid_amount || (existingRow.paid ? oldTotalPrice : 0));
         const oldSpouseTicket = existingRow.spouse_dinner_ticket || false;
-        const oldKidsData = existingRow.kids_data ? JSON.parse(existingRow.kids_data) : [];
+        const oldKidsData = existingRow.kids_data
+          ? (typeof existingRow.kids_data === 'string' ? JSON.parse(existingRow.kids_data) : existingRow.kids_data)
+          : [];
         const oldKidsCount = Array.isArray(oldKidsData) ? oldKidsData.length : 0;
         
         // Calculate new total price and pending amount
