@@ -22,6 +22,11 @@
   color: white;
 }
 
+.status-due {
+  background-color: #f59e0b;
+  color: #111827;
+}
+
 .event-details {
   list-style: none;
   margin: 1rem 0;

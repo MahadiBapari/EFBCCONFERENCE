@@ -12,7 +12,7 @@ interface UserDashboardProps {
   handleSaveRegistration: (regData: Registration) => void;
   handleCancelRegistration: (regId: number) => void;
   user: User;
-  onBeginRegistration: (eventId?: number) => void;
+  onBeginRegistration: (eventId?: number, scrollToPayment?: boolean) => void;
   pendingCancellationIds?: number[];
 }
 
@@ -35,6 +35,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     registrations.find(r => r.userId === user.id && r.eventId === activeEvent?.id), 
     [registrations, user, activeEvent]
   );
+  const hasPendingBalance = Number((userRegistration as any)?.pendingPaymentAmount || 0) > 0;
 
   // NOTE: Per requirements, dashboard cards show global event counts now
 
@@ -70,6 +71,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             <div className="event-header-left">
               <h2>{activeEvent.name}</h2>
               <span className="event-status status-active">Active</span>
+              {userRegistration && (userRegistration as any).status !== 'cancelled' && hasPendingBalance && (
+                <span className="event-status status-due">Due</span>
+              )}
             </div>
             {userRegistration && (userRegistration as any).status !== 'cancelled' && (
               <button
@@ -113,9 +117,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 <div className="event-actions">
                   <button
                     className="btn btn-primary"
-                    onClick={() => onBeginRegistration(activeEvent.id)}
+                    onClick={() => onBeginRegistration(activeEvent.id, hasPendingBalance)}
                   >
-                    Edit
+                    {hasPendingBalance ? 'Pay' : 'Edit'}
                   </button>
                   <button
                     className="btn btn-danger"

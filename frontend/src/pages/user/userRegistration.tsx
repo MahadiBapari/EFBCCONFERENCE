@@ -147,6 +147,7 @@ interface UserRegistrationProps {
   registrations: Registration[];
   user: { id: number; name: string; email: string };
   targetEventId?: number | null;
+  scrollToPayment?: boolean;
   onBack: () => void;
   onSave: (regData: Registration) => void;
   isAdminEdit?: boolean; // True when admin is editing/creating registration
@@ -157,6 +158,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   registrations,
   user,
   targetEventId,
+  scrollToPayment = false,
   onBack,
   onSave,
   isAdminEdit = false,
@@ -489,6 +491,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       setFormData(prev => ({ ...prev, spouseDinnerTicket: true }));
     }
   }, [hadSpousePayment, formData.spouseDinnerTicket]);
+
+  useEffect(() => {
+    if (!scrollToPayment || isAdminEdit) return;
+
+    const tryScrollToPayment = () => {
+      const paymentSection = document.getElementById('payment-section');
+      if (!paymentSection) return;
+      paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const timer = setTimeout(tryScrollToPayment, 200);
+    return () => clearTimeout(timer);
+  }, [scrollToPayment, isAdminEdit, isEditing, isAlreadyPaid, formData.pendingPaymentAmount, formData.spouseDinnerTicket, kids.length, originalKidsCount]);
 
   useEffect(() => {
     // Skip price calculation if override is enabled (admin is manually setting price)
@@ -3633,7 +3648,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             }
             
             return (
-            <div className="form-section">
+            <div className="form-section" id="payment-section">
               <h3 className="section-title">Payment Information</h3>
               {(() => {
                 // Re-check these flags for the payment summary logic
