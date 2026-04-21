@@ -483,6 +483,18 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     }
     return 675;
   }, [registration, event]);
+
+  /** Saved registration package total (`total_price` at edit open) — delta vs form is incremental due for cards/pending UI */
+  const baselinePackageTotal = useMemo(
+    () => (registration ? Number(registration.totalPrice) || 0 : 0),
+    [registration],
+  );
+
+  const adminPackageDeltaDue = useMemo(() => {
+    const current = Number(formData.totalPrice ?? 0);
+    return Math.max(0, Math.round((current - baselinePackageTotal) * 100) / 100);
+  }, [formData.totalPrice, baselinePackageTotal]);
+
   // const childLunchPrice = useMemo(() => event?.childLunchPrice || 0, [event?.childLunchPrice]);
 
   // Ensure spouse ticket stays checked if payment was made
@@ -3541,8 +3553,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                         Override Price: <strong>${priceOverride.toFixed(2)}</strong>
                       </p>
                       {isEditing && registration && (
-                        <p style={{ margin: '4px 0', color: priceOverride > originalPrice ? '#dc2626' : '#059669' }}>
-                          Difference: <strong>${(priceOverride - originalPrice).toFixed(2)}</strong>
+                        <p style={{ margin: '4px 0', color: priceOverride > baselinePackageTotal ? '#dc2626' : '#059669' }}>
+                          Difference vs saved package: <strong>${(priceOverride - baselinePackageTotal).toFixed(2)}</strong>
                         </p>
                       )}
                     </>
@@ -3551,15 +3563,18 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       <p style={{ margin: '4px 0', color: '#6b7280' }}>
                         {isEditing && registration ? 'Original Price (Paid):' : 'Base Price:'} <strong>${originalPrice.toFixed(2)}</strong>
                       </p>
+                      {isEditing && registration && (
+                        <p style={{ margin: '4px 0', color: '#6b7280' }}>
+                          Previous saved package total: <strong>${baselinePackageTotal.toFixed(2)}</strong>
+                        </p>
+                      )}
                       <p style={{ margin: '4px 0', color: '#6b7280' }}>
                         Current Calculated Price: <strong>${(formData.totalPrice || 675).toFixed(2)}</strong>
                       </p>
-                      {/* Only show additional amount due if something actually changed (spouse, kids, or override) */}
-                      {isEditing && registration && 
-                       (formData.totalPrice || 675) > originalPrice && 
-                       (formData.spouseDinnerTicket !== hadSpouseTicket || kids.length !== originalKidsCount) && (
+                      {/* Incremental due = current package − saved package (matches backend pending stacking for add-ons) */}
+                      {isEditing && registration && adminPackageDeltaDue > 0 && (
                         <p style={{ margin: '4px 0', color: '#dc2626', fontWeight: '600' }}>
-                          Additional Amount Due: <strong>${((formData.totalPrice || 675) - originalPrice).toFixed(2)}</strong>
+                          Additional Amount Due: <strong>${adminPackageDeltaDue.toFixed(2)}</strong>
                         </p>
                       )}
                     </>
