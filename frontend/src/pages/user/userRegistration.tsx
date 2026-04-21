@@ -1081,10 +1081,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         (registrationData as any).spousePaymentId = (registration as any)?.spousePaymentId;
         (registrationData as any).kidsPaymentId = (registration as any)?.kidsPaymentId;
         (registrationData as any).paidAmount = (registration as any)?.paidAmount;
-        registrationData.totalPrice =
-          isAdminEdit && priceOverrideEnabled
-            ? priceOverride
-            : Number(formData.totalPrice ?? (registration as any)?.totalPrice ?? 0);
+        // Keep DB package total — do not use form recalculation (spouse/kids bumps) when waiving pending via Comp
+        registrationData.totalPrice = Number((registration as any)?.totalPrice ?? 0);
         (registrationData as any).paid = true;
         const originalPaidAt = (registration as any)?.paidAt;
         const hasMeaningfulPaidAt =

@@ -1157,6 +1157,8 @@ export class RegistrationController {
           if (keepPaidAt) {
             dbPayload.paid_at = existingRow.paid_at;
           }
+          // Do not raise total_price with tier math when Comp waives pending — keep pre-update package total
+          dbPayload.total_price = oldTotalPrice;
         }
       }
       
