@@ -457,11 +457,15 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const spouseTiers = useMemo(() => event?.spousePricing || [], [event?.spousePricing]);
   const kidsTiers = useMemo(() => event?.kidsPricing || [], [event?.kidsPricing]);
 
-  // Calculate original price (what was already paid/stored for existing registrations)
+  // Calculate original paid baseline for admin comparison displays
   const originalPrice = useMemo(() => {
     if (registration) {
-      // For existing registrations, use the stored price as original (what was already paid)
-      return registration.totalPrice || 675;
+      // Prefer explicit paidAmount when available; fallback to stored totalPrice for legacy rows
+      const paidAmountValue = Number((registration as any).paidAmount);
+      if (Number.isFinite(paidAmountValue) && paidAmountValue > 0) {
+        return paidAmountValue;
+      }
+      return Number(registration.totalPrice) || 675;
     }
     // For new registrations, calculate base price only (no spouse, no kids)
     if (event) {
