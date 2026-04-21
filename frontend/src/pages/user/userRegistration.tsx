@@ -1002,6 +1002,26 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const pickleballEquipmentValue = isPickleball ? ((formData as any).pickleballEquipment !== undefined ? (formData as any).pickleballEquipment : null) : null;
 
       const isCompPayment = paymentMethod === 'Comp';
+      const pendingBalanceForComp = Number(
+        (registration as any)?.pendingPaymentAmount ?? formData.pendingPaymentAmount ?? 0
+      );
+      const hadPriorPaymentSnapshot =
+        Number((registration as any)?.paidAmount || 0) > 0 ||
+        !!(registration as any)?.squarePaymentId ||
+        !!(registration as any)?.spousePaymentId ||
+        !!(registration as any)?.kidsPaymentId;
+      const hasNewChargeThisEdit =
+        pendingBalanceForComp > 0 ||
+        (!!formData.spouseDinnerTicket && !hadSpouseTicket) ||
+        kids.length > originalKidsCount;
+      const compWaivesPendingOnly =
+        isCompPayment &&
+        isAdminEdit &&
+        isEditing &&
+        !!registration &&
+        hadPriorPaymentSnapshot &&
+        hasNewChargeThisEdit;
+
       const registrationData: Registration = {
         ...(registration?.id ? { id: registration.id } : {} as any),
         userId: user.id,
@@ -1052,7 +1072,29 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         ...(isAdminEdit && priceOverrideEnabled ? { totalPrice: priceOverride } : {}),
         ...(isAdminEdit && priceOverrideEnabled && priceOverrideReason ? { pendingPaymentReason: priceOverrideReason } : {}),
       } as Registration;
-      if (isCompPayment) {
+      if (compWaivesPendingOnly) {
+        // Admin Comp after initial paid registration: waive pending balance only — keep prior payment IDs and paid snapshot
+        (registrationData as any).pendingPaymentAmount = 0;
+        (registrationData as any).pendingPaymentReason = undefined;
+        (registrationData as any).pendingPaymentCreatedAt = undefined;
+        (registrationData as any).squarePaymentId = (registration as any)?.squarePaymentId;
+        (registrationData as any).spousePaymentId = (registration as any)?.spousePaymentId;
+        (registrationData as any).kidsPaymentId = (registration as any)?.kidsPaymentId;
+        (registrationData as any).paidAmount = (registration as any)?.paidAmount;
+        registrationData.totalPrice =
+          isAdminEdit && priceOverrideEnabled
+            ? priceOverride
+            : Number(formData.totalPrice ?? (registration as any)?.totalPrice ?? 0);
+        (registrationData as any).paid = true;
+        const originalPaidAt = (registration as any)?.paidAt;
+        const hasMeaningfulPaidAt =
+          originalPaidAt != null &&
+          String(originalPaidAt).trim() !== '' &&
+          !String(originalPaidAt).startsWith('0000-00-00');
+        if (hasMeaningfulPaidAt) {
+          (registrationData as any).paidAt = originalPaidAt;
+        }
+      } else if (isCompPayment) {
         registrationData.totalPrice = 0;
         (registrationData as any).paid = true;
         (registrationData as any).paidAt = new Date().toISOString();

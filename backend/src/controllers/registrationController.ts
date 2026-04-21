@@ -1126,6 +1126,38 @@ export class RegistrationController {
             dbPayload.paid_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
           }
         }
+
+        // Admin Comp after prior card payment(s): waive outstanding pending only — do not clear payment IDs or clobber paid_amount / paid_at.
+        const paymentMethodLower = String(updateDataObj.paymentMethod ?? '').toLowerCase();
+        const priorPaidEvidence =
+          oldPaidAmount > 0 ||
+          !!existingRow.square_payment_id ||
+          !!existingRow.spouse_payment_id ||
+          !!existingRow.kids_payment_id;
+        if (
+          paymentMethodLower === 'comp' &&
+          priorPaidEvidence &&
+          (existingPending > 0 || pendingAmount > 0)
+        ) {
+          dbPayload.pending_payment_amount = 0;
+          dbPayload.pending_payment_reason = null;
+          dbPayload.pending_payment_created_at = null;
+          dbPayload.paid = 1;
+          const clientPaidAmt = updateDataObj.paidAmount;
+          if (clientPaidAmt !== undefined && clientPaidAmt !== null && Number.isFinite(Number(clientPaidAmt))) {
+            dbPayload.paid_amount = Number(clientPaidAmt);
+          } else {
+            dbPayload.paid_amount = oldPaidAmount;
+          }
+          const existingPaidAtStr = existingRow.paid_at ? String(existingRow.paid_at) : '';
+          const keepPaidAt =
+            existingPaidAtStr &&
+            !existingPaidAtStr.startsWith('0000-00-00') &&
+            existingPaidAtStr.trim() !== '';
+          if (keepPaidAt) {
+            dbPayload.paid_at = existingRow.paid_at;
+          }
+        }
       }
       
       // If a non-admin user just completed a pending payment,
