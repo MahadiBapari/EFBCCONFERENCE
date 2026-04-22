@@ -73,6 +73,14 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
     return baseAmount;
   };
 
+  const getCompensationScopeLabel = (reg: Registration): string | null => {
+    const notes = String((reg as any).updateNotes || '').trim();
+    if (!notes) return null;
+    const lines = notes.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    const compLine = lines.find((line) => /^Comp\.\s*/i.test(line));
+    return compLine || null;
+  };
+
   const downloadPDF = async () => {
     if (!registration || !event) return;
 
@@ -418,6 +426,7 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
     const pdfPendingAmt = Number((registration as any).pendingPaymentAmount || 0);
     const pdfHasPending = pdfPendingAmt > 0;
     const pdfPaidAmt = Number((registration as any).paidAmount || 0);
+    const pdfCompScope = getCompensationScopeLabel(registration);
     doc.setFont('helvetica', 'bold');
     doc.text('Total Payment Amount:', margin, yPos);
     doc.setFont('helvetica', 'normal');
@@ -440,6 +449,13 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
     doc.setFont('helvetica', 'normal');
     doc.text(registration.paymentMethod || '-', margin + 60, yPos);
     yPos += 6;
+    if (pdfCompScope) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Compensation:', margin, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(pdfCompScope, margin + 60, yPos);
+      yPos += 6;
+    }
     if (typeof (registration as any).paid !== 'undefined') {
       doc.setFont('helvetica', 'bold');
       doc.text('Paid:', margin, yPos);
@@ -755,6 +771,7 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
             const pendingAmt = Number((registration as any).pendingPaymentAmount || 0);
             const hasPending = pendingAmt > 0;
             const paidAmt = Number((registration as any).paidAmount || 0);
+            const compScope = getCompensationScopeLabel(registration);
             return (
               <>
                 <Line
@@ -768,6 +785,7 @@ export const RegistrationPreview: React.FC<RegistrationPreviewProps> = ({
                   </>
                 )}
                 <Line label="Payment Method" value={registration.paymentMethod} />
+                {compScope && <Line label="Compensation" value={compScope} />}
                 {typeof (registration as any).paid !== 'undefined' && (
                   <Line label="Paid" value={hasPending ? 'Due' : ((registration as any).paid ? 'Yes' : 'No')} />
                 )}

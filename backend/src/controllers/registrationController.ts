@@ -1139,9 +1139,22 @@ export class RegistrationController {
           priorPaidEvidence &&
           (existingPending > 0 || pendingAmount > 0)
         ) {
+          const newSpouseTicketRaw = updateDataObj.spouseDinnerTicket;
+          const newSpouseTicket = newSpouseTicketRaw !== undefined
+            ? (newSpouseTicketRaw === true || newSpouseTicketRaw === 'Yes' || newSpouseTicketRaw === 'yes' || newSpouseTicketRaw === 1)
+            : !!existingRow.spouse_dinner_ticket;
+          const newKidsRaw = updateDataObj.kids;
+          const newKidsCount = Array.isArray(newKidsRaw) ? newKidsRaw.length : oldKidsCount;
+          const compScopeParts: string[] = [];
+          if (!oldSpouseTicket && newSpouseTicket) compScopeParts.push('Spouse');
+          if (newKidsCount > oldKidsCount) compScopeParts.push('Children');
+          const compScopeNote = compScopeParts.length > 0 ? `Comp. ${compScopeParts.join(', ')}` : '';
+
           dbPayload.pending_payment_amount = 0;
           dbPayload.pending_payment_reason = null;
           dbPayload.pending_payment_created_at = null;
+          // Preserve original payment method in history/previews; Comp acts as a waiver marker only.
+          dbPayload.payment_method = existingRow.payment_method || dbPayload.payment_method;
           dbPayload.paid = 1;
           const clientPaidAmt = updateDataObj.paidAmount;
           if (clientPaidAmt !== undefined && clientPaidAmt !== null && Number.isFinite(Number(clientPaidAmt))) {
@@ -1159,6 +1172,15 @@ export class RegistrationController {
           }
           // Do not raise total_price with tier math when Comp waives pending — keep pre-update package total
           dbPayload.total_price = oldTotalPrice;
+          if (compScopeNote) {
+            const existingNotes = dbPayload.update_notes !== undefined
+              ? String(dbPayload.update_notes || '')
+              : String(existingRow.update_notes || '');
+            const firstNoteLine = existingNotes.split('\n')[0]?.trim();
+            if (firstNoteLine !== compScopeNote) {
+              dbPayload.update_notes = existingNotes ? `${compScopeNote}\n${existingNotes}` : compScopeNote;
+            }
+          }
         }
       }
       
