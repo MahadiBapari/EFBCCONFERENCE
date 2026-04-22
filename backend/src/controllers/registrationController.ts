@@ -1191,11 +1191,13 @@ export class RegistrationController {
 
         dbPayload.paid_amount = newPaidAmount;
 
-        // If paid_amount exceeds total_price (e.g. card fee included),
-        // bump total_price to match so future pending calculations stay correct.
-        if (newPaidAmount > totalPrice) {
-          dbPayload.total_price = newPaidAmount;
-        }
+        // Package subtotal (`total_price`) must stay tier-based (no card processing fee).
+        // `newPaidAmount` includes fees from Square — never copy it into total_price.
+        // Admin updates already set total_price to the full calculated package when spouse/kids/pricing
+        // changed; pending_payment_amount is the unpaid balance — paying it does not change the
+        // package total (it was already reflected in total_price when the admin save ran).
+        // Explicitly keep the pre-update row total_price (fee-free package).
+        dbPayload.total_price = totalPrice;
 
         dbPayload.pending_payment_amount = 0;
         dbPayload.pending_payment_reason = null;
