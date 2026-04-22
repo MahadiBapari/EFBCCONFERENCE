@@ -3596,7 +3596,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     <>
                       {isEditing && registration && (
                         <p style={{ margin: '4px 0', color: '#6b7280' }}>
-                          Original Price (Paid): <strong>${originalPrice.toFixed(2)}</strong>
+                          Original Price: <strong>${originalPrice.toFixed(2)}</strong>
                         </p>
                       )}
                       <p style={{ margin: '4px 0', color: '#6b7280' }}>
@@ -3886,9 +3886,16 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   const pendingPaymentAmount = Number(formData.pendingPaymentAmount || 0);
                   const pendingPaymentReason = formData.pendingPaymentReason || '';
                   const hasPendingPayment = pendingPaymentAmount > 0;
+                  const isCheckPayment = (formData.paymentMethod || 'Card') === 'Check';
+                  const isCheckMarkedPaidByAdmin = isAdminEdit && isCheckPayment && formData.paid === true;
+                  const projectedPendingAmount = isCheckMarkedPaidByAdmin
+                    ? 0
+                    : (hasPendingPayment ? pendingPaymentAmount + finalTotal : pendingPaymentAmount);
                   
                   // If there's a pending payment, use it as the base total instead
-                  const amountToPay = hasPendingPayment ? pendingPaymentAmount : finalTotal;
+                  const amountToPay = hasPendingPayment
+                    ? (isCheckPayment ? projectedPendingAmount : pendingPaymentAmount)
+                    : finalTotal;
                   
                   const isCard = (formData.paymentMethod || 'Card') === 'Card';
                   // Calculate 3.5% convenience fee for card payments (on amount to pay)
@@ -3914,7 +3921,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                         </div>
                       )}
                       <div style={{ color: '#374151', fontSize: '1rem' }}>
-                        <strong style={{ color: '#374151' }}>Amount Due:</strong> <span style={{ fontWeight: 600 }}>${pendingPaymentAmount.toFixed(2)}</span>
+                        <strong style={{ color: '#374151' }}>Amount Due:</strong> <span style={{ fontWeight: 600 }}>${(isCheckPayment ? projectedPendingAmount : pendingPaymentAmount).toFixed(2)}</span>
                       </div>
                     </div>
                   )}
@@ -3926,8 +3933,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                   )}
                   {hasPendingPayment && (
                     <div className="payment-item">
-                      <span>Outstanding Balance:</span>
-                      <span>${pendingPaymentAmount.toFixed(2)}</span>
+                      <span>{isCheckPayment ? 'Outstanding Balance (Total):' : 'Outstanding Balance:'}</span>
+                      <span>${(isCheckPayment ? projectedPendingAmount : pendingPaymentAmount).toFixed(2)}</span>
                     </div>
                   )}
                   {/* Only show breakdown if price is NOT overridden and NO pending payment */}

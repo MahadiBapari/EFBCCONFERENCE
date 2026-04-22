@@ -1127,6 +1127,26 @@ export class RegistrationController {
           }
         }
 
+        // If admin explicitly marks Check as paid, clear all pending and mark paid now.
+        // This should override pending accumulation from add-ons in the same edit.
+        const selectedPaymentMethod = String(updateDataObj.paymentMethod || existingRow.payment_method || '').toLowerCase();
+        const adminMarkedPaid = updateDataObj.paid === true || updateDataObj.paid === 1 || String(updateDataObj.paid).toLowerCase() === 'true';
+        if (selectedPaymentMethod === 'check' && adminMarkedPaid) {
+          dbPayload.paid = 1;
+          dbPayload.pending_payment_amount = 0;
+          dbPayload.pending_payment_reason = null;
+          dbPayload.pending_payment_created_at = null;
+          const effectiveTotalPrice = Number(
+            dbPayload.total_price !== undefined ? dbPayload.total_price : newTotalPrice
+          );
+          dbPayload.paid_amount = Number.isFinite(effectiveTotalPrice) ? effectiveTotalPrice : oldTotalPrice;
+          const paidAtStr = existingRow.paid_at ? String(existingRow.paid_at) : '';
+          const isMissingPaidAt = !paidAtStr || paidAtStr.startsWith('0000-00-00');
+          if (isMissingPaidAt) {
+            dbPayload.paid_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+          }
+        }
+
         // Admin Comp after prior card payment(s): waive outstanding pending only — do not clear payment IDs or clobber paid_amount / paid_at.
         const paymentMethodLower = String(updateDataObj.paymentMethod ?? '').toLowerCase();
         const priorPaidEvidence =
