@@ -12,6 +12,7 @@ import { formatDateShort } from '../../utils/dateUtils';
 import { getActivityNames, getActivitySeatLimit } from '../../utils/eventUtils';
 import { COUNTRY_OPTIONS, getRegionOptionsForCountry, normalizeCountryCode } from '../../utils/addressOptions';
 import apiClient from '../../services/apiClient';
+import { Modal } from '../../components/Modal';
 import '../../styles/RegistrationModal.css';
 
 /**
@@ -420,6 +421,8 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const [priceOverride, setPriceOverride] = useState<number>(registration?.totalPrice || 675);
   const [priceOverrideReason, setPriceOverrideReason] = useState<string>(registration?.pendingPaymentReason || '');
   const [compensatePreviousDue, setCompensatePreviousDue] = useState<boolean>(true);
+  const [showCompensationChoiceModal, setShowCompensationChoiceModal] = useState<boolean>(false);
+  const [pendingDueAtCompChoice, setPendingDueAtCompChoice] = useState<number>(0);
   
   // Load discount code data if registration already has a discount code
   useEffect(() => {
@@ -972,17 +975,46 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const handleAdminCompSelection = () => {
     const existingPending = Number((formData.pendingPaymentAmount ?? (registration as any)?.pendingPaymentAmount ?? 0));
     if (existingPending > 0) {
-      const confirmCompPrevious = window.confirm(
-        `Do you want to compensate the previous due amount of $${existingPending.toFixed(2)}?\n\n` +
-        'Click OK for Yes (clear all previous due).\n' +
-        'Click Cancel for No (keep previous due and only comp the newly added items).'
-      );
-      setCompensatePreviousDue(confirmCompPrevious);
+      setPendingDueAtCompChoice(existingPending);
+      setShowCompensationChoiceModal(true);
     } else {
       setCompensatePreviousDue(true);
+      setPendingDueAtCompChoice(0);
+      handleInputChange('paymentMethod', 'Comp');
     }
+  };
+
+  const handleCompensationChoice = (compensateAllPreviousDue: boolean) => {
+    setCompensatePreviousDue(compensateAllPreviousDue);
+    setShowCompensationChoiceModal(false);
+    setPendingDueAtCompChoice(0);
     handleInputChange('paymentMethod', 'Comp');
   };
+
+  const closeCompensationChoiceModal = () => {
+    setShowCompensationChoiceModal(false);
+    setPendingDueAtCompChoice(0);
+    // Keep current payment method unchanged when user dismisses the choice dialog.
+  };
+
+  const compensationChoiceFooter = (
+    <div className="modal-footer-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', width: '100%' }}>
+      <button
+        type="button"
+        className="btn btn-secondary"
+        onClick={() => handleCompensationChoice(false)}
+      >
+        No
+      </button>
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={() => handleCompensationChoice(true)}
+      >
+        Yes
+      </button>
+    </div>
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2424,6 +2456,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   }
 
   return (
+    <>
     <div className="container">
       <div className="page-header">
         <h1>{registration ? 'Edit' : 'Register'}</h1>
@@ -4138,6 +4171,26 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         </form>
       </div>
     </div>
+    {showCompensationChoiceModal && (
+      <Modal
+        title="Compensation Choice"
+        onClose={closeCompensationChoiceModal}
+        footer={compensationChoiceFooter}
+      >
+        <p style={{ marginBottom: '1rem' }}>
+          There is an existing due amount of <strong>${pendingDueAtCompChoice.toFixed(2)}</strong>.
+        </p>
+        <p style={{ marginBottom: '0.5rem' }}>
+          Do you want to compensate the previous due amount as well?
+        </p>
+        <p className="form-hint" style={{ marginTop: '0.5rem' }}>
+          <strong>Yes</strong>: Clears all previous due and newly added due items.
+          <br />
+          <strong>No</strong>: Keeps previous due and compensates only newly added items.
+        </p>
+      </Modal>
+    )}
+    </>
   );
 };
 
