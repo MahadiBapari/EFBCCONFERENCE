@@ -419,6 +419,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const [priceOverrideEnabled, setPriceOverrideEnabled] = useState(false);
   const [priceOverride, setPriceOverride] = useState<number>(registration?.totalPrice || 675);
   const [priceOverrideReason, setPriceOverrideReason] = useState<string>(registration?.pendingPaymentReason || '');
+  const [compensatePreviousDue, setCompensatePreviousDue] = useState<boolean>(true);
   
   // Load discount code data if registration already has a discount code
   useEffect(() => {
@@ -968,6 +969,21 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleAdminCompSelection = () => {
+    const existingPending = Number((formData.pendingPaymentAmount ?? (registration as any)?.pendingPaymentAmount ?? 0));
+    if (existingPending > 0) {
+      const confirmCompPrevious = window.confirm(
+        `Do you want to compensate the previous due amount of $${existingPending.toFixed(2)}?\n\n` +
+        'Click OK for Yes (clear all previous due).\n' +
+        'Click Cancel for No (keep previous due and only comp the newly added items).'
+      );
+      setCompensatePreviousDue(confirmCompPrevious);
+    } else {
+      setCompensatePreviousDue(true);
+    }
+    handleInputChange('paymentMethod', 'Comp');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!event) return;
@@ -1083,6 +1099,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         // Include admin price override if enabled
         ...(isAdminEdit && priceOverrideEnabled ? { totalPrice: priceOverride } : {}),
         ...(isAdminEdit && priceOverrideEnabled && priceOverrideReason ? { pendingPaymentReason: priceOverrideReason } : {}),
+        ...(isAdminEdit && isCompPayment ? { compensatePreviousDue } : {}),
       } as Registration;
       if (compWaivesPendingOnly) {
         // Admin Comp after initial paid registration: waive pending balance only — keep prior payment IDs and paid snapshot
@@ -3640,12 +3657,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       type="radio"
                       name="paymentMethod"
                       checked={formData.paymentMethod === 'Comp'}
-                      onChange={() => handleInputChange('paymentMethod', 'Comp')}
+                      onChange={handleAdminCompSelection}
                     />
                     <span style={{ marginLeft: '8px' }}>Comp</span>
                   </label>
                 </div>
               </div>
+              {formData.paymentMethod === 'Comp' && isAdminEdit && Number((formData.pendingPaymentAmount ?? (registration as any)?.pendingPaymentAmount ?? 0)) > 0 && (
+                <p className="form-hint" style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                  {compensatePreviousDue
+                    ? 'Comp mode: previous due will be cleared along with newly added items.'
+                    : 'Comp mode: previous due will remain; only newly added items will be compensated.'}
+                </p>
+              )}
               {formData.paymentMethod === 'Check' && (
                 <div className="form-group">
                   <label className="form-label">Paid</label>

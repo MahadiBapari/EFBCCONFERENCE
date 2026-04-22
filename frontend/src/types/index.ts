@@ -157,6 +157,7 @@ export interface Registration {
   pendingPaymentAmount?: number;
   pendingPaymentReason?: string;
   pendingPaymentCreatedAt?: string;
+  compensatePreviousDue?: boolean;
   
   // Legacy fields for backward compatibility
   name: string;

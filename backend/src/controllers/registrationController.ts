@@ -1139,6 +1139,12 @@ export class RegistrationController {
           priorPaidEvidence &&
           (existingPending > 0 || pendingAmount > 0)
         ) {
+          const compensatePreviousDue =
+            updateDataObj.compensatePreviousDue === undefined
+              ? true
+              : (updateDataObj.compensatePreviousDue === true ||
+                updateDataObj.compensatePreviousDue === 1 ||
+                String(updateDataObj.compensatePreviousDue).toLowerCase() === 'true');
           const newSpouseTicketRaw = updateDataObj.spouseDinnerTicket;
           const newSpouseTicket = newSpouseTicketRaw !== undefined
             ? (newSpouseTicketRaw === true || newSpouseTicketRaw === 'Yes' || newSpouseTicketRaw === 'yes' || newSpouseTicketRaw === 1)
@@ -1148,14 +1154,29 @@ export class RegistrationController {
           const compScopeParts: string[] = [];
           if (!oldSpouseTicket && newSpouseTicket) compScopeParts.push('Spouse');
           if (newKidsCount > oldKidsCount) compScopeParts.push('Children');
-          const compScopeNote = compScopeParts.length > 0 ? `Comp. ${compScopeParts.join(', ')}` : '';
+          const compScopeNote = compScopeParts.length > 0
+            ? `Comp. ${compScopeParts.join(', ')}${compensatePreviousDue ? '' : ' (new only)'}`
+            : (compensatePreviousDue ? 'Comp. Previous Due' : '');
 
-          dbPayload.pending_payment_amount = 0;
-          dbPayload.pending_payment_reason = null;
-          dbPayload.pending_payment_created_at = null;
           // Preserve original payment method in history/previews; Comp acts as a waiver marker only.
           dbPayload.payment_method = existingRow.payment_method || dbPayload.payment_method;
-          dbPayload.paid = 1;
+
+          if (compensatePreviousDue) {
+            // Yes: clear all outstanding due (previous + current), then roll total_price back by previous pending.
+            dbPayload.pending_payment_amount = 0;
+            dbPayload.pending_payment_reason = null;
+            dbPayload.pending_payment_created_at = null;
+            dbPayload.total_price = Math.max(0, oldTotalPrice - existingPending);
+            dbPayload.paid = 1;
+          } else {
+            // No: keep previous pending due as-is; comp only newly added items from this edit.
+            dbPayload.pending_payment_amount = existingPending;
+            dbPayload.pending_payment_reason = existingRow.pending_payment_reason || null;
+            dbPayload.pending_payment_created_at = existingRow.pending_payment_created_at || null;
+            dbPayload.total_price = oldTotalPrice;
+            dbPayload.paid = existingPending > 0 ? 0 : 1;
+          }
+
           const clientPaidAmt = updateDataObj.paidAmount;
           if (clientPaidAmt !== undefined && clientPaidAmt !== null && Number.isFinite(Number(clientPaidAmt))) {
             dbPayload.paid_amount = Number(clientPaidAmt);
@@ -1170,8 +1191,6 @@ export class RegistrationController {
           if (keepPaidAt) {
             dbPayload.paid_at = existingRow.paid_at;
           }
-          // Do not raise total_price with tier math when Comp waives pending — keep pre-update package total
-          dbPayload.total_price = oldTotalPrice;
           if (compScopeNote) {
             const existingNotes = dbPayload.update_notes !== undefined
               ? String(dbPayload.update_notes || '')
