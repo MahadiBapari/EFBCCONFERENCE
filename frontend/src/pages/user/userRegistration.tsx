@@ -1130,7 +1130,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         })() : undefined,
         // Include admin price override if enabled
         ...(isAdminEdit && priceOverrideEnabled ? { totalPrice: priceOverride } : {}),
-        ...(isAdminEdit && priceOverrideEnabled && priceOverrideReason ? { pendingPaymentReason: priceOverrideReason } : {}),
+        ...(isAdminEdit && priceOverrideReason.trim() ? { pendingPaymentReason: priceOverrideReason.trim() } : {}),
         ...(isAdminEdit && isCompPayment ? { compensatePreviousDue } : {}),
       } as Registration;
       if (compWaivesPendingOnly) {
@@ -3649,18 +3649,23 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       />
                     </div>
 
-                    <div className="form-group">
-                      <label htmlFor="priceOverrideReason" className="form-label">Reason (Optional)</label>
-                      <textarea
-                        id="priceOverrideReason"
-                        className="form-control"
-                        placeholder="e.g., Special discount applied, Price adjustment due to..."
-                        value={priceOverrideReason}
-                        onChange={(e) => setPriceOverrideReason(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
                   </>
+                )}
+                {isAdminEdit && isEditing && adminPackageDeltaDue > 0 && (
+                  <div className="form-group">
+                    <label htmlFor="pendingAmountReason" className="form-label">Pending Amount Reason</label>
+                    <textarea
+                      id="pendingAmountReason"
+                      className="form-control"
+                      placeholder="e.g., Added spouse ticket and 2 children at current tier pricing"
+                      value={priceOverrideReason}
+                      onChange={(e) => setPriceOverrideReason(e.target.value)}
+                      rows={3}
+                    />
+                    <small className="form-hint" style={{ display: 'block', marginTop: '0.35rem' }}>
+                      This note will be saved as the pending payment reason and included in the pending payment email.
+                    </small>
+                  </div>
                 )}
               </div>
               
