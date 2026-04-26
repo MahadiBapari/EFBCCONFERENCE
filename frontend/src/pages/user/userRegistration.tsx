@@ -3505,26 +3505,47 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
             </div>
           )} */}
 
-          {/* Update Notes section — only visible when editing an existing registration */}
+          {/* Update Notes section — visible when editing; admin can edit, users see read-only notes */}
           {isEditing && (
             <div className="form-section">
               <h3 className="section-title">Update Notes</h3>
-              <div className="form-group">
-                <label htmlFor="updateNotes" className="form-label">
-                  Add a note about changes being made
-                </label>
-                <textarea
-                  id="updateNotes"
-                  className="form-control"
-                  placeholder="e.g., Changed personal information, Updated spouse information..."
-                  value={(formData as any).updateNotes || ''}
-                  onChange={(e) => handleInputChange('updateNotes', e.target.value)}
-                  rows={3}
-                />
-              </div>
-              {registration?.updateNotes && (
+              {isAdminEdit ? (
+                <>
+                  <div className="form-group">
+                    <label htmlFor="updateNotes" className="form-label">
+                      Add a note about changes being made
+                    </label>
+                    <textarea
+                      id="updateNotes"
+                      className="form-control"
+                      placeholder="e.g., Changed personal information, Updated spouse information..."
+                      value={(formData as any).updateNotes || ''}
+                      onChange={(e) => handleInputChange('updateNotes', e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  {registration?.updateNotes && (
+                    <div className="form-group">
+                      <label className="form-label">Previous Notes</label>
+                      <div style={{
+                        whiteSpace: 'pre-wrap',
+                        fontSize: '14px',
+                        padding: '12px',
+                        backgroundColor: '#f9fafb',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '6px',
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        color: '#374151',
+                        lineHeight: '1.6'
+                      }}>
+                        {registration.updateNotes}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
                 <div className="form-group">
-                  <label className="form-label">Previous Notes</label>
                   <div style={{
                     whiteSpace: 'pre-wrap',
                     fontSize: '14px',
@@ -3532,12 +3553,10 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     backgroundColor: '#f9fafb',
                     border: '1px solid #e5e7eb',
                     borderRadius: '6px',
-                    maxHeight: '200px',
-                    overflowY: 'auto',
                     color: '#374151',
                     lineHeight: '1.6'
                   }}>
-                    {registration.updateNotes}
+                    {(registration?.updateNotes && String(registration.updateNotes).trim()) ? registration.updateNotes : 'No notes'}
                   </div>
                 </div>
               )}
