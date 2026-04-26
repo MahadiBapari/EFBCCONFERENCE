@@ -2819,11 +2819,19 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                       {seatLimit !== undefined && (
                         isFull
                           ? (
-                              isCurrentSelection && isExistingSelectedActivity
-                                ? ` (FULL — You are ${existingIsWaitlisted ? 'WAITLISTED' : 'CONFIRMED'}, ${confirmedCount}/${seatLimit} confirmed${waitlistCount ? `, ${waitlistCount} waitlisted` : ''})`
-                                : ` (FULL — Waitlist available, ${confirmedCount}/${seatLimit} confirmed${waitlistCount ? `, ${waitlistCount} waitlisted` : ''})`
+                              isAdminEdit
+                                ? (
+                                    isCurrentSelection && isExistingSelectedActivity
+                                      ? ` (FULL — You are ${existingIsWaitlisted ? 'WAITLISTED' : 'CONFIRMED'}, ${confirmedCount}/${seatLimit} confirmed${waitlistCount ? `, ${waitlistCount} waitlisted` : ''})`
+                                      : ` (FULL — Waitlist available, ${confirmedCount}/${seatLimit} confirmed${waitlistCount ? `, ${waitlistCount} waitlisted` : ''})`
+                                  )
+                                : ' (FULL — Waitlist available)'
                             )
-                          : ` (${availableSeats} available, ${confirmedCount}/${seatLimit} confirmed${waitlistCount ? `, ${waitlistCount} waitlisted` : ''})`
+                          : (
+                              isAdminEdit
+                                ? ` (${availableSeats} available, ${confirmedCount}/${seatLimit} confirmed${waitlistCount ? `, ${waitlistCount} waitlisted` : ''})`
+                                : ''
+                            )
                       )}
                     </option>
                   );
@@ -2843,13 +2851,21 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                     <div style={{ marginTop: '5px', fontSize: '0.9em', color: isFull ? '#dc2626' : '#666' }}>
                       {isFull ? (
                         <strong>
-                          {isExistingSelectedActivity
-                            ? `This activity is FULL (${confirmedCount}/${seatLimit} seats confirmed). You are currently ${existingIsWaitlisted ? 'WAITLISTED' : 'CONFIRMED'} for this activity.`
-                            : `This activity is FULL (${confirmedCount}/${seatLimit} seats confirmed). You can still select it and you will be waitlisted.`}
-                          {waitlistCount ? ` (Current waitlist: ${waitlistCount})` : ''}
+                          {isAdminEdit
+                            ? (
+                                isExistingSelectedActivity
+                                  ? `This activity is FULL (${confirmedCount}/${seatLimit} seats confirmed). You are currently ${existingIsWaitlisted ? 'WAITLISTED' : 'CONFIRMED'} for this activity.`
+                                  : `This activity is FULL (${confirmedCount}/${seatLimit} seats confirmed). You can still select it and you will be waitlisted.`
+                              )
+                            : (
+                                isExistingSelectedActivity
+                                  ? `This activity is FULL. You are currently ${existingIsWaitlisted ? 'WAITLISTED' : 'CONFIRMED'} for this activity.`
+                                  : 'This activity is FULL. You can still select it and you will be waitlisted.'
+                              )}
+                          {isAdminEdit && waitlistCount ? ` (Current waitlist: ${waitlistCount})` : ''}
                         </strong>
                       ) : (
-                        `${availableSeats} of ${seatLimit} seats available`
+                        isAdminEdit ? `${availableSeats} of ${seatLimit} seats available` : ''
                       )}
                     </div>
                   );
