@@ -106,7 +106,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     const regActive = pickTier(withBounds(regTiers));
     const spouseActive = pickTier(withBounds(spouseTiers));
     let total = regActive?.price ?? 0;
-    if (spouseDinnerSelected) total += (spouseActive?.price ?? 200);
+    if (spouseDinnerSelected) total += (spouseActive?.price ?? 0);
     if (spouseBreakfastSelected && typeof event.breakfastPrice === 'number') {
       const endOk = breakfastEnd ? (now <= new Date(breakfastEnd).getTime()) : true;
       if (endOk) total += event.breakfastPrice;
@@ -835,7 +835,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                           const regActive = pickTier(withBounds(regTiers));
                           const spouseActive = pickTier(withBounds(spouseTiers));
                           let total = regActive?.price ?? 0;
-                          if (spouseDinnerSelected) total += (spouseActive?.price ?? 200);
+                          if (spouseDinnerSelected) total += (spouseActive?.price ?? 0);
                           if (spouseBreakfastSelected && typeof event.breakfastPrice === 'number') {
                             const endOk = breakfastEnd ? (now <= new Date(breakfastEnd).getTime()) : true;
                             if (endOk) total += event.breakfastPrice;

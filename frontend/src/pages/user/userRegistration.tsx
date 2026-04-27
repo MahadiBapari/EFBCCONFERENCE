@@ -601,7 +601,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           return upcoming || tiers[tiers.length - 1];
         };
         const spouseActive = pickTier(withBounds(spouseTiers));
-        const spousePrice = spouseActive?.price ?? 200;
+        const spousePrice = spouseActive?.price ?? 0;
         const total = originalRegPrice + spousePrice;
         setFormData(prev => ({ ...prev, totalPrice: total }));
         return;
@@ -629,7 +629,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           return upcoming || tiers[tiers.length - 1];
         };
         const kidsActive = pickTier(withBounds(kidsTiers));
-        const pricePerKid = kidsActive?.price ?? 50;
+        const pricePerKid = kidsActive?.price ?? 0;
         const newKidsCount = kids.length - originalKidsCount;
         const kidsPrice = pricePerKid * newKidsCount;
         const total = originalRegPrice + kidsPrice;
@@ -659,9 +659,9 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           return upcoming || tiers[tiers.length - 1];
         };
         const spouseActive = pickTier(withBounds(spouseTiers));
-        const spousePrice = spouseActive?.price ?? 200;
+        const spousePrice = spouseActive?.price ?? 0;
         const kidsActive = pickTier(withBounds(kidsTiers));
-        const pricePerKid = kidsActive?.price ?? 50;
+        const pricePerKid = kidsActive?.price ?? 0;
         const newKidsCount = kids.length - originalKidsCount;
         const kidsPrice = pricePerKid * newKidsCount;
         const total = originalRegPrice + spousePrice + kidsPrice;
@@ -694,7 +694,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
         return upcoming || tiers[tiers.length - 1];
       };
       const spouseActive = pickTier(withBounds(spouseTiers));
-      const spousePrice = spouseActive?.price ?? 200;
+      const spousePrice = spouseActive?.price ?? 0;
       const total = originalRegPrice + spousePrice;
       setFormData(prev => ({ ...prev, totalPrice: total }));
       return;
@@ -730,7 +730,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     const spouseActive = pickTier(withBounds(spouseTiers));
     const kidsActive = pickTier(withBounds(kidsTiers));
     let total = regActive?.price ?? 0;
-    if (spouseDinnerSelected) total += spouseActive?.price ?? 200;
+    if (spouseDinnerSelected) total += spouseActive?.price ?? 0;
     // Calculate kids price: calculate from tiers (admin override commented out)
     if (kids.length > 0) {
       // const kidsPrice = formData.kidsTotalPrice !== undefined 
@@ -3625,7 +3625,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                             })).sort((a: any, b: any) => a.s - b.s);
                             const spouseActive = spouseTiers.find((t: any) => now >= t.s && now < t.e) ||
                               (now < spouseTiers[0]?.s ? spouseTiers[0] : (now >= spouseTiers[spouseTiers.length - 1]?.e ? spouseTiers[spouseTiers.length - 1] : (spouseTiers.find((t: any) => now < t.s) || spouseTiers[spouseTiers.length - 1])));
-                            total += (spouseActive?.price ?? 200);
+                            total += (spouseActive?.price ?? 0);
                           }
                           
                           if (kids.length > 0) {
@@ -3636,7 +3636,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                             })).sort((a: any, b: any) => a.s - b.s);
                             const kidsActive = kidsTiers.find((t: any) => now >= t.s && now < t.e) ||
                               (now < kidsTiers[0]?.s ? kidsTiers[0] : (now >= kidsTiers[kidsTiers.length - 1]?.e ? kidsTiers[kidsTiers.length - 1] : (kidsTiers.find((t: any) => now < t.s) || kidsTiers[kidsTiers.length - 1])));
-                            const pricePerKid = kidsActive?.price ?? 50;
+                            const pricePerKid = kidsActive?.price ?? 0;
                             total += pricePerKid * kids.length;
                           }
                           

@@ -1003,14 +1003,14 @@ export class RegistrationController {
               const newSpouseTicket = (updateData as any).spouseDinnerTicket || false;
               if (newSpouseTicket && !oldSpouseTicket) {
                 const spouse = pick(spouseTiers);
-                const spousePrice = spouse && typeof spouse.price === 'number' ? spouse.price : 200; // Default
+                const spousePrice = spouse && typeof spouse.price === 'number' ? spouse.price : 0;
                 calculatedTotal += spousePrice;
                 pendingAmount += spousePrice;
                 reasonParts.push(`Spouse dinner ticket added ($${spousePrice.toFixed(2)})`);
               } else if (newSpouseTicket && oldSpouseTicket) {
                 // Spouse already exists, recalculate price
                 const spouse = pick(spouseTiers);
-                const spousePrice = spouse && typeof spouse.price === 'number' ? spouse.price : 200;
+                const spousePrice = spouse && typeof spouse.price === 'number' ? spouse.price : 0;
                 calculatedTotal += spousePrice;
               }
               
@@ -1025,7 +1025,7 @@ export class RegistrationController {
               if (newKidsCount > oldKidsCount) {
                 const addedKidsCount = newKidsCount - oldKidsCount;
                 const kidsActive = pick(kidsTiers);
-                const pricePerKid = kidsActive?.price ?? 50; // Default
+                const pricePerKid = kidsActive?.price ?? 0;
                 const kidsPrice = pricePerKid * addedKidsCount;
                 calculatedTotal += kidsPrice;
                 pendingAmount += kidsPrice;
@@ -1033,7 +1033,7 @@ export class RegistrationController {
               } else if (newKidsCount > 0) {
                 // Children already exist, recalculate price
                 const kidsActive = pick(kidsTiers);
-                const pricePerKid = kidsActive?.price ?? 50;
+                const pricePerKid = kidsActive?.price ?? 0;
                 calculatedTotal += pricePerKid * newKidsCount;
               }
               
