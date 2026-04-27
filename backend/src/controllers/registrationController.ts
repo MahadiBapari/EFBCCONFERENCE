@@ -1092,6 +1092,31 @@ export class RegistrationController {
         // correctly even when paid_amount includes card processing fees.
         const existingPending = Number(existingRow.pending_payment_amount || 0);
         const newPending = existingPending + pendingAmount;
+
+        const paymentMethodLowerEarly = String(updateDataObj.paymentMethod ?? '').toLowerCase();
+        const priorPaidEvidenceEarly =
+          oldPaidAmount > 0 ||
+          !!existingRow.square_payment_id ||
+          !!existingRow.spouse_payment_id ||
+          !!existingRow.kids_payment_id;
+        const adminCompWaivesAfterPriorPayment =
+          paymentMethodLowerEarly === 'comp' && priorPaidEvidenceEarly;
+
+        const newSpouseTicketRawComp = updateDataObj.spouseDinnerTicket;
+        const newSpouseTicketComp =
+          newSpouseTicketRawComp !== undefined
+            ? (newSpouseTicketRawComp === true ||
+              newSpouseTicketRawComp === 'Yes' ||
+              newSpouseTicketRawComp === 'yes' ||
+              newSpouseTicketRawComp === 1)
+            : !!existingRow.spouse_dinner_ticket;
+        const newKidsRawComp = updateDataObj.kids;
+        const newKidsCountComp = Array.isArray(newKidsRawComp)
+          ? newKidsRawComp.length
+          : oldKidsCount;
+        const spouseOrKidsAddedThisEdit =
+          (!oldSpouseTicket && newSpouseTicketComp) || newKidsCountComp > oldKidsCount;
+
         if (pendingAmount > 0) {
           dbPayload.total_price = newTotalPrice;
           dbPayload.paid_amount = oldPaidAmount;
@@ -1114,7 +1139,13 @@ export class RegistrationController {
         // Skip when pendingAmount > 0: the block above already set paid=0 and
         // created a pending payment — don't clobber it just because the frontend
         // forwarded the existing paid flag.
-        if (pendingAmount <= 0 && ((updateData as any).paid === true || (updateData as any).paid === 1)) {
+        // Skip when admin chose Comp after a real prior payment — dedicated block below
+        // preserves paid_amount / payment_method (do not set paid_amount = total_price here).
+        if (
+          !adminCompWaivesAfterPriorPayment &&
+          pendingAmount <= 0 &&
+          ((updateData as any).paid === true || (updateData as any).paid === 1)
+        ) {
           dbPayload.paid = 1;
           dbPayload.paid_amount = newTotalPrice;
           dbPayload.pending_payment_amount = 0;
@@ -1148,16 +1179,13 @@ export class RegistrationController {
         }
 
         // Admin Comp after prior card payment(s): waive outstanding pending only — do not clear payment IDs or clobber paid_amount / paid_at.
-        const paymentMethodLower = String(updateDataObj.paymentMethod ?? '').toLowerCase();
-        const priorPaidEvidence =
-          oldPaidAmount > 0 ||
-          !!existingRow.square_payment_id ||
-          !!existingRow.spouse_payment_id ||
-          !!existingRow.kids_payment_id;
+        // Run when Comp is chosen and there was prior payment evidence, including when tier math yields $0 pending but spouse/children were added (no legacy $50 fallback).
+        const paymentMethodLower = paymentMethodLowerEarly;
+        const priorPaidEvidence = priorPaidEvidenceEarly;
         if (
           paymentMethodLower === 'comp' &&
           priorPaidEvidence &&
-          (existingPending > 0 || pendingAmount > 0)
+          (existingPending > 0 || pendingAmount > 0 || spouseOrKidsAddedThisEdit)
         ) {
           const compensatePreviousDue =
             updateDataObj.compensatePreviousDue === undefined
@@ -1165,15 +1193,9 @@ export class RegistrationController {
               : (updateDataObj.compensatePreviousDue === true ||
                 updateDataObj.compensatePreviousDue === 1 ||
                 String(updateDataObj.compensatePreviousDue).toLowerCase() === 'true');
-          const newSpouseTicketRaw = updateDataObj.spouseDinnerTicket;
-          const newSpouseTicket = newSpouseTicketRaw !== undefined
-            ? (newSpouseTicketRaw === true || newSpouseTicketRaw === 'Yes' || newSpouseTicketRaw === 'yes' || newSpouseTicketRaw === 1)
-            : !!existingRow.spouse_dinner_ticket;
-          const newKidsRaw = updateDataObj.kids;
-          const newKidsCount = Array.isArray(newKidsRaw) ? newKidsRaw.length : oldKidsCount;
           const compScopeParts: string[] = [];
-          if (!oldSpouseTicket && newSpouseTicket) compScopeParts.push('Spouse');
-          if (newKidsCount > oldKidsCount) compScopeParts.push('Children');
+          if (!oldSpouseTicket && newSpouseTicketComp) compScopeParts.push('Spouse');
+          if (newKidsCountComp > oldKidsCount) compScopeParts.push('Children');
           const compScopeNote = compScopeParts.length > 0
             ? `Comp. ${compScopeParts.join(', ')}${compensatePreviousDue ? '' : ' (new only)'}`
             : (compensatePreviousDue ? 'Comp. Previous Due' : '');
@@ -1197,12 +1219,8 @@ export class RegistrationController {
             dbPayload.paid = existingPending > 0 ? 0 : 1;
           }
 
-          const clientPaidAmt = updateDataObj.paidAmount;
-          if (clientPaidAmt !== undefined && clientPaidAmt !== null && Number.isFinite(Number(clientPaidAmt))) {
-            dbPayload.paid_amount = Number(clientPaidAmt);
-          } else {
-            dbPayload.paid_amount = oldPaidAmount;
-          }
+          // Always keep historical paid_amount for waiver edits; clients often send paidAmount 0 when Comp is selected.
+          dbPayload.paid_amount = oldPaidAmount;
           const existingPaidAtStr = existingRow.paid_at ? String(existingRow.paid_at) : '';
           const keepPaidAt =
             existingPaidAtStr &&
@@ -1219,6 +1237,17 @@ export class RegistrationController {
             if (firstNoteLine !== compScopeNote) {
               dbPayload.update_notes = existingNotes ? `${compScopeNote}\n${existingNotes}` : compScopeNote;
             }
+          }
+        } else if (
+          paymentMethodLowerEarly === 'comp' &&
+          priorPaidEvidenceEarly
+        ) {
+          // Client sends paymentMethod Comp but no new pending math and no add-ons — still restore Card/Check row, never store Comp over prior payment.
+          dbPayload.payment_method = existingRow.payment_method || dbPayload.payment_method;
+          dbPayload.paid_amount = oldPaidAmount;
+          const pas = existingRow.paid_at ? String(existingRow.paid_at) : '';
+          if (pas && !pas.startsWith('0000-00-00') && pas.trim() !== '') {
+            dbPayload.paid_at = existingRow.paid_at;
           }
         }
       }

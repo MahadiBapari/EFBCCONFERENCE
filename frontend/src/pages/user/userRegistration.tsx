@@ -166,7 +166,7 @@ function getActiveRegistrationPriceFromEvent(event: Event | null | undefined): n
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Prefer stored package total; if missing/NaN, derive from event tiers (never a hardcoded default). */
+/** Prefer stored package total; if missing/NaN, derive from event tiers. */
 function registrationPackageTotalOrDerived(
   registration: Partial<Registration> | null | undefined,
   event: Event | null | undefined,
@@ -1089,11 +1089,14 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       const pendingBalanceForComp = Number(
         (registration as any)?.pendingPaymentAmount ?? formData.pendingPaymentAmount ?? 0
       );
+      const paidMethodLower = String((registration as any)?.paymentMethod || '').toLowerCase();
+      const paidViaCardOrCheck = paidMethodLower === 'card' || paidMethodLower === 'check';
       const hadPriorPaymentSnapshot =
         Number((registration as any)?.paidAmount || 0) > 0 ||
         !!(registration as any)?.squarePaymentId ||
         !!(registration as any)?.spousePaymentId ||
-        !!(registration as any)?.kidsPaymentId;
+        !!(registration as any)?.kidsPaymentId ||
+        (!!(registration as any)?.paid && paidViaCardOrCheck);
       const hasNewChargeThisEdit =
         pendingBalanceForComp > 0 ||
         (!!formData.spouseDinnerTicket && !hadSpouseTicket) ||
@@ -1176,6 +1179,21 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
           !String(originalPaidAt).startsWith('0000-00-00');
         if (hasMeaningfulPaidAt) {
           (registrationData as any).paidAt = originalPaidAt;
+        }
+      } else if (isCompPayment && hadPriorPaymentSnapshot) {
+        // Comp after Card/Check (or recorded payment IDs): never send full-wipe Comp payload — server restores payment_method and paid_amount.
+        (registrationData as any).paidAmount = (registration as any)?.paidAmount;
+        (registrationData as any).squarePaymentId = (registration as any)?.squarePaymentId;
+        (registrationData as any).spousePaymentId = (registration as any)?.spousePaymentId;
+        (registrationData as any).kidsPaymentId = (registration as any)?.kidsPaymentId;
+        (registrationData as any).paid = true;
+        const pa = (registration as any)?.paidAt;
+        if (
+          pa != null &&
+          String(pa).trim() !== '' &&
+          !String(pa).startsWith('0000-00-00')
+        ) {
+          (registrationData as any).paidAt = pa;
         }
       } else if (isCompPayment) {
         registrationData.totalPrice = 0;
