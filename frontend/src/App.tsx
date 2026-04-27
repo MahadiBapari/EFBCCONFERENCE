@@ -268,7 +268,11 @@ useEffect(() => {
         specialPhysicalNeeds: r.specialPhysicalNeeds !== undefined ? r.specialPhysicalNeeds : (r.special_physical_needs !== undefined ? !!r.special_physical_needs : undefined),
         specialPhysicalNeedsDetails: r.specialPhysicalNeedsDetails ?? r.special_physical_needs_details ?? '',
         // Payment
-        totalPrice: Number(r.totalPrice ?? 675),
+        totalPrice: (() => {
+          const raw = r.totalPrice ?? r.total_price;
+          const n = Number(raw);
+          return Number.isFinite(n) ? n : 0;
+        })(),
         paymentMethod: r.paymentMethod ?? 'Card',
         paid: r.paid ?? false,
         paidAt: r.paidAt ?? r.paid_at,

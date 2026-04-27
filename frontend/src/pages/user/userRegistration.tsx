@@ -143,6 +143,40 @@ function getCurrentEasternTime(): number {
   return easternMidnight + hoursMs + minutesMs + secondsMs;
 }
 
+/** Active attendee tier price from event config, or 0 if none / invalid */
+function getActiveRegistrationPriceFromEvent(event: Event | null | undefined): number {
+  if (!event) return 0;
+  const now = getCurrentEasternTime();
+  const regTiers = (event.registrationPricing || [])
+    .map((t: any) => ({
+      ...t,
+      s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
+      e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity,
+    }))
+    .sort((a: any, b: any) => a.s - b.s);
+  if (!regTiers.length) return 0;
+  const regActive =
+    regTiers.find((t: any) => now >= t.s && now < t.e) ||
+    (now < regTiers[0]?.s
+      ? regTiers[0]
+      : now >= regTiers[regTiers.length - 1]?.e
+        ? regTiers[regTiers.length - 1]
+        : regTiers.find((t: any) => now < t.s) || regTiers[regTiers.length - 1]);
+  const n = Number(regActive?.price);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Prefer stored package total; if missing/NaN, derive from event tiers (never a hardcoded default). */
+function registrationPackageTotalOrDerived(
+  registration: Partial<Registration> | null | undefined,
+  event: Event | null | undefined,
+): number {
+  if (!registration) return getActiveRegistrationPriceFromEvent(event);
+  const n = Number(registration.totalPrice);
+  if (Number.isFinite(n)) return n;
+  return getActiveRegistrationPriceFromEvent(event);
+}
+
 interface UserRegistrationProps {
   events: Event[];
   registrations: Registration[];
@@ -309,7 +343,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
 
     // Payment Information
     // Backend stores the discounted price in totalPrice, so use it directly
-    totalPrice: registration?.totalPrice || 675,
+    totalPrice: registrationPackageTotalOrDerived(registration, event),
     paymentMethod: registration?.paymentMethod || 'Card',
     paid: registration?.paid ?? false,
     discountCode: registration?.discountCode,
@@ -418,7 +452,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
   const [discountCodeError, setDiscountCodeError] = useState('');
   const [validatingDiscountCode, setValidatingDiscountCode] = useState(false);
   const [priceOverrideEnabled, setPriceOverrideEnabled] = useState(false);
-  const [priceOverride, setPriceOverride] = useState<number>(registration?.totalPrice || 675);
+  const [priceOverride, setPriceOverride] = useState<number>(registrationPackageTotalOrDerived(registration, event));
   const [priceOverrideReason, setPriceOverrideReason] = useState<string>(registration?.pendingPaymentReason || '');
   const [compensatePreviousDue, setCompensatePreviousDue] = useState<boolean>(true);
   const [showCompensationChoiceModal, setShowCompensationChoiceModal] = useState<boolean>(false);
@@ -471,21 +505,11 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       if (Number.isFinite(paidAmountValue) && paidAmountValue > 0) {
         return paidAmountValue;
       }
-      return Number(registration.totalPrice) || 675;
+      const tp = Number(registration.totalPrice);
+      if (Number.isFinite(tp)) return tp;
+      return getActiveRegistrationPriceFromEvent(event);
     }
-    // For new registrations, calculate base price only (no spouse, no kids)
-    if (event) {
-      const now = getCurrentEasternTime();
-      const regTiers = (event.registrationPricing || []).map((t: any) => ({
-        ...t,
-        s: t.startDate ? getEasternTimeMidnight(t.startDate) : -Infinity,
-        e: t.endDate ? getEasternTimeEndOfDay(t.endDate) : Infinity
-      })).sort((a: any, b: any) => a.s - b.s);
-      const regActive = regTiers.find((t: any) => now >= t.s && now < t.e) ||
-        (now < regTiers[0]?.s ? regTiers[0] : (now >= regTiers[regTiers.length - 1]?.e ? regTiers[regTiers.length - 1] : (regTiers.find((t: any) => now < t.s) || regTiers[regTiers.length - 1])));
-      return regActive?.price ?? 675;
-    }
-    return 675;
+    return getActiveRegistrationPriceFromEvent(event);
   }, [registration, event]);
 
   /** Saved registration package total (`total_price` at edit open) — delta vs form is incremental due for cards/pending UI */
@@ -546,7 +570,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       
       // If nothing is being added, ALWAYS preserve the original price
       if (!isAddingSpouse && !isAddingKids) {
-        const storedPrice = registration?.totalPrice || 675;
+        const storedPrice = registrationPackageTotalOrDerived(registration, event);
         // Always set to stored price to prevent any recalculation
         setFormData(prev => {
           // Force update to stored price when viewing existing registration with no changes
@@ -557,7 +581,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       
       // If spouse is being added (without kids), calculate only spouse price
       if (isAddingSpouse && !isAddingKids) {
-        const originalRegPrice = registration?.totalPrice || 675;
+        const originalRegPrice = registrationPackageTotalOrDerived(registration, event);
         const now = getCurrentEasternTime();
         const withBounds = (arr: any[] = []) =>
           arr
@@ -585,7 +609,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       
       // If kids are being added (without spouse), calculate only kids price
       if (isAddingKids && !isAddingSpouse) {
-        const originalRegPrice = registration?.totalPrice || 675;
+        const originalRegPrice = registrationPackageTotalOrDerived(registration, event);
         const now = getCurrentEasternTime();
         const withBounds = (arr: any[] = []) =>
           arr
@@ -615,7 +639,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
       
       // If both spouse and kids are being added, calculate both
       if (isAddingSpouse && isAddingKids) {
-        const originalRegPrice = registration?.totalPrice || 675;
+        const originalRegPrice = registrationPackageTotalOrDerived(registration, event);
         const now = getCurrentEasternTime();
         const withBounds = (arr: any[] = []) =>
           arr
@@ -650,7 +674,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     // and only calculate spouse tier price
     if (isAlreadyPaid && formData.spouseDinnerTicket && !hadSpouseTicket) {
       // Adding spouse to paid registration - preserve original reg price, calculate spouse price
-      const originalRegPrice = registration?.totalPrice || 675;
+      const originalRegPrice = registrationPackageTotalOrDerived(registration, event);
       const now = getCurrentEasternTime();
     const withBounds = (arr: any[] = []) =>
       arr
@@ -705,7 +729,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     const regActive = pickTier(withBounds(regTiers));
     const spouseActive = pickTier(withBounds(spouseTiers));
     const kidsActive = pickTier(withBounds(kidsTiers));
-    let total = regActive?.price ?? 675;
+    let total = regActive?.price ?? 0;
     if (spouseDinnerSelected) total += spouseActive?.price ?? 200;
     // Calculate kids price: calculate from tiers (admin override commented out)
     if (kids.length > 0) {
@@ -717,7 +741,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
     }
     // if (childLunchSelected) total += childLunchPrice;
     setFormData(prev => ({ ...prev, totalPrice: total }));
-  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration, registration?.totalPrice, kids, kids.length, originalKidsCount, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers, priceOverrideEnabled, formData.pendingPaymentAmount]);
+  }, [isEditing, isAlreadyPaid, hadSpouseTicket, formData.spouseDinnerTicket, /* formData.kidsTotalPrice, */ spouseDinnerSelected, registration, registration?.totalPrice, event, kids, kids.length, originalKidsCount, /* childLunchSelected, childLunchPrice, */ regTiers, spouseTiers, kidsTiers, priceOverrideEnabled, formData.pendingPaymentAmount]);
 
   // Sync priceOverride with calculated price when override is disabled
   useEffect(() => {
@@ -3591,7 +3615,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                           })).sort((a: any, b: any) => a.s - b.s);
                           const regActive = regTiers.find((t: any) => now >= t.s && now < t.e) ||
                             (now < regTiers[0]?.s ? regTiers[0] : (now >= regTiers[regTiers.length - 1]?.e ? regTiers[regTiers.length - 1] : (regTiers.find((t: any) => now < t.s) || regTiers[regTiers.length - 1])));
-                          let total = regActive?.price ?? 675;
+                          let total = regActive?.price ?? 0;
                           
                           if (formData.spouseDinnerTicket) {
                             const spouseTiers = (event?.spousePricing || []).map((t: any) => ({
@@ -3654,7 +3678,7 @@ export const UserRegistration: React.FC<UserRegistrationProps> = ({
                         </p>
                       )}
                       <p style={{ margin: '4px 0', color: '#6b7280' }}>
-                        Current Calculated Price: <strong>${(formData.totalPrice || 675).toFixed(2)}</strong>
+                        Current Calculated Price: <strong>${(Number(formData.totalPrice ?? 0)).toFixed(2)}</strong>
                       </p>
                       {/* Incremental due = current package − saved package (matches backend pending stacking for add-ons) */}
                       {isEditing && registration && adminPackageDeltaDue > 0 && (

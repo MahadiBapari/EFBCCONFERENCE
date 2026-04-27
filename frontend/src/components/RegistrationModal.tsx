@@ -4,6 +4,13 @@ import { Modal } from './Modal';
 import { getActivityNames } from '../utils/eventUtils';
 import '../styles/RegistrationModal.css';
 
+/** Stored package total only; use 0 until tier effect runs for new rows (preserves comp $0). */
+function packageTotalFromRegistration(registration: Registration | null | undefined): number {
+  if (!registration) return 0;
+  const n = Number(registration.totalPrice);
+  return Number.isFinite(n) ? n : 0;
+}
+
 interface RegistrationModalProps {
   event: Event;
   registration?: Registration | null;
@@ -60,7 +67,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     spouseLastName: registration?.spouseLastName || '',
     
     // Payment Information
-    totalPrice: registration?.totalPrice || 675, // Default price
+    totalPrice: packageTotalFromRegistration(registration ?? undefined),
     paymentMethod: registration?.paymentMethod || 'Card',
     
     // Legacy fields
@@ -71,7 +78,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [priceOverrideEnabled, setPriceOverrideEnabled] = useState(false);
-  const [priceOverride, setPriceOverride] = useState<number>(registration?.totalPrice || 675);
+  const [priceOverride, setPriceOverride] = useState<number>(packageTotalFromRegistration(registration ?? undefined));
   const [priceOverrideReason, setPriceOverrideReason] = useState<string>('');
 
   // Derived selections to keep effects dependencies simple
@@ -98,7 +105,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     };
     const regActive = pickTier(withBounds(regTiers));
     const spouseActive = pickTier(withBounds(spouseTiers));
-    let total = regActive?.price ?? 675;
+    let total = regActive?.price ?? 0;
     if (spouseDinnerSelected) total += (spouseActive?.price ?? 200);
     if (spouseBreakfastSelected && typeof event.breakfastPrice === 'number') {
       const endOk = breakfastEnd ? (now <= new Date(breakfastEnd).getTime()) : true;
@@ -760,7 +767,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             <div className="payment-summary">
               <div className="payment-item">
                 <span>Conference Registration:</span>
-                <span>${(event.registrationPricing && event.registrationPricing.length ? (function(){ const now=Date.now(); const tiers=(event.registrationPricing||[]).map((t:any)=>({ ...t, s:t.startDate? new Date(t.startDate).getTime():-Infinity, e:t.endDate? new Date(t.endDate).getTime():Infinity })).sort((a:any,b:any)=>a.s-b.s); const active=tiers.find((t:any)=> now>=t.s && now<=t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length-1].e ? tiers[tiers.length-1] : (tiers.find((t:any)=> now < t.s) || tiers[tiers.length-1]))); return (active?.price ?? 675).toFixed(2); })() : '675.00')}</span>
+                <span>${(event.registrationPricing && event.registrationPricing.length ? (function(){ const now=Date.now(); const tiers=(event.registrationPricing||[]).map((t:any)=>({ ...t, s:t.startDate? new Date(t.startDate).getTime():-Infinity, e:t.endDate? new Date(t.endDate).getTime():Infinity })).sort((a:any,b:any)=>a.s-b.s); const active=tiers.find((t:any)=> now>=t.s && now<=t.e) || (now < tiers[0].s ? tiers[0] : (now > tiers[tiers.length-1].e ? tiers[tiers.length-1] : (tiers.find((t:any)=> now < t.s) || tiers[tiers.length-1]))); return (active?.price ?? 0).toFixed(2); })() : '0.00')}</span>
               </div>
               {formData.spouseDinnerTicket && (
                 <div className="payment-item">
@@ -776,7 +783,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               )}
               <div className="payment-total">
                 <span>Total Price:</span>
-                <span>${(formData.totalPrice || 675).toFixed(2)} USD</span>
+                <span>${Number(formData.totalPrice ?? 0).toFixed(2)} USD</span>
               </div>
             </div>
 
@@ -827,7 +834,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                           };
                           const regActive = pickTier(withBounds(regTiers));
                           const spouseActive = pickTier(withBounds(spouseTiers));
-                          let total = regActive?.price ?? 675;
+                          let total = regActive?.price ?? 0;
                           if (spouseDinnerSelected) total += (spouseActive?.price ?? 200);
                           if (spouseBreakfastSelected && typeof event.breakfastPrice === 'number') {
                             const endOk = breakfastEnd ? (now <= new Date(breakfastEnd).getTime()) : true;
@@ -874,13 +881,13 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
                     <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff', borderRadius: '4px', fontSize: '14px' }}>
                       <p style={{ margin: '4px 0', color: '#6b7280' }}>
-                        Calculated Price: <strong>${(formData.totalPrice || 675).toFixed(2)}</strong>
+                        Calculated Price: <strong>${Number(formData.totalPrice ?? 0).toFixed(2)}</strong>
                       </p>
                       <p style={{ margin: '4px 0', color: '#6b7280' }}>
                         Override Price: <strong>${priceOverride.toFixed(2)}</strong>
                       </p>
-                      <p style={{ margin: '4px 0', color: priceOverride > (formData.totalPrice || 675) ? '#dc2626' : '#059669' }}>
-                        Difference: <strong>${(priceOverride - (formData.totalPrice || 675)).toFixed(2)}</strong>
+                      <p style={{ margin: '4px 0', color: priceOverride > Number(formData.totalPrice ?? 0) ? '#dc2626' : '#059669' }}>
+                        Difference: <strong>${(priceOverride - Number(formData.totalPrice ?? 0)).toFixed(2)}</strong>
                       </p>
                     </div>
                   </>
